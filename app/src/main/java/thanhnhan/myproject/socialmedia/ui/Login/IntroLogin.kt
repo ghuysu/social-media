@@ -42,7 +42,7 @@ class IntroLogin {
             modifier = Modifier
                 .fillMaxSize()
                 .background(Color(0xFF22272E))
-                .padding(horizontal = 50.dp),
+                .padding(horizontal = 20.dp),
             contentAlignment = Alignment.TopCenter
         ) {
             Column(
@@ -75,17 +75,18 @@ class IntroLogin {
                 // Nút "Tạo một tài khoản"
                 Button(
                     onClick = { /* TODO: Add your logic here */ },
-                    colors = ButtonDefaults.run { buttonColors(containerColor = Color(0xFF19ADC8)) },
-                    shape = RoundedCornerShape(50),
+                    colors = ButtonDefaults.buttonColors(
+                        containerColor = AppTheme.appButtonStyle.backgroundColor,
+                        contentColor = AppTheme.appButtonStyle.contentColor
+                    ),
+                    shape = RoundedCornerShape(AppTheme.appButtonStyle.cornerRadius.dp),
                     modifier = Modifier
                         .fillMaxWidth()
-                        .height(50.dp)
+                        .padding(AppTheme.appButtonStyle.padding.dp)
                 ) {
                     Text(
-                        text = "Sign Up",
-                        color = Color.White,
-                        style = MaterialTheme.typography.bodyLarge,
-                        onTextLayout = {}
+                        text = "Sign Out",
+                        style = AppTheme.appButtonStyle.textStyle
                     )
                 }
 
@@ -94,17 +95,18 @@ class IntroLogin {
                 // Nút "Đăng nhập"
                 Button(
                     onClick = { /* TODO: Add your logic here */ },
-                    colors = ButtonDefaults.run { buttonColors(containerColor = Color(0xFF19ADC8)) },
-                    shape = RoundedCornerShape(50),
+                    colors = ButtonDefaults.buttonColors(
+                        containerColor = AppTheme.appButtonStyle.backgroundColor,
+                        contentColor = AppTheme.appButtonStyle.contentColor
+                    ),
+                    shape = RoundedCornerShape(AppTheme.appButtonStyle.cornerRadius.dp),
                     modifier = Modifier
                         .fillMaxWidth()
-                        .height(50.dp)
+                        .padding(AppTheme.appButtonStyle.padding.dp)
                 ) {
                     Text(
                         text = "Sign In",
-                        color = Color.White,
-                        style = MaterialTheme.typography.bodyLarge,
-                        onTextLayout = {}
+                        style = AppTheme.appButtonStyle.textStyle
                     )
                 }
             }

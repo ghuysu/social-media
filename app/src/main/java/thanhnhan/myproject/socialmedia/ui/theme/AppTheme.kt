@@ -20,13 +20,22 @@ data class AppTypography(
     val largeTitle: TextStyle = TextStyle.Default,
     val title: TextStyle = TextStyle.Default,
     val subtitle: TextStyle = TextStyle.Default,
-    val body: TextStyle = TextStyle.Default,
+    val buttonText: TextStyle = TextStyle.Default,
 )
-
+data class AppButtonStyle(
+    val backgroundColor: Color = Color(0xFF19ADC8),
+    val contentColor: Color = Color.White,
+    val cornerRadius: Int = 50,
+    val padding: Int = 16,
+    val textStyle: TextStyle = TextStyle.Default
+)
 val LocalAppTypography = staticCompositionLocalOf {
     AppTypography()
 }
 
+val LocalAppButtonStyle = staticCompositionLocalOf {
+    AppButtonStyle()
+}
 @Composable
 fun AppTheme(
     content: @Composable () -> Unit
@@ -47,20 +56,28 @@ fun AppTheme(
         ),
         subtitle = TextStyle(
             fontFamily = FontFamily.Monospace,
-            fontSize = 16.sp,
+            fontSize = 12.sp,
             fontWeight = FontWeight.Bold,
             color = Color(0xFF19ADC8),
             textAlign = TextAlign.Center
         ),
-        body = TextStyle(
+        buttonText = TextStyle(
             fontFamily = FontFamily.Monospace,
             fontSize = 18.sp,
-            fontWeight = FontWeight.Normal,
-            color = Color(0xFF19ADC8),
+            fontWeight = FontWeight.ExtraBold,
+            color = Color.White,
             textAlign = TextAlign.Center
-        )
+        ),
     )
-    CompositionLocalProvider(LocalAppTypography provides typography) {
+    val buttonStyle = AppButtonStyle(
+        backgroundColor = Color(0xFF19ADC8),
+        contentColor = Color.White,
+        cornerRadius = 50,
+        padding = 16,
+        textStyle = typography.buttonText // Có thể áp dụng kiểu chữ từ typography
+    )
+
+    CompositionLocalProvider(LocalAppTypography provides typography, LocalAppButtonStyle provides buttonStyle) {
         content.invoke()
     }
 }
@@ -69,4 +86,7 @@ object AppTheme {
     val appTypography: AppTypography
         @Composable
         get() = LocalAppTypography.current
+    val appButtonStyle: AppButtonStyle
+        @Composable
+        get() = LocalAppButtonStyle.current
 }
