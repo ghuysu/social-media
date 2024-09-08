@@ -17,6 +17,7 @@ import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navArgument
 import thanhnhan.myproject.socialmedia.ui.theme.SocialMediaTheme
+import thanhnhan.myproject.socialmedia.ui.view.sign_up.ChooseBirthdaySignUp
 import thanhnhan.myproject.socialmedia.ui.view.sign_up.ChooseEmailSignUp
 import thanhnhan.myproject.socialmedia.ui.view.sign_up.ChooseNameSignUp
 import thanhnhan.myproject.socialmedia.ui.view.sign_up.ChoosePasswordSignUp
@@ -84,7 +85,45 @@ fun MainApp() {
                 navBackStackEntry.arguments?.let { argument ->
                     val email = argument.getString("email")!!
                     val password = argument.getString("password")!!
-                    ChooseNameSignUp(email = email, password = password)
+                    ChooseNameSignUp(
+                        email = email,
+                        password = password,
+                        openChooseBirthday = { email, password, name ->
+                            navController.navigate("chooseBirthdaySignUp/$email/$password/$name")
+                        },
+                        backAction = {
+                            navController.popBackStack()
+                        }
+                    )
+                }
+            }
+
+            composable(
+                route = "chooseBirthdaySignUp/{email}/{password}/{name}",
+                arguments = listOf(
+                    navArgument(name = "email") {
+                        type = NavType.StringType
+                    },
+                    navArgument(name = "password") {
+                        type = NavType.StringType
+                    },
+                    navArgument(name = "name") {
+                        type = NavType.StringType
+                    }
+                )
+            ) {navBackStackEntry ->
+                navBackStackEntry.arguments?.let { argument ->
+                    val email = argument.getString("email")!!
+                    val password = argument.getString("password")!!
+                    val name = argument.getString("name")!!
+                    ChooseBirthdaySignUp(
+                        email = email,
+                        password = password,
+                        name = name,
+                        backAction = {
+                            navController.popBackStack()
+                        }
+                    )
                 }
             }
         }

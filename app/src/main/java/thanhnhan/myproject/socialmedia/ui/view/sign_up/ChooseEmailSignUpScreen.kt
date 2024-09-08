@@ -39,6 +39,7 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import thanhnhan.myproject.socialmedia.R
+import thanhnhan.myproject.socialmedia.ui.theme.AppTheme
 import thanhnhan.myproject.socialmedia.ui.theme.SocialMediaTheme
 
 @Composable
@@ -117,12 +118,12 @@ fun ContinueButton(
             .height(60.dp)
             .width(400.dp)
             .padding(horizontal = 24.dp)
-            .clip(RoundedCornerShape(16.dp)),
+            .clip(RoundedCornerShape(AppTheme.appButtonStyle.cornerRadius)),
         onClick = {
             onClick.invoke()
         },
         colors = ButtonDefaults.buttonColors(
-            containerColor = Color(0xFF19ADC8)
+            containerColor = AppTheme.appButtonStyle.backgroundColor
         ),
 
         elevation = ButtonDefaults.buttonElevation(
@@ -258,10 +259,10 @@ fun InputField(
             unfocusedIndicatorColor = Color.Transparent,
             focusedIndicatorColor = Color.Transparent,
             disabledIndicatorColor = Color.Transparent,
-            focusedTrailingIconColor = Color(0xFF19ADC8),
-            unfocusedTrailingIconColor = Color(0xFF19ADC8),
-            focusedLeadingIconColor = Color(0xFF19ADC8),
-            unfocusedLeadingIconColor = Color(0xFF19ADC8),
+            focusedTrailingIconColor = AppTheme.appButtonStyle.backgroundColor,
+            unfocusedTrailingIconColor = AppTheme.appButtonStyle.backgroundColor,
+            focusedLeadingIconColor = AppTheme.appButtonStyle.backgroundColor,
+            unfocusedLeadingIconColor = AppTheme.appButtonStyle.backgroundColor,
             focusedPlaceholderColor = Color.Gray,
             unfocusedPlaceholderColor = Color.Gray,
             containerColor = Color(0xFF3C434A)
