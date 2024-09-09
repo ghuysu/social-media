@@ -1,32 +1,24 @@
 package thanhnhan.myproject.socialmedia.ui.view.sign_up
 
 import android.app.DatePickerDialog
+import android.widget.Toast
 import androidx.compose.foundation.background
-import androidx.compose.foundation.clickable
-import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.padding
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowForward
-import androidx.compose.material.icons.filled.Clear
-import androidx.compose.material.icons.filled.Email
-import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
-import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
 import thanhnhan.myproject.socialmedia.ui.theme.SocialMediaTheme
 import java.util.Calendar
 
@@ -35,9 +27,10 @@ fun ChooseBirthdaySignUp(
     email: String,
     password: String,
     name: String,
+    openChooseCountry: (String, String, String, String) -> Unit,
     backAction: () -> Unit = {}
 ) {
-    var selectedDate by remember { mutableStateOf("") }
+    var birthday by remember { mutableStateOf("") }
     var showDatePicker by remember { mutableStateOf(false) }
     val context = LocalContext.current
     val calendar = Calendar.getInstance()
@@ -49,7 +42,7 @@ fun ChooseBirthdaySignUp(
         DatePickerDialog(
             context,
             { _, selectedYear, selectedMonth, selectedDayOfMonth ->
-                selectedDate = String.format("%02d/%02d/%04d", selectedDayOfMonth, selectedMonth + 1, selectedYear)
+                birthday = String.format("%02d-%02d-%04d", selectedDayOfMonth, selectedMonth + 1, selectedYear)
                 showDatePicker = false
             }, year, month, day
         ).show()
@@ -65,7 +58,7 @@ fun ChooseBirthdaySignUp(
         AppName()
         Spacer(modifier = Modifier.height(80.dp))
         ContinueButton(
-            text = selectedDate.ifEmpty { "Choose your birthday" },
+            text = birthday.ifEmpty { "Choose your birthday" },
             onClick = {
                 showDatePicker = true
             }
@@ -77,7 +70,11 @@ fun ChooseBirthdaySignUp(
             text = "Continue",
             icon = Icons.Default.ArrowForward,
             onClick = {
-
+                if (birthday.isNotEmpty()) {
+                    openChooseCountry(email, password, name, birthday)
+                } else {
+                    Toast.makeText(context, "Please choose your birthday", Toast.LENGTH_SHORT).show()
+                }
             }
         )
     }
@@ -90,7 +87,8 @@ fun ChooseBirthdaySignUpPreview() {
         ChooseBirthdaySignUp(
             email = "example@example.com",
             password = "password123",
-            name = "John Doe"
+            name = "John Doe",
+            openChooseCountry = { _, _, _, _ -> }
         )
     }
 }

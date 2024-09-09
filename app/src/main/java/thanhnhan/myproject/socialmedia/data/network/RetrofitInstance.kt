@@ -10,7 +10,7 @@ object RetrofitInstance {
 
     private val headerInterceptor = Interceptor { chain ->
         val request = chain.request().newBuilder()
-            .addHeader("api-key", "ABC-XYZ-WWW")
+            .addHeader("x-api-key", "abc-xyz-www")
             .build()
         chain.proceed(request)
     }

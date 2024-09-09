@@ -1,6 +1,5 @@
 package thanhnhan.myproject.socialmedia.ui.view.sign_up
 
-import android.content.Context
 import android.widget.Toast
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
@@ -38,43 +37,109 @@ import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.lifecycle.ViewModel
+import androidx.lifecycle.ViewModelProvider
+import androidx.lifecycle.viewmodel.compose.viewModel
 import thanhnhan.myproject.socialmedia.R
+import thanhnhan.myproject.socialmedia.data.network.RetrofitInstance
+import thanhnhan.myproject.socialmedia.data.repository.SignupRepository
+import thanhnhan.myproject.socialmedia.data.Result
 import thanhnhan.myproject.socialmedia.ui.theme.AppTheme
 import thanhnhan.myproject.socialmedia.ui.theme.SocialMediaTheme
+import thanhnhan.myproject.socialmedia.viewmodel.SignupViewModel
+import thanhnhan.myproject.socialmedia.viewmodel.SignupViewModelFactory
 
 @Composable
 fun ChooseEmailSignUp(
-    openChoosePassword:(String) -> Unit
+    openChoosePassword: (String) -> Unit
 ) {
+    val api = RetrofitInstance.api
+    val repository = SignupRepository(api)
+    val viewModel: SignupViewModel = viewModel(factory = SignupViewModelFactory(repository))
     Column(
         modifier = Modifier
             .fillMaxSize()
             .background(color = Color(0xFF22272E))
     ) {
         var email by remember { mutableStateOf("") }
+        var savedEmail by remember { mutableStateOf<String>("") }
+        var textButton by remember { mutableStateOf("Continue") }
+        var textTitle by remember { mutableStateOf("What's your email?") }
+        var textPlaceHolder by remember { mutableStateOf("Email") }
+        val emailValidationResult by viewModel.emailValidationResult.collectAsState()
+        val codeValidationResult by viewModel.stringLengthValidationResult.collectAsState()
 
-        BackIconButton({})
+        val emailCheckResult = viewModel.emailCheckResult.collectAsState().value
+        val context = LocalContext.current
+        var verificationCode by remember { mutableStateOf("") }
+        LaunchedEffect(key1 = emailCheckResult) {
+            emailCheckResult?.let { result ->
+                when (result) {
+                    is Result.Success -> {
+                        verificationCode = result.data?.metadata?.code?.toString() ?: ""
+                        savedEmail = email
+                        textButton = "Verify code"
+                        textTitle = "Enter your code"
+                        textPlaceHolder = "Verification code"
+                        email = ""
+                    }
+                    is Result.Error -> {
+                        Toast.makeText(
+                            context,
+                            result.message ?: "Error occurred",
+                            Toast.LENGTH_LONG
+                        ).show()
+                    }
+                }
+            }
+        }
+
+        BackIconButton {}
         LogoImage()
         AppName()
         Spacer(modifier = Modifier.height(80.dp))
-        SignUpTitle(text = "What's your email?")
+        SignUpTitle(text = textTitle)
         InputField(
-            placeHolder = "Email",
+            placeHolder = textPlaceHolder,
             leadingIcon = Icons.Default.Email,
             trailingIconVector = Icons.Default.Clear,
             value = email,
-            onValueChange = { email = it },
+            onValueChange = {
+                email = it
+                if (textButton == "Continue") {
+                    viewModel.checkEmailFormat(it)
+                } else {
+                    viewModel.checkStringLength(it)
+                }
+            },
             onTrailingIconClick = { email = "" }
         )
         Spacer(modifier = Modifier.height(105.dp))
         TermsAndPolicyText()
         Spacer(modifier = Modifier.height(20.dp))
         ContinueButton(
-            text = "Continue",
+            text = textButton,
             icon = Icons.Default.ArrowForward,
             onClick = {
-                openChoosePassword(email)
-            }
+                if (email.isNotEmpty()) {
+                    if (textButton == "Continue") {
+                        viewModel.checkEmail(email)
+                    } else {
+                        if (email == verificationCode) {
+                            openChoosePassword(savedEmail)
+                        } else {
+                            Toast.makeText(
+                                context,
+                                "Verification code is incorrect",
+                                Toast.LENGTH_LONG
+                            ).show()
+                        }
+                    }
+                } else {
+                    Toast.makeText(context, "Please enter your email", Toast.LENGTH_LONG).show()
+                }
+            },
+            isEnable = (emailValidationResult == true || codeValidationResult == true)
         )
     }
 }
@@ -109,9 +174,10 @@ fun LogoImage() {
 
 @Composable
 fun ContinueButton(
+    isEnable: Boolean = true,
     text: String,
     icon: ImageVector? = null,
-    onClick: () -> Unit
+    onClick: () -> Unit,
 ) {
     Button(
         modifier = Modifier
@@ -123,9 +189,11 @@ fun ContinueButton(
             onClick.invoke()
         },
         colors = ButtonDefaults.buttonColors(
-            containerColor = AppTheme.appButtonStyle.backgroundColor
+            containerColor = AppTheme.appButtonStyle.backgroundColor,
+            disabledContainerColor = Color.Gray,
+            disabledContentColor = Color.White
         ),
-
+        enabled = isEnable,
         elevation = ButtonDefaults.buttonElevation(
             defaultElevation = 10.dp,
             pressedElevation = 15.dp,
@@ -170,7 +238,7 @@ fun TermsAndPolicyText() {
 
 @Composable
 fun BackIconButton(
-    onClick: () -> Unit
+    onClick: () -> Unit,
 ) {
     IconButton(
         onClick = { onClick.invoke() },

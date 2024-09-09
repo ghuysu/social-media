@@ -1,5 +1,6 @@
 package thanhnhan.myproject.socialmedia.ui.view.sign_up
 
+import android.widget.Toast
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
@@ -16,6 +17,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import thanhnhan.myproject.socialmedia.ui.theme.SocialMediaTheme
@@ -34,6 +36,7 @@ fun ChooseNameSignUp(
     ) {
         var firstName by remember { mutableStateOf("") }
         var lastName by remember { mutableStateOf("") }
+        val context = LocalContext.current
 
         BackIconButton(backAction)
         LogoImage()
@@ -63,7 +66,13 @@ fun ChooseNameSignUp(
         ContinueButton(
             text = "Continue",
             icon = Icons.Default.ArrowForward,
-            onClick = { openChooseBirthday(email, password, "$firstName $lastName") }
+            onClick = {
+                if (firstName.isNotEmpty() && lastName.isNotEmpty()) {
+                    openChooseBirthday(email, password, "$firstName $lastName")
+                } else {
+                    Toast.makeText(context, "Please fill all information", Toast.LENGTH_SHORT).show()
+                }
+            }
         )
     }
 }
