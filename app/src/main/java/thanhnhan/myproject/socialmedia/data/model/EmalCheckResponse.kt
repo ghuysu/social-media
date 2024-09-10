@@ -1,14 +1,9 @@
 package thanhnhan.myproject.socialmedia.data.model
 
-data class EmailRequest(
+data class EmailVerificationRequest(
     val email: String
 )
-data class EmailCheckResponse(
+data class EmailVerificationResponse(
     val status: Int,
-    val message: String,
-    val metadata: Metadata?
-)
-
-data class Metadata(
-    val code: Int?
+    val message: String
 )

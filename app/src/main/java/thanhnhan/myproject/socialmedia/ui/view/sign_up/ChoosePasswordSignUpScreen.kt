@@ -74,7 +74,7 @@ fun ChoosePasswordSignUp(
         )
         Spacer(modifier = Modifier.height(5.dp))
         ConditionOfPassword()
-        Spacer(modifier = Modifier.height(145.dp))
+        Spacer(modifier = Modifier.height(75.dp))
         ContinueButton(
             text = "Continue",
             icon = Icons.Default.ArrowForward,
@@ -95,10 +95,13 @@ fun ConditionOfPassword() {
             text = buildAnnotatedString {
                 withStyle(style = ParagraphStyle(textAlign = TextAlign.End)) {
                     withStyle(style = SpanStyle(color = Color.Gray)) {
-                        append("Your password must be at least ")
+                        append("Your password must be at least:\n")
                     }
                     withStyle(style = SpanStyle(color = Color(0xFF19ADC8))) {
-                        append("8 characters")
+                        append("8 characters\n" +
+                                "1 number\n" +
+                                "1 uppercase letter\n" +
+                                "1 lowercase letter")
                     }
                 }
             },

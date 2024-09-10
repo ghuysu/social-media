@@ -62,84 +62,43 @@ fun ChooseEmailSignUp(
             .background(color = Color(0xFF22272E))
     ) {
         var email by remember { mutableStateOf("") }
-        var savedEmail by remember { mutableStateOf<String>("") }
-        var textButton by remember { mutableStateOf("Continue") }
-        var textTitle by remember { mutableStateOf("What's your email?") }
-        var textPlaceHolder by remember { mutableStateOf("Email") }
         val emailValidationResult by viewModel.emailValidationResult.collectAsState()
-        val codeValidationResult by viewModel.stringLengthValidationResult.collectAsState()
 
-        val emailCheckResult = viewModel.emailCheckResult.collectAsState().value
         val context = LocalContext.current
-        var verificationCode by remember { mutableStateOf("") }
-        LaunchedEffect(key1 = emailCheckResult) {
-            emailCheckResult?.let { result ->
-                when (result) {
-                    is Result.Success -> {
-                        verificationCode = result.data?.metadata?.code?.toString() ?: ""
-                        savedEmail = email
-                        textButton = "Verify code"
-                        textTitle = "Enter your code"
-                        textPlaceHolder = "Verification code"
-                        email = ""
-                    }
-                    is Result.Error -> {
-                        Toast.makeText(
-                            context,
-                            result.message ?: "Error occurred",
-                            Toast.LENGTH_LONG
-                        ).show()
-                    }
-                }
-            }
-        }
 
         BackIconButton {}
         LogoImage()
         AppName()
         Spacer(modifier = Modifier.height(80.dp))
-        SignUpTitle(text = textTitle)
+        SignUpTitle(text = "What's your email?")
         InputField(
-            placeHolder = textPlaceHolder,
+            placeHolder = "Email",
             leadingIcon = Icons.Default.Email,
             trailingIconVector = Icons.Default.Clear,
             value = email,
             onValueChange = {
                 email = it
-                if (textButton == "Continue") {
-                    viewModel.checkEmailFormat(it)
-                } else {
-                    viewModel.checkStringLength(it)
-                }
+                viewModel.checkEmailFormat(it)
             },
-            onTrailingIconClick = { email = "" }
+            onTrailingIconClick = {
+                email = ""
+                viewModel.checkEmailFormat(email)
+            }
         )
         Spacer(modifier = Modifier.height(105.dp))
         TermsAndPolicyText()
         Spacer(modifier = Modifier.height(20.dp))
         ContinueButton(
-            text = textButton,
+            text = "Continue",
             icon = Icons.Default.ArrowForward,
             onClick = {
                 if (email.isNotEmpty()) {
-                    if (textButton == "Continue") {
-                        viewModel.checkEmail(email)
-                    } else {
-                        if (email == verificationCode) {
-                            openChoosePassword(savedEmail)
-                        } else {
-                            Toast.makeText(
-                                context,
-                                "Verification code is incorrect",
-                                Toast.LENGTH_LONG
-                            ).show()
-                        }
-                    }
+                    openChoosePassword(email)
                 } else {
                     Toast.makeText(context, "Please enter your email", Toast.LENGTH_LONG).show()
                 }
             },
-            isEnable = (emailValidationResult == true || codeValidationResult == true)
+            isEnable = emailValidationResult == true
         )
     }
 }
@@ -323,7 +282,7 @@ fun InputField(
             }
         },
         colors = TextFieldDefaults.textFieldColors(
-            cursorColor = Color(0xFFE3A400),
+            cursorColor = AppTheme.appButtonStyle.backgroundColor,
             unfocusedIndicatorColor = Color.Transparent,
             focusedIndicatorColor = Color.Transparent,
             disabledIndicatorColor = Color.Transparent,

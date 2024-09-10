@@ -38,14 +38,26 @@ fun ChooseBirthdaySignUp(
     val month = calendar.get(Calendar.MONTH)
     val day = calendar.get(Calendar.DAY_OF_MONTH)
 
+    val datePickerDialog = DatePickerDialog(
+        context,
+        { _, selectedYear, selectedMonth, selectedDayOfMonth ->
+            birthday = String.format("%02d-%02d-%04d", selectedDayOfMonth, selectedMonth + 1, selectedYear)
+            showDatePicker = false
+        }, year, month, day
+    )
+
+    // Thiết lập minDate là ngày 1 tháng 1 năm 1991
+    calendar.set(1991, Calendar.JANUARY, 1)
+    datePickerDialog.datePicker.minDate = calendar.timeInMillis
+
+    // Thiết lập maxDate là năm hiện tại trừ 1 năm
+    val currentYear = Calendar.getInstance().get(Calendar.YEAR)
+    calendar.set(currentYear-1, Calendar.DECEMBER, 31)
+    datePickerDialog.datePicker.maxDate = calendar.timeInMillis - 1
+
+    // Hiển thị DatePickerDialog
     if (showDatePicker) {
-        DatePickerDialog(
-            context,
-            { _, selectedYear, selectedMonth, selectedDayOfMonth ->
-                birthday = String.format("%02d-%02d-%04d", selectedDayOfMonth, selectedMonth + 1, selectedYear)
-                showDatePicker = false
-            }, year, month, day
-        ).show()
+        datePickerDialog.show()
     }
 
     Column(
@@ -53,7 +65,7 @@ fun ChooseBirthdaySignUp(
             .fillMaxSize()
             .background(color = Color(0xFF22272E))
     ) {
-        BackIconButton({})
+        BackIconButton(backAction)
         LogoImage()
         AppName()
         Spacer(modifier = Modifier.height(80.dp))
