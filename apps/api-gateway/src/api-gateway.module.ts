@@ -5,6 +5,7 @@ import * as joi from 'joi';
 import { ClientsModule, Transport } from '@nestjs/microservices';
 import { AUTH_SERVICE, LoggerModule } from '@app/common';
 import { ApiGatewayService } from './api-gateway.service';
+import { GoogleStrategy } from './strategies/google.strategy';
 
 @Module({
   imports: [
@@ -16,6 +17,9 @@ import { ApiGatewayService } from './api-gateway.service';
         AUTH_HOST: joi.string().required(),
         AUTH_PORT: joi.number().required(),
         API_KEY: joi.string().required(),
+        GOOGLE_CLIENT_ID: joi.string().required(),
+        GOOGLE_SECRET: joi.string().required(),
+        GOOGLE_REDIRECT: joi.string().required(),
       }),
     }),
     ClientsModule.registerAsync([
@@ -33,6 +37,6 @@ import { ApiGatewayService } from './api-gateway.service';
     ]),
   ],
   controllers: [ApiGatewayController],
-  providers: [ApiGatewayService],
+  providers: [ApiGatewayService, GoogleStrategy],
 })
 export class ApiGatewayModule {}

@@ -7,7 +7,7 @@ import { UserDocument, UserSchema } from '@app/common';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import * as joi from 'joi';
 import { ClientsModule, Transport } from '@nestjs/microservices';
-import { AWS_S3_SERVICE, NOTIFICATION_SERVICE } from '@app/common/constants';
+import { AWS_S3_SERVICE, NOTIFICATION_SERVICE } from '@app/common';
 import { JwtModule } from '@nestjs/jwt';
 import { CacheModule } from '@nestjs/cache-manager';
 import * as redisStore from 'cache-manager-redis-store';
@@ -30,9 +30,8 @@ import * as redisStore from 'cache-manager-redis-store';
         BUCKET_NAME: joi.string().required(),
         AWSS3_REGION: joi.string().required(),
         ARGON2_SERCET: joi.string().required(),
-        JWT_SECRET_USER: joi.string().required(),
+        JWT_SECRET: joi.string().required(),
         JWT_EXPIRATION_USER: joi.string().required(),
-        JWT_SECRET_ADMIN: joi.string().required(),
         JWT_EXPIRATION_ADMIN: joi.string().required(),
       }),
     }),

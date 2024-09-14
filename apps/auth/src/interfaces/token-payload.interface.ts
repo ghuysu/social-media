@@ -1,5 +1,7 @@
 import { Types } from 'mongoose';
 
-export interface TokenPayload {
+export interface TokenPayloadInterface {
   userId: Types.ObjectId;
+  email: string;
+  role: string;
 }

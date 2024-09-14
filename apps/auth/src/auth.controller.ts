@@ -13,7 +13,8 @@ import { ChangePasswordDto, CheckEmailDto } from '@app/common';
 import { CreateNormalUserDto } from '@app/common';
 import { SignInDto } from '@app/common';
 import { MessagePattern } from '@nestjs/microservices';
-import { CheckCodeDto } from '@app/common/dto/auth-dto/check-code.dto';
+import { CheckCodeDto } from '@app/common';
+import { GoogleSignInDto } from '@app/common';
 
 @Controller()
 export class AuthController {
@@ -110,6 +111,17 @@ export class AuthController {
         message: 'Sign in as admin successfully.',
         metadata: result,
       };
+    } catch (error) {
+      return this.handleError(error);
+    }
+  }
+
+  //Google authentication
+  @MessagePattern('google_redirect')
+  async handleRedirect(user: GoogleSignInDto) {
+    try {
+      const result = await this.authService.googleSignIn(user);
+      return result;
     } catch (error) {
       return this.handleError(error);
     }

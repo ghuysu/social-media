@@ -3,6 +3,7 @@ import {
   ChangePasswordDto,
   CheckEmailDto,
   CreateNormalUserDto,
+  GoogleSignInDto,
   SignInDto,
 } from '@app/common';
 import { CheckCodeDto } from '@app/common/dto/auth-dto/check-code.dto';
@@ -160,6 +161,25 @@ export class ApiGatewayService {
   async checkCodeForChangePassword(@Body() dto: ChangePasswordDto) {
     const result = await lastValueFrom(
       this.authService.send('change_password', dto).pipe(
+        map((response) => {
+          if (response.error) {
+            this.throwErrorBasedOnStatusCode(
+              response.statusCode,
+              response.message,
+            );
+          }
+          return response;
+        }),
+      ),
+    );
+
+    return result;
+  }
+
+  //google authentication
+  async handleGoogleRedirect(user: GoogleSignInDto) {
+    const result = await lastValueFrom(
+      this.authService.send('google_redirect', user).pipe(
         map((response) => {
           if (response.error) {
             this.throwErrorBasedOnStatusCode(
