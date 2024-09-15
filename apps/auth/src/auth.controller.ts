@@ -78,7 +78,9 @@ export class AuthController {
   @MessagePattern('sign_in_as_user')
   async signinAsUser(@Body() dto: SignInDto) {
     try {
+      console.log(dto);
       const data = await this.authService.signInAsNormalUser(dto);
+      console.log(data);
       return {
         status: HttpStatus.OK,
         message: 'Signed in as normal user successfully.',
@@ -163,7 +165,7 @@ export class AuthController {
     if (error instanceof InternalServerErrorException) {
       return {
         statusCode: HttpStatus.INTERNAL_SERVER_ERROR,
-        message: 'An unexpected error occurred',
+        message: error.message,
         error: 'Internal Server Error',
       };
     }
@@ -171,7 +173,7 @@ export class AuthController {
     // Default case for other errors
     return {
       statusCode: HttpStatus.INTERNAL_SERVER_ERROR,
-      message: 'An unexpected error occurred',
+      message: error.message,
       error: 'Internal Server Error',
     };
   }

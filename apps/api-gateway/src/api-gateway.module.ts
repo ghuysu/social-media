@@ -3,9 +3,10 @@ import { ApiGatewayController } from './api-gateway.controller';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import * as joi from 'joi';
 import { ClientsModule, Transport } from '@nestjs/microservices';
-import { AUTH_SERVICE, LoggerModule } from '@app/common';
+import { AUTH_SERVICE, USER_SERVICE, LoggerModule } from '@app/common';
 import { ApiGatewayService } from './api-gateway.service';
 import { GoogleStrategy } from './strategies/google.strategy';
+import { JwtStrategy } from './strategies/jwt.strategy';
 
 @Module({
   imports: [
@@ -16,6 +17,8 @@ import { GoogleStrategy } from './strategies/google.strategy';
         PORT: joi.string().required(),
         AUTH_HOST: joi.string().required(),
         AUTH_PORT: joi.number().required(),
+        USER_HOST: joi.string().required(),
+        USER_PORT: joi.number().required(),
         API_KEY: joi.string().required(),
         GOOGLE_CLIENT_ID: joi.string().required(),
         GOOGLE_SECRET: joi.string().required(),
@@ -34,9 +37,20 @@ import { GoogleStrategy } from './strategies/google.strategy';
         }),
         inject: [ConfigService],
       },
+      {
+        name: USER_SERVICE,
+        useFactory: (configService: ConfigService) => ({
+          transport: Transport.TCP,
+          options: {
+            host: configService.get('USER_HOST'),
+            port: configService.get('USER_PORT'),
+          },
+        }),
+        inject: [ConfigService],
+      },
     ]),
   ],
   controllers: [ApiGatewayController],
-  providers: [ApiGatewayService, GoogleStrategy],
+  providers: [ApiGatewayService, GoogleStrategy, JwtStrategy],
 })
 export class ApiGatewayModule {}

@@ -19,10 +19,10 @@ export class UserDocument extends AbstractDocument {
   @Prop({ type: String, required: true })
   profileImageUrl: string;
 
-  @Prop({ type: [SchemaTypes.ObjectId], ref: 'Users', default: [] })
+  @Prop({ type: [SchemaTypes.ObjectId], ref: 'users', default: [] })
   friendList: Types.ObjectId[];
 
-  @Prop({ type: [SchemaTypes.ObjectId], ref: 'Users', default: [] })
+  @Prop({ type: [SchemaTypes.ObjectId], ref: 'users', default: [] })
   friendInvites: Types.ObjectId[];
 
   @Prop({ type: String })

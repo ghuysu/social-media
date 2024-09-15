@@ -5,5 +5,4 @@ export * from './dto';
 export * from './constants';
 export * from './validators';
 export * from './utils';
-export * from './guards';
-export * from './decorators';
+export * from './interfaces';

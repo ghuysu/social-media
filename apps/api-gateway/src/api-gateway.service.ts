@@ -5,6 +5,8 @@ import {
   CreateNormalUserDto,
   GoogleSignInDto,
   SignInDto,
+  TokenPayloadInterface,
+  USER_SERVICE,
 } from '@app/common';
 import { CheckCodeDto } from '@app/common/dto/auth-dto/check-code.dto';
 import {
@@ -26,6 +28,7 @@ import { lastValueFrom, map } from 'rxjs';
 export class ApiGatewayService {
   constructor(
     @Inject(AUTH_SERVICE) private readonly authService: ClientProxy,
+    @Inject(USER_SERVICE) private readonly userService: ClientProxy,
   ) {}
 
   throwErrorBasedOnStatusCode(statusCode: number, message: string) {
@@ -180,6 +183,25 @@ export class ApiGatewayService {
   async handleGoogleRedirect(user: GoogleSignInDto) {
     const result = await lastValueFrom(
       this.authService.send('google_redirect', user).pipe(
+        map((response) => {
+          if (response.error) {
+            this.throwErrorBasedOnStatusCode(
+              response.statusCode,
+              response.message,
+            );
+          }
+          return response;
+        }),
+      ),
+    );
+
+    return result;
+  }
+
+  //user
+  async getUser(userPayload: TokenPayloadInterface) {
+    const result = await lastValueFrom(
+      this.userService.send('get_user', userPayload).pipe(
         map((response) => {
           if (response.error) {
             this.throwErrorBasedOnStatusCode(

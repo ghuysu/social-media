@@ -4,6 +4,7 @@ import {
   CreateNormalUserDto,
   GoogleSignInDto,
   SignInDto,
+  TokenPayloadInterface,
 } from '@app/common';
 import {
   Body,
@@ -24,6 +25,8 @@ import { AuthGuard } from '@nestjs/passport';
 import { ConfigService } from '@nestjs/config';
 import { GoogleSignInInforInterface } from './interfaces/google-sign-in-infor.interface';
 import { ApiKeyGuard } from './guards/api-key.guard';
+import { JwtGuard } from './guards/jwt.guard';
+import { User } from './decorators/user.decorator';
 
 @Controller('api')
 export class ApiGatewayController {
@@ -94,7 +97,7 @@ export class ApiGatewayController {
   @UseGuards(AuthGuard('google'))
   @HttpCode(HttpStatus.OK)
   async handleRedirect(@Req() req: Request, @Res() res) {
-    const signInUser: GoogleSignInDto = req.user;
+    const signInUser: GoogleSignInDto = req.user as GoogleSignInDto;
 
     // Lấy thông tin người dùng và token từ dịch vụ
     const { signInToken, user }: GoogleSignInInforInterface =
@@ -127,5 +130,13 @@ export class ApiGatewayController {
 
     // Redirect về URL đã xây dựng
     res.redirect(redirectUrl);
+  }
+
+  //user
+  @UseGuards(ApiKeyGuard)
+  @Get('user')
+  @UseGuards(JwtGuard)
+  async getUser(@User() userPayload: TokenPayloadInterface) {
+    return this.apiGatewayService.getUser(userPayload);
   }
 }

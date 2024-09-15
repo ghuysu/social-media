@@ -23,7 +23,7 @@ import * as Jimp from 'jimp';
 import { ConfigService } from '@nestjs/config';
 import { SignInDto } from '@app/common';
 import { JwtService } from '@nestjs/jwt';
-import { TokenPayloadInterface } from './interfaces/token-payload.interface';
+import { TokenPayloadInterface } from '@app/common';
 import { CheckCodeDto } from '@app/common';
 import { CACHE_MANAGER } from '@nestjs/cache-manager';
 import { AdminCodeInterface } from './interfaces/admin-code.interface';
@@ -218,9 +218,14 @@ export class AuthService {
     }
 
     if (!registeredUser) {
-      registeredUser = await this.authRepository.findOne({
-        email,
-      });
+      needToSaveIntoRedis = true;
+
+      registeredUser = await this.authRepository.findOne(
+        {
+          email,
+        },
+        [{ path: 'friendList', select: '_id fullname profileImageUrl' }],
+      );
     }
 
     //throw error if existed
@@ -228,7 +233,6 @@ export class AuthService {
       throw new NotFoundException('Not Found Resource');
     }
 
-    needToSaveIntoRedis = true;
     isAdmin = registeredUser.role === 'normal_user' ? false : true;
 
     //create a 6-digit validation code
@@ -333,10 +337,13 @@ export class AuthService {
   //sign in
   async signInAsNormalUser({ email, password }: SignInDto) {
     // find user by email
-    const user = await this.authRepository.findOne({
-      email,
-      role: 'normal_user',
-    });
+    const user = await this.authRepository.findOne(
+      {
+        email,
+        role: 'normal_user',
+      },
+      [{ path: 'friendList', select: '_id fullname profileImageUrl' }],
+    );
 
     // if user doesn't exist
     if (!user) {
@@ -362,7 +369,10 @@ export class AuthService {
       role: user.role,
     };
 
-    const signInToken = await this.jwtService.signAsync(tokenPayload);
+    const signInToken = await this.jwtService.signAsync(tokenPayload, {
+      secret: this.configService.get('JWT_SECRET'),
+      expiresIn: `${this.configService.get('JWT_EXPIRATION_ADMIN')}s`,
+    });
 
     // Prepend 'Bearer ' to the token
     const bearerToken = `Bearer ${signInToken}`;
@@ -379,10 +389,13 @@ export class AuthService {
 
   async signInAsAdmin({ email, password }: SignInDto) {
     //find admin by email
-    const admin = await this.authRepository.findOne({
-      email,
-      $or: [{ role: 'admin' }, { role: 'root_admin' }],
-    });
+    const admin = await this.authRepository.findOne(
+      {
+        email,
+        $or: [{ role: 'admin' }, { role: 'root_admin' }],
+      },
+      [{ path: 'friendList', select: '_id fullname profileImageUrl' }],
+    );
 
     //if admin doesn't exist
     if (!admin) {
@@ -467,7 +480,7 @@ export class AuthService {
 
     const signInToken = await this.jwtService.signAsync(tokenPayload, {
       secret: this.configService.get('JWT_SECRET'),
-      expiresIn: this.configService.get('JWT_EXPIRATION_ADMIN'),
+      expiresIn: `${this.configService.get('JWT_EXPIRATION_ADMIN')}s`,
     });
 
     // Prepend 'Bearer ' to the token
@@ -488,10 +501,13 @@ export class AuthService {
     if (!registeredUser) {
       needToSaveIntoRedis = true;
 
-      registeredUser = await this.authRepository.findOne({
-        email,
-        role: 'normal_user',
-      });
+      registeredUser = await this.authRepository.findOne(
+        {
+          email,
+          role: 'normal_user',
+        },
+        [{ path: 'friendList', select: '_id fullname profileImageUrl' }],
+      );
     }
 
     //if account is not existed, sign up

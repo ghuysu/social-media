@@ -2,8 +2,8 @@ import { Module } from '@nestjs/common';
 import { AuthService } from './auth.service';
 import { AuthController } from './auth.controller';
 import { AuthRepository } from './auth.repository';
-import { DatabaseModule, LoggerModule } from '@app/common';
-import { UserDocument, UserSchema } from '@app/common';
+import { DatabaseModule, LoggerModule, USER_DOCUMENT } from '@app/common';
+import { UserSchema } from '@app/common';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import * as joi from 'joi';
 import { ClientsModule, Transport } from '@nestjs/microservices';
@@ -35,18 +35,10 @@ import * as redisStore from 'cache-manager-redis-store';
         JWT_EXPIRATION_ADMIN: joi.string().required(),
       }),
     }),
-    JwtModule.registerAsync({
-      inject: [ConfigService],
-      useFactory: (configService: ConfigService) => ({
-        secret: configService.get('JWT_SECRET_USER'),
-        signOptions: {
-          expiresIn: `${configService.get('JWT_EXPIRATION_USER')}s`,
-        },
-      }),
+    JwtModule.register({
+      global: true,
     }),
-    DatabaseModule.forFeature([
-      { name: UserDocument.name, schema: UserSchema },
-    ]),
+    DatabaseModule.forFeature([{ name: USER_DOCUMENT, schema: UserSchema }]),
     ClientsModule.registerAsync([
       {
         name: NOTIFICATION_SERVICE,
