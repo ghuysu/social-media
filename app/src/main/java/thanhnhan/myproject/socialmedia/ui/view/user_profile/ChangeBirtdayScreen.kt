@@ -1,4 +1,4 @@
-package thanhnhan.myproject.socialmedia.ui.view.sign_up
+package thanhnhan.myproject.socialmedia.ui.view.user_profile
 
 import android.app.DatePickerDialog
 import android.widget.Toast
@@ -20,17 +20,20 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import thanhnhan.myproject.socialmedia.ui.theme.SocialMediaTheme
+import thanhnhan.myproject.socialmedia.ui.view.sign_up.AppName
+import thanhnhan.myproject.socialmedia.ui.view.sign_up.BackIconButton
+import thanhnhan.myproject.socialmedia.ui.view.sign_up.ContinueButton
+import thanhnhan.myproject.socialmedia.ui.view.sign_up.LogoImage
+import thanhnhan.myproject.socialmedia.ui.view.sign_up.TermsAndPolicyText
 import java.util.Calendar
 
 @Composable
-fun ChooseBirthdaySignUp(
-    email: String,
-    password: String,
-    name: String,
-    openChooseCountry: (String, String, String, String) -> Unit,
+fun ChangeBirthday(
+    oldBirthday: String,
+    openUserProfile: (String) -> Unit,
     backAction: () -> Unit = {}
 ) {
-    var birthday by remember { mutableStateOf("") }
+    var birthday by remember { mutableStateOf(oldBirthday) }
     var showDatePicker by remember { mutableStateOf(false) }
     val context = LocalContext.current
     val calendar = Calendar.getInstance()
@@ -46,16 +49,13 @@ fun ChooseBirthdaySignUp(
         }, year, month, day
     )
 
-    // Thiết lập minDate là ngày 1 tháng 1 năm 1991
     calendar.set(1991, Calendar.JANUARY, 1)
     datePickerDialog.datePicker.minDate = calendar.timeInMillis
 
-    // Thiết lập maxDate là năm hiện tại trừ 1 năm
     val currentYear = Calendar.getInstance().get(Calendar.YEAR)
     calendar.set(currentYear-1, Calendar.DECEMBER, 31)
     datePickerDialog.datePicker.maxDate = calendar.timeInMillis - 1
 
-    // Hiển thị DatePickerDialog
     if (showDatePicker) {
         datePickerDialog.show()
     }
@@ -84,7 +84,7 @@ fun ChooseBirthdaySignUp(
             icon = Icons.Default.ArrowForward,
             onClick = {
                 if (birthday.isNotEmpty()) {
-                    openChooseCountry(email, password, name, birthday)
+                    openUserProfile(birthday)
                 } else {
                     Toast.makeText(context, "Please choose your birthday", Toast.LENGTH_SHORT).show()
                 }
@@ -97,11 +97,9 @@ fun ChooseBirthdaySignUp(
 @Preview(showBackground = true, showSystemUi = true)
 fun ChooseBirthdaySignUpPreview() {
     SocialMediaTheme {
-        ChooseBirthdaySignUp(
-            email = "example@example.com",
-            password = "password123",
-            name = "John Doe",
-            openChooseCountry = { _, _, _, _ -> }
+        ChangeBirthday(
+            oldBirthday = "01/01/1992",
+            openUserProfile = { _ -> }
         )
     }
 }

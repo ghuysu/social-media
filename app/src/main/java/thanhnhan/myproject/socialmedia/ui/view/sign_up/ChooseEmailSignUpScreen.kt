@@ -136,6 +136,7 @@ fun ContinueButton(
     isEnable: Boolean = true,
     text: String,
     icon: ImageVector? = null,
+    buttonColor: Color = AppTheme.appButtonStyle.backgroundColor,
     onClick: () -> Unit,
 ) {
     Button(
@@ -148,7 +149,7 @@ fun ContinueButton(
             onClick.invoke()
         },
         colors = ButtonDefaults.buttonColors(
-            containerColor = AppTheme.appButtonStyle.backgroundColor,
+            containerColor = buttonColor,
             disabledContainerColor = Color.Gray,
             disabledContentColor = Color.White
         ),
@@ -221,9 +222,9 @@ fun SignUpTitle(text: String) {
     Text(
         text = text,
         fontWeight = FontWeight.Bold,
-        fontSize = 30.sp,
+        fontSize = 25.sp,
         color = Color(0xFF19ADC8),
-        modifier = Modifier.padding(start = 20.dp)
+        modifier = Modifier.padding(start = 25.dp)
     )
 }
 

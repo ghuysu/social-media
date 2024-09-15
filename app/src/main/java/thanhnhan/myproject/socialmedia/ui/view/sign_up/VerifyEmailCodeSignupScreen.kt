@@ -23,6 +23,7 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
+import kotlinx.coroutines.delay
 import thanhnhan.myproject.socialmedia.data.network.RetrofitInstance
 import thanhnhan.myproject.socialmedia.data.repository.SignupRepository
 import thanhnhan.myproject.socialmedia.data.Result
@@ -37,6 +38,7 @@ fun VerifyEmailCodeSignUp(
     name: String,
     birthday: String,
     country: String,
+    openSignin: (String) -> Unit,
     backAction: () -> Unit = {},
 ) {
     val api = RetrofitInstance.api
@@ -56,6 +58,10 @@ fun VerifyEmailCodeSignUp(
                         "Sign up result: ${result.data}",
                         Toast.LENGTH_LONG
                     ).show()
+
+                    delay(1000)
+
+                    openSignin(email)
                 }
                 is Result.Error -> {
                     Toast.makeText(
@@ -125,7 +131,8 @@ fun VerifyEmailCodeSignUpPreview() {
             password = "password123",
             name = "John Doe",
             birthday = "1990-01-01",
-            country = "United States"
+            country = "United States",
+            openSignin = { _ -> }
         )
     }
 }

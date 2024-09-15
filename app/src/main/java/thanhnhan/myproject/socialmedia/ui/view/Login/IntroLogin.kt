@@ -1,4 +1,4 @@
-package thanhnhan.myproject.socialmedia.ui.Login
+package thanhnhan.myproject.socialmedia.ui.view.Login
 
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
