@@ -1,4 +1,4 @@
-package thanhnhan.myproject.socialmedia.ui.HomeScreen
+package thanhnhan.myproject.socialmedia.ui.view.HomeScreen
 
 import androidx.camera.lifecycle.ProcessCameraProvider
 import androidx.camera.view.PreviewView

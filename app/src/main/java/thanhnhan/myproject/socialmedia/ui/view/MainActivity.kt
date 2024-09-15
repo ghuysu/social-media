@@ -15,12 +15,14 @@ import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navArgument
 import thanhnhan.myproject.socialmedia.ui.theme.SocialMediaTheme
+import thanhnhan.myproject.socialmedia.ui.view.Login.SignIn
 import thanhnhan.myproject.socialmedia.ui.view.sign_up.ChooseBirthdaySignUp
 import thanhnhan.myproject.socialmedia.ui.view.sign_up.ChooseCountrySignUp
 import thanhnhan.myproject.socialmedia.ui.view.sign_up.ChooseEmailSignUp
 import thanhnhan.myproject.socialmedia.ui.view.sign_up.ChooseNameSignUp
 import thanhnhan.myproject.socialmedia.ui.view.sign_up.ChoosePasswordSignUp
 import thanhnhan.myproject.socialmedia.ui.view.sign_up.VerifyEmailCodeSignUp
+import thanhnhan.myproject.socialmedia.ui.view.user_profile.ChangeCountry
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -202,11 +204,29 @@ fun MainApp() {
                         name = name,
                         birthday = birthday,
                         country = country,
+                        openSignin = { email ->
+                            navController.navigate("signIn/$email")
+                        },
                         backAction = {
                             navController.popBackStack()
                         }
                     )
                 }
+            }
+
+            composable(
+                route = "signIn/{email}",
+                arguments = listOf(
+                    navArgument("email") {
+                        type = NavType.StringType
+                    }
+                )
+            ) { backStackEntry ->
+                val email = backStackEntry.arguments?.getString("email")
+                requireNotNull(email)
+                SignIn(
+                    sentEmail = email
+                )
             }
         }
     }

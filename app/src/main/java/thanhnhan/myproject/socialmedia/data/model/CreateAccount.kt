@@ -13,5 +13,3 @@ data class SignUpResponse(
     val status: Int,
     val message: String
 )
-
-data class Country(val name: String, val code: String)
