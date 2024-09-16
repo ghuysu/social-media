@@ -2,8 +2,10 @@ import {
   AUTH_SERVICE,
   ChangeBirthdayDto,
   ChangeCountryDto,
+  ChangeEmailDto,
   ChangeFullnameDto,
   ChangePasswordDto,
+  CheckCodeToChangeEmailDto,
   CheckEmailDto,
   CreateNormalUserDto,
   GoogleSignInDto,
@@ -14,7 +16,6 @@ import {
 import { CheckCodeDto } from '@app/common/dto/auth-dto/check-code.dto';
 import {
   BadRequestException,
-  Body,
   ConflictException,
   ForbiddenException,
   HttpException,
@@ -268,11 +269,54 @@ export class ApiGatewayService {
 
   async changeCountry(
     userPayload: TokenPayloadInterface,
-    @Body() dto: ChangeCountryDto,
+    dto: ChangeCountryDto,
   ) {
     const result = await lastValueFrom(
       this.userService
         .send('change_country', { countryPayload: dto, userPayload })
+        .pipe(
+          map((response) => {
+            if (response.error) {
+              this.throwErrorBasedOnStatusCode(
+                response.statusCode,
+                response.message,
+              );
+            }
+            return response;
+          }),
+        ),
+    );
+
+    return result;
+  }
+
+  async changeEmail(userPayload: TokenPayloadInterface, dto: ChangeEmailDto) {
+    const result = await lastValueFrom(
+      this.userService
+        .send('change_email', { emailPayload: dto, userPayload })
+        .pipe(
+          map((response) => {
+            if (response.error) {
+              this.throwErrorBasedOnStatusCode(
+                response.statusCode,
+                response.message,
+              );
+            }
+            return response;
+          }),
+        ),
+    );
+
+    return result;
+  }
+
+  async checkCodeToChangeEmail(
+    userPayload: TokenPayloadInterface,
+    dto: CheckCodeToChangeEmailDto,
+  ) {
+    const result = await lastValueFrom(
+      this.userService
+        .send('check_code_to_change_email', { payload: dto, userPayload })
         .pipe(
           map((response) => {
             if (response.error) {

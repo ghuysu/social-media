@@ -15,6 +15,7 @@ import * as joi from 'joi';
 import { ClientsModule, Transport } from '@nestjs/microservices';
 import { CacheModule } from '@nestjs/cache-manager';
 import * as redisStore from 'cache-manager-redis-store';
+import { JwtModule } from '@nestjs/jwt';
 
 @Module({
   imports: [
@@ -33,7 +34,13 @@ import * as redisStore from 'cache-manager-redis-store';
         REDIS_PORT: joi.number().required(),
         BUCKET_NAME: joi.string().required(),
         AWSS3_REGION: joi.string().required(),
+        ARGON2_SERCET: joi.string().required(),
+        JWT_SECRET: joi.string().required(),
+        JWT_EXPIRATION_USER: joi.string().required(),
       }),
+    }),
+    JwtModule.register({
+      global: true,
     }),
     DatabaseModule.forFeature([{ name: USER_DOCUMENT, schema: UserSchema }]),
     ClientsModule.registerAsync([

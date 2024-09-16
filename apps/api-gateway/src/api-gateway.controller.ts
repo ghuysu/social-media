@@ -1,8 +1,10 @@
 import {
   ChangeBirthdayDto,
   ChangeCountryDto,
+  ChangeEmailDto,
   ChangeFullnameDto,
   ChangePasswordDto,
+  CheckCodeToChangeEmailDto,
   CheckEmailDto,
   CreateNormalUserDto,
   GoogleSignInDto,
@@ -171,5 +173,25 @@ export class ApiGatewayController {
     @Body() dto: ChangeCountryDto,
   ) {
     return this.apiGatewayService.changeCountry(userPayload, dto);
+  }
+
+  @UseGuards(ApiKeyGuard)
+  @Post('user/email')
+  @UseGuards(JwtGuard)
+  async changeEmail(
+    @User() userPayload: TokenPayloadInterface,
+    @Body() dto: ChangeEmailDto,
+  ) {
+    return this.apiGatewayService.changeEmail(userPayload, dto);
+  }
+
+  @UseGuards(ApiKeyGuard)
+  @Patch('user/email/check')
+  @UseGuards(JwtGuard)
+  async checkCodeToChangeEmail(
+    @User() userPayload: TokenPayloadInterface,
+    @Body() dto: CheckCodeToChangeEmailDto,
+  ) {
+    return this.apiGatewayService.checkCodeToChangeEmail(userPayload, dto);
   }
 }

@@ -14,6 +14,8 @@ import {
 import { ChangeBirthdayInterface } from './interfaces/change-birthday.interface';
 import { ChangeFullnameInterface } from './interfaces/change-fullname.interface';
 import { ChangeCountryInterface } from './interfaces/change-country.interface';
+import { ChangeEmailInterface } from './interfaces/change-email.interface';
+import { CheckCodeToChangeEmailInterface } from './interfaces/check-code-to-change-email.interface';
 
 @Controller()
 export class UserController {
@@ -87,6 +89,42 @@ export class UserController {
         status: HttpStatus.OK,
         message: 'Changed country successfully.',
         metadata: account,
+      };
+    } catch (error) {
+      return this.handleError(error);
+    }
+  }
+
+  @MessagePattern('change_email')
+  async changeEmail(
+    @Payload()
+    { emailPayload, userPayload }: ChangeEmailInterface,
+  ) {
+    try {
+      await this.userService.changeEmail(userPayload, emailPayload);
+      return {
+        status: HttpStatus.OK,
+        message: 'Sent code to change email successfully.',
+      };
+    } catch (error) {
+      return this.handleError(error);
+    }
+  }
+
+  @MessagePattern('check_code_to_change_email')
+  async checkCodeToChangeEmail(
+    @Payload()
+    { payload, userPayload }: CheckCodeToChangeEmailInterface,
+  ) {
+    try {
+      const result = await this.userService.checkCodeToChangeEmail(
+        userPayload,
+        payload,
+      );
+      return {
+        status: HttpStatus.OK,
+        message: 'Changed email successfully.',
+        metadata: result,
       };
     } catch (error) {
       return this.handleError(error);

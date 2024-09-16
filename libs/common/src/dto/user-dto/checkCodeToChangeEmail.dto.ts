@@ -1,9 +1,9 @@
 import { IsEmail, IsNumber } from 'class-validator';
 
-export class SendCodeToChangePasswordDto {
+export class CheckCodeToChangeEmailDto {
   @IsEmail()
-  email: string;
+  newEmail: string;
 
   @IsNumber()
-  code: string;
+  code: number;
 }
