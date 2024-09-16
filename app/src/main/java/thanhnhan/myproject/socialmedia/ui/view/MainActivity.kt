@@ -6,22 +6,25 @@ import androidx.activity.compose.setContent
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
-import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.tooling.preview.Preview
-import thanhnhan.myproject.socialmedia.ui.Login.IntroLogin
+import thanhnhan.myproject.socialmedia.ui.view.Login.IntroLogin
 import androidx.navigation.NavType
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navArgument
+import thanhnhan.myproject.socialmedia.data.repository.SignInUserRepository
 import thanhnhan.myproject.socialmedia.ui.theme.SocialMediaTheme
+import thanhnhan.myproject.socialmedia.ui.view.HomeScreen.LocketScreen
+import thanhnhan.myproject.socialmedia.ui.view.Login.SignInScreen
 import thanhnhan.myproject.socialmedia.ui.view.sign_up.ChooseBirthdaySignUp
 import thanhnhan.myproject.socialmedia.ui.view.sign_up.ChooseCountrySignUp
 import thanhnhan.myproject.socialmedia.ui.view.sign_up.ChooseEmailSignUp
 import thanhnhan.myproject.socialmedia.ui.view.sign_up.ChooseNameSignUp
 import thanhnhan.myproject.socialmedia.ui.view.sign_up.ChoosePasswordSignUp
+import thanhnhan.myproject.socialmedia.viewmodel.SignInUserViewModelFactory
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -44,7 +47,20 @@ class MainActivity : ComponentActivity() {
 fun MainApp() {
     val navController = rememberNavController()
     SocialMediaTheme {
-        NavHost(navController = navController, startDestination = "chooseEmailSignUp") {
+        NavHost(navController = navController, startDestination = "signInScreen") {
+
+            // Thêm SignInScreen vào NavHost
+            composable(route = "signInScreen") {
+                SignInScreen(
+                    onLoginSuccess = {
+                        navController.navigate("homeScreen")  // Điều hướng đến màn hình chính sau khi đăng nhập thành công
+                    }
+                )
+            }
+            // Thêm HomeScreen vào NavHost
+            composable(route = "homeScreen") {
+                LocketScreen()
+            }
             composable(route = "chooseEmailSignUp") {
                 ChooseEmailSignUp(openChoosePassword = { email ->
                     navController.navigate("choosePasswordSignUp/$email")

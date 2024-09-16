@@ -1,4 +1,4 @@
-package thanhnhan.myproject.socialmedia.ui.HomeScreen
+package thanhnhan.myproject.socialmedia.ui.view.HomeScreen
 
 import androidx.camera.lifecycle.ProcessCameraProvider
 import androidx.camera.view.PreviewView
@@ -39,7 +39,6 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.viewinterop.AndroidView
 import thanhnhan.myproject.socialmedia.R
 
-class HomeScreen {
     @Composable
     fun LocketScreen() {
         Box(
@@ -182,4 +181,3 @@ class HomeScreen {
     fun LocketScreenPreview() {
         LocketScreen()
     }
-}

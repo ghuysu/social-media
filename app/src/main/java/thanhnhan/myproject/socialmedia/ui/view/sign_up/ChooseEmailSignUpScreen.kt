@@ -285,6 +285,7 @@ fun InputField(
         if (isPassword) PasswordVisualTransformation()
         else VisualTransformation.None
 
+    val containerColor = Color(0xFF3C434A)
     TextField(
         modifier = Modifier
             .padding(start = 25.dp)
@@ -322,18 +323,20 @@ fun InputField(
                 }
             }
         },
-        colors = TextFieldDefaults.textFieldColors(
+        colors = TextFieldDefaults.colors(
+            focusedContainerColor = containerColor,
+            unfocusedContainerColor = containerColor,
+            disabledContainerColor = containerColor,
             cursorColor = Color(0xFFE3A400),
-            unfocusedIndicatorColor = Color.Transparent,
             focusedIndicatorColor = Color.Transparent,
+            unfocusedIndicatorColor = Color.Transparent,
             disabledIndicatorColor = Color.Transparent,
-            focusedTrailingIconColor = AppTheme.appButtonStyle.backgroundColor,
-            unfocusedTrailingIconColor = AppTheme.appButtonStyle.backgroundColor,
             focusedLeadingIconColor = AppTheme.appButtonStyle.backgroundColor,
             unfocusedLeadingIconColor = AppTheme.appButtonStyle.backgroundColor,
+            focusedTrailingIconColor = AppTheme.appButtonStyle.backgroundColor,
+            unfocusedTrailingIconColor = AppTheme.appButtonStyle.backgroundColor,
             focusedPlaceholderColor = Color.Gray,
             unfocusedPlaceholderColor = Color.Gray,
-            containerColor = Color(0xFF3C434A)
         ),
         visualTransformation = visualTransformation,
         keyboardOptions = KeyboardOptions(

@@ -1,4 +1,4 @@
-package thanhnhan.myproject.socialmedia.ui.Login
+package thanhnhan.myproject.socialmedia.ui.view.Login
 
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
@@ -51,7 +51,7 @@ class IntroLogin {
                 // Hình ảnh ở trên cùng
                 Spacer(modifier = Modifier.height(50.dp))
                 Image(
-                    painter = painterResource(id = R.drawable.logo), // Thay thế `your_image` bằng id của hình ảnh bạn sử dụng
+                    painter = painterResource(id = R.drawable.logo),
                     contentDescription = "Avatar",
                     modifier = Modifier
                         .size(200.dp)
@@ -72,7 +72,6 @@ class IntroLogin {
 
                 Spacer(modifier = Modifier.height(150.dp))
 
-                // Nút "Tạo một tài khoản"
                 Button(
                     onClick = { /* TODO: Add your logic here */ },
                     colors = ButtonDefaults.buttonColors(
@@ -83,14 +82,14 @@ class IntroLogin {
                     modifier = Modifier
                         .fillMaxWidth()
                         .padding(AppTheme.appButtonStyle.padding.dp)
+                        .height(AppTheme.appButtonStyle.height)
                 ) {
                     Text(
-                        text = "Sign Out",
+                        text = "Sign Up",
                         style = AppTheme.appButtonStyle.textStyle
                     )
                 }
 
-                Spacer(modifier = Modifier.height(20.dp))
 
                 // Nút "Đăng nhập"
                 Button(
@@ -103,6 +102,7 @@ class IntroLogin {
                     modifier = Modifier
                         .fillMaxWidth()
                         .padding(AppTheme.appButtonStyle.padding.dp)
+                        .height(AppTheme.appButtonStyle.height)
                 ) {
                     Text(
                         text = "Sign In",
