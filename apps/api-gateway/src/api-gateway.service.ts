@@ -1,5 +1,8 @@
 import {
   AUTH_SERVICE,
+  ChangeBirthdayDto,
+  ChangeCountryDto,
+  ChangeFullnameDto,
   ChangePasswordDto,
   CheckEmailDto,
   CreateNormalUserDto,
@@ -51,7 +54,7 @@ export class ApiGatewayService {
   }
 
   //sign up
-  async checkEmail(@Body() dto: CheckEmailDto) {
+  async checkEmail(dto: CheckEmailDto) {
     const result = await lastValueFrom(
       this.authService.send('check_email_for_sign_up', dto).pipe(
         map((response) => {
@@ -69,7 +72,7 @@ export class ApiGatewayService {
     return result;
   }
 
-  async checkCodeForSignUp(@Body() dto: CreateNormalUserDto) {
+  async checkCodeForSignUp(dto: CreateNormalUserDto) {
     const result = await lastValueFrom(
       this.authService.send('check_code_for_sign_up', dto).pipe(
         map((response) => {
@@ -88,7 +91,7 @@ export class ApiGatewayService {
   }
 
   //sign in
-  async signinAsUser(@Body() dto: SignInDto) {
+  async signinAsUser(dto: SignInDto) {
     const result = await lastValueFrom(
       this.authService.send('sign_in_as_user', dto).pipe(
         map((response) => {
@@ -106,7 +109,7 @@ export class ApiGatewayService {
     return result;
   }
 
-  async signinAsAdmin(@Body() dto: SignInDto) {
+  async signinAsAdmin(dto: SignInDto) {
     const result = await lastValueFrom(
       this.authService.send('sign_in_as_admin', dto).pipe(
         map((response) => {
@@ -124,7 +127,7 @@ export class ApiGatewayService {
     return result;
   }
 
-  async checkCodeToSignInAsAdmin(@Body() dto: CheckCodeDto) {
+  async checkCodeToSignInAsAdmin(dto: CheckCodeDto) {
     const result = await lastValueFrom(
       this.authService.send('check_code_to_sign_in_as_admin', dto).pipe(
         map((response) => {
@@ -143,7 +146,7 @@ export class ApiGatewayService {
   }
 
   //change password
-  async checkEmailForChangePassword(@Body() dto: CheckEmailDto) {
+  async checkEmailForChangePassword(dto: CheckEmailDto) {
     const result = await lastValueFrom(
       this.authService.send('check_email_for_change_password', dto).pipe(
         map((response) => {
@@ -161,7 +164,7 @@ export class ApiGatewayService {
     return result;
   }
 
-  async checkCodeForChangePassword(@Body() dto: ChangePasswordDto) {
+  async checkCodeForChangePassword(dto: ChangePasswordDto) {
     const result = await lastValueFrom(
       this.authService.send('change_password', dto).pipe(
         map((response) => {
@@ -212,6 +215,75 @@ export class ApiGatewayService {
           return response;
         }),
       ),
+    );
+
+    return result;
+  }
+
+  async changeBirthday(
+    userPayload: TokenPayloadInterface,
+    dto: ChangeBirthdayDto,
+  ) {
+    const result = await lastValueFrom(
+      this.userService
+        .send('change_birthday', { birthdayPayload: dto, userPayload })
+        .pipe(
+          map((response) => {
+            if (response.error) {
+              this.throwErrorBasedOnStatusCode(
+                response.statusCode,
+                response.message,
+              );
+            }
+            return response;
+          }),
+        ),
+    );
+
+    return result;
+  }
+
+  async changeFullname(
+    userPayload: TokenPayloadInterface,
+    dto: ChangeFullnameDto,
+  ) {
+    const result = await lastValueFrom(
+      this.userService
+        .send('change_fullname', { fullnamePayload: dto, userPayload })
+        .pipe(
+          map((response) => {
+            if (response.error) {
+              this.throwErrorBasedOnStatusCode(
+                response.statusCode,
+                response.message,
+              );
+            }
+            return response;
+          }),
+        ),
+    );
+
+    return result;
+  }
+
+  async changeCountry(
+    userPayload: TokenPayloadInterface,
+    @Body() dto: ChangeCountryDto,
+  ) {
+    const result = await lastValueFrom(
+      this.userService
+        .send('change_country', { countryPayload: dto, userPayload })
+        .pipe(
+          map((response) => {
+            if (response.error) {
+              this.throwErrorBasedOnStatusCode(
+                response.statusCode,
+                response.message,
+              );
+            }
+            return response;
+          }),
+        ),
     );
 
     return result;

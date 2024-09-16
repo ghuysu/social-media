@@ -5,10 +5,15 @@ import {
   SendCodeCheckEmailDto,
   SendCodeToChangePasswordDto,
 } from '@app/common';
+import { EmitMessageDto } from './dto/emit-message.dto';
+import { SocketGateway } from './gateways/socket-io.gateway';
 
 @Injectable()
 export class NotificationService {
-  constructor(private readonly configService: ConfigService) {}
+  constructor(
+    private readonly configService: ConfigService,
+    private readonly socketGateway: SocketGateway,
+  ) {}
 
   private readonly transporter = nodemailer.createTransport({
     service: 'gmail',
@@ -94,5 +99,9 @@ export class NotificationService {
       subject,
       html,
     });
+  }
+
+  async sendMessageToAllClientBySocketIo({ name, payload }: EmitMessageDto) {
+    this.socketGateway.sendMessageToAllClient(name, payload);
   }
 }

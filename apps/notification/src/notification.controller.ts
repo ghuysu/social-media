@@ -5,6 +5,7 @@ import {
   SendCodeCheckEmailDto,
   SendCodeToChangePasswordDto,
 } from '@app/common';
+import { EmitMessageDto } from './dto/emit-message.dto';
 
 @Controller()
 export class NotificationController {
@@ -23,5 +24,10 @@ export class NotificationController {
   @EventPattern('send_code_to_sign_in_as_admin')
   async sendCodeToSignInAsAdmin(@Payload() dto: SendCodeToChangePasswordDto) {
     this.notificationService.sendCodeToSignInAsAdmin(dto);
+  }
+
+  @EventPattern('emit_message')
+  async sendMessageToAllClientBySocketIo(@Payload() dto: EmitMessageDto) {
+    this.notificationService.sendMessageToAllClientBySocketIo(dto);
   }
 }

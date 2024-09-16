@@ -1,4 +1,7 @@
 import {
+  ChangeBirthdayDto,
+  ChangeCountryDto,
+  ChangeFullnameDto,
   ChangePasswordDto,
   CheckEmailDto,
   CreateNormalUserDto,
@@ -138,5 +141,35 @@ export class ApiGatewayController {
   @UseGuards(JwtGuard)
   async getUser(@User() userPayload: TokenPayloadInterface) {
     return this.apiGatewayService.getUser(userPayload);
+  }
+
+  @UseGuards(ApiKeyGuard)
+  @Patch('user/birthday')
+  @UseGuards(JwtGuard)
+  async changeBirthday(
+    @User() userPayload: TokenPayloadInterface,
+    @Body() dto: ChangeBirthdayDto,
+  ) {
+    return this.apiGatewayService.changeBirthday(userPayload, dto);
+  }
+
+  @UseGuards(ApiKeyGuard)
+  @Patch('user/fullname')
+  @UseGuards(JwtGuard)
+  async changeFullname(
+    @User() userPayload: TokenPayloadInterface,
+    @Body() dto: ChangeFullnameDto,
+  ) {
+    return this.apiGatewayService.changeFullname(userPayload, dto);
+  }
+
+  @UseGuards(ApiKeyGuard)
+  @Patch('user/country')
+  @UseGuards(JwtGuard)
+  async changeCountry(
+    @User() userPayload: TokenPayloadInterface,
+    @Body() dto: ChangeCountryDto,
+  ) {
+    return this.apiGatewayService.changeCountry(userPayload, dto);
   }
 }

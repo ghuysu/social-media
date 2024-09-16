@@ -11,6 +11,9 @@ import {
   UnauthorizedException,
   BadRequestException,
 } from '@nestjs/common';
+import { ChangeBirthdayInterface } from './interfaces/change-birthday.interface';
+import { ChangeFullnameInterface } from './interfaces/change-fullname.interface';
+import { ChangeCountryInterface } from './interfaces/change-country.interface';
 
 @Controller()
 export class UserController {
@@ -23,6 +26,66 @@ export class UserController {
       return {
         status: HttpStatus.OK,
         message: 'Get user information successfully.',
+        metadata: account,
+      };
+    } catch (error) {
+      return this.handleError(error);
+    }
+  }
+
+  @MessagePattern('change_birthday')
+  async changeBirthday(
+    @Payload()
+    { birthdayPayload, userPayload }: ChangeBirthdayInterface,
+  ) {
+    try {
+      const account = await this.userService.changeBirthday(
+        userPayload,
+        birthdayPayload,
+      );
+      return {
+        status: HttpStatus.OK,
+        message: 'Changed birthday successfully.',
+        metadata: account,
+      };
+    } catch (error) {
+      return this.handleError(error);
+    }
+  }
+
+  @MessagePattern('change_fullname')
+  async changeFullname(
+    @Payload()
+    { fullnamePayload, userPayload }: ChangeFullnameInterface,
+  ) {
+    try {
+      const account = await this.userService.changeFullname(
+        userPayload,
+        fullnamePayload,
+      );
+      return {
+        status: HttpStatus.OK,
+        message: 'Changed fullname successfully.',
+        metadata: account,
+      };
+    } catch (error) {
+      return this.handleError(error);
+    }
+  }
+
+  @MessagePattern('change_country')
+  async changeCountry(
+    @Payload()
+    { countryPayload, userPayload }: ChangeCountryInterface,
+  ) {
+    try {
+      const account = await this.userService.changeCountry(
+        userPayload,
+        countryPayload,
+      );
+      return {
+        status: HttpStatus.OK,
+        message: 'Changed country successfully.',
         metadata: account,
       };
     } catch (error) {

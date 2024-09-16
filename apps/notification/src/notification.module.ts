@@ -3,6 +3,7 @@ import { NotificationController } from './notification.controller';
 import { NotificationService } from './notification.service';
 import { ConfigModule } from '@nestjs/config';
 import * as joi from 'joi';
+import { SocketGateway } from './gateways/socket-io.gateway';
 
 @Module({
   imports: [
@@ -18,6 +19,6 @@ import * as joi from 'joi';
     }),
   ],
   controllers: [NotificationController],
-  providers: [NotificationService],
+  providers: [NotificationService, SocketGateway],
 })
 export class NotificationModule {}

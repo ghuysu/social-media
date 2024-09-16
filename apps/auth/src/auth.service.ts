@@ -371,7 +371,7 @@ export class AuthService {
 
     const signInToken = await this.jwtService.signAsync(tokenPayload, {
       secret: this.configService.get('JWT_SECRET'),
-      expiresIn: `${this.configService.get('JWT_EXPIRATION_ADMIN')}s`,
+      expiresIn: `${this.configService.get('JWT_EXPIRATION_USER')}s`,
     });
 
     // Prepend 'Bearer ' to the token
@@ -531,7 +531,7 @@ export class AuthService {
 
     const signInToken = await this.jwtService.signAsync(tokenPayload, {
       secret: this.configService.get('JWT_SECRET'),
-      expiresIn: this.configService.get('JWT_EXPIRATION_USER'),
+      expiresIn: `${this.configService.get('JWT_EXPIRATION_USER')}s`,
     });
 
     // Prepend 'Bearer ' to the token
