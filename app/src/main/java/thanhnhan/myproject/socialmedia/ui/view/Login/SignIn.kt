@@ -65,11 +65,8 @@ fun SignInScreen(
                 scope.launch {
                     viewModel.signInUser(email, password)
                 }
-
-            }
-            else{
+            } else {
                 Log.d("SignInScreen", "Đăng nhập thất bại")
-                // Đăng nhập thất bại, cập nhật thông báo lỗi
                 errorMessage = "Email or password incorrect"
             }
         },
@@ -84,15 +81,15 @@ fun SignInScreen(
                 Log.d("SignInScreen", "Đăng nhập thành công")
             }
             is Result.Error -> {
-                // Hiển thị thông báo lỗi
                 Log.e("SignInScreen", "Đăng nhập thất bại: ${result.message ?: "Unknown error"}")
-                Text(text = "Error: ${result.message ?: "Unknown error"}", color = Color.Red)
+                errorMessage = "Email or password incorrect"
             }
         }
-        // Hiển thị SignInReport nếu có lỗi
-        errorMessage?.let {
-            SignInReport(text = it) // Cập nhật nội dung Text cho SignInReport
-        }
+    }
+
+    // Hiển thị SignInReport nếu có lỗi
+    errorMessage?.let {
+        SignInReport(text = it)
     }
 }
 
@@ -120,7 +117,6 @@ fun SignInContent(
                 Spacer(modifier = Modifier.height(80.dp))
                 SignInTitle()
 
-
                 SignInEmailField(
                     email = email,
                     onEmailChange = onEmailChange,
@@ -144,6 +140,14 @@ fun SignInContent(
             }
         }
     }
+}
+
+@Composable
+fun SignInReport(text: String) {
+    Text(
+        text = text,
+        style = AppTheme.appTypography.reportTitle
+    )
 }
 
 @Composable
@@ -171,6 +175,7 @@ fun SignInTitle() {
             .padding(start = 0.dp, end = 150.dp)
     )
 }
+
 @Composable
 fun SignInPassTitle() {
     Text(
@@ -180,12 +185,6 @@ fun SignInPassTitle() {
             .fillMaxWidth()
             .padding(start = 0.dp, end = 180.dp)
     )
-}
-
-@Composable
-fun SignInReport(text: String){
-    Text(text = "",
-        style = AppTheme.appTypography.reportTitle)
 }
 
 @Composable
@@ -280,7 +279,6 @@ fun SignInButton(onClick: () -> Unit) {
 @Preview(showBackground = true)
 @Composable
 fun SignInScreenPreview() {
-    // Provide mocked content instead of using ViewModel for the preview
     SignInContent(
         email = "test@example.com",
         password = "password123",

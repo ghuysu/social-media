@@ -5,13 +5,11 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowForward
-import androidx.compose.material3.DropdownMenu
-import androidx.compose.material3.DropdownMenuItem
-import androidx.compose.material3.Text
+import androidx.compose.material.icons.filled.Clear
+import androidx.compose.material.icons.filled.Create
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
@@ -34,42 +32,43 @@ import thanhnhan.myproject.socialmedia.viewmodel.SignupViewModel
 import thanhnhan.myproject.socialmedia.viewmodel.SignupViewModelFactory
 
 @Composable
-fun ChooseCountrySignUp(
+fun VerifyEmailCodeSignUp(
     email: String,
     password: String,
     name: String,
     birthday: String,
-    openChooseEmail: () -> Unit,
-    openVerifyCode: (String, String, String, String, String) -> Unit,
-    backAction: () -> Unit = {}
+    country: String,
+    openSignin: (String) -> Unit,
+    backAction: () -> Unit = {},
 ) {
-    val context = LocalContext.current
-
     val api = RetrofitInstance.api
     val repository = SignupRepository(api)
     val viewModel: SignupViewModel = viewModel(factory = SignupViewModelFactory(repository))
-    val emailCheckResult = viewModel.emailCheckResult.collectAsState().value
+    val signUpResult = viewModel.signUpResult.collectAsState().value
 
-    val countries by viewModel.countries.collectAsState()
-    // Biến trạng thái để lưu country được chọn
-    val selectedCountry by viewModel.selectedCountry.collectAsState()
-    // Biến trạng thái để kiểm soát hiển thị của menu
-    var expanded by remember { mutableStateOf(false) }
+    val context = LocalContext.current
+    val formattedBirthday = birthday.replace("-", "/")
 
-    LaunchedEffect(key1 = emailCheckResult) {
-        emailCheckResult?.let { result ->
+    LaunchedEffect(key1 = signUpResult) {
+        signUpResult?.let { result ->
             when (result) {
                 is Result.Success -> {
-                    openVerifyCode(email, password, name, birthday, selectedCountry!!.second)
+                    Toast.makeText(
+                        context,
+                        "Sign up result: ${result.data}",
+                        Toast.LENGTH_LONG
+                    ).show()
+
+                    delay(1000)
+
+                    openSignin(email)
                 }
                 is Result.Error -> {
                     Toast.makeText(
                         context,
-                        result.data ?: "Unauthorized or conflict Email",
+                        result.message ?: "Wrong code",
                         Toast.LENGTH_LONG
                     ).show()
-                    delay(3000)
-                    openChooseEmail()
                 }
             }
         }
@@ -80,60 +79,60 @@ fun ChooseCountrySignUp(
             .fillMaxSize()
             .background(color = Color(0xFF22272E))
     ) {
+        val codeValidationResult by viewModel.stringValidationResult.collectAsState()
+        var verifyCode by remember { mutableStateOf("") }
+
         BackIconButton(backAction)
         LogoImage()
         AppName()
         Spacer(modifier = Modifier.height(80.dp))
-        ContinueButton(
-            text = selectedCountry?.first ?: "Select your country",
-            onClick = {
-                expanded = true
-            },
-            buttonColor = Color(0xFF3C434A)
-        )
+        SignUpTitle(text = "Code sent to your email?")
         Spacer(modifier = Modifier.height(5.dp))
-        DropdownMenu(
-            expanded = expanded,
-            onDismissRequest = { expanded = false },
-            modifier = Modifier.fillMaxWidth()
-        ) {
-            countries.forEach { (name, code) ->
-               DropdownMenuItem(
-                   text = { Text(text = name) },
-                   onClick = {
-                       viewModel.selectCountry(name, code)
-                       expanded = false
-                   }
-               )
-            }
-        }
-        Spacer(modifier = Modifier.height(145.dp))
+        InputField(
+            placeHolder = "Verification code",
+            leadingIcon = Icons.Default.Create,
+            trailingIconVector = Icons.Default.Clear,
+            value = verifyCode,
+            onValueChange = {
+                verifyCode = it
+                viewModel.checkString(it)
+            },
+            onTrailingIconClick = {
+                verifyCode = ""
+                viewModel.checkString(verifyCode)
+            },
+        )
+        Spacer(modifier = Modifier.height(155.dp))
         ContinueButton(
             text = "Continue",
             icon = Icons.Default.ArrowForward,
-            isEnable = selectedCountry != null,
             onClick = {
-                if (selectedCountry != null) {
-                    viewModel.checkEmail(email)
+                if (verifyCode.isNotEmpty()) {
+                    viewModel.signUp(verifyCode.toInt(), email, name, password, country, formattedBirthday)
                 } else {
-                    Toast.makeText(context, "Please select a country", Toast.LENGTH_SHORT).show()
+                    Toast.makeText(
+                        context,
+                        "Please fill your code",
+                        Toast.LENGTH_SHORT
+                    ).show()
                 }
-            }
+            },
+            isEnable = codeValidationResult == true
         )
     }
 }
 
 @Composable
 @Preview(showBackground = true, showSystemUi = true)
-fun ChooseCountrySignUpPreview() {
+fun VerifyEmailCodeSignUpPreview() {
     SocialMediaTheme {
-        ChooseCountrySignUp(
-            email = "jd@gmail.com",
-            password = "123",
+        VerifyEmailCodeSignUp(
+            email = "example@email.com",
+            password = "password123",
             name = "John Doe",
-            birthday = "01/01/2000",
-            openChooseEmail = {},
-            openVerifyCode = { _, _, _, _, _ -> }
+            birthday = "1990-01-01",
+            country = "United States",
+            openSignin = { _ -> }
         )
     }
 }

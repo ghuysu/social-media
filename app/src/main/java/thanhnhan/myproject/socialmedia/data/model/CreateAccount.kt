@@ -1,6 +1,7 @@
 package thanhnhan.myproject.socialmedia.data.model
 
-data class UserRequest(
+data class SignUpRequest(
+    val code: Int,
     val email: String,
     val fullname: String,
     val password: String,
@@ -8,23 +9,7 @@ data class UserRequest(
     val birthday: String
 )
 
-data class UserResponse(
+data class SignUpResponse(
     val status: Int,
-    val message: String,
-    val metadata: Metadata?
-) {
-    data class Metadata(
-        val user: User?
-    ) {
-        data class User(
-            val _id: String,
-            val email: String,
-            val fullname: String,
-            val birthday: String,
-            val profileImageUrl: String,
-            val friendList: List<String>,
-            val friendInvites: List<String>,
-            val country: String
-        )
-    }
-}
+    val message: String
+)

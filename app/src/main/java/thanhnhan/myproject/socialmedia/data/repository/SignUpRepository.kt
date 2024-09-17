@@ -4,21 +4,19 @@ import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flow
 import okio.IOException
 import retrofit2.HttpException
-import thanhnhan.myproject.socialmedia.data.model.EmailCheckResponse
-import thanhnhan.myproject.socialmedia.data.model.EmailRequest
 import thanhnhan.myproject.socialmedia.data.network.Api
 import thanhnhan.myproject.socialmedia.data.Result
-import thanhnhan.myproject.socialmedia.data.model.UserRequest
-import thanhnhan.myproject.socialmedia.data.model.UserResponse
+import thanhnhan.myproject.socialmedia.data.model.EmailVerificationRequest
+import thanhnhan.myproject.socialmedia.data.model.SignUpRequest
 
 class SignupRepository(
     private val api: Api
 ) {
-    suspend fun checkEmail(email: String): Flow<Result<EmailCheckResponse>> {
+    suspend fun checkEmail(email: String): Flow<Result<String>> {
         return flow {
             try {
-                val response = api.checkEmail(EmailRequest(email))
-                emit(Result.Success(response))
+                val response = api.checkEmail(EmailVerificationRequest(email))
+                emit(Result.Success(response.message))
             } catch (e: HttpException) {
                 val errorMessage = e.response()?.errorBody()?.string()
                 emit(Result.Error(message = errorMessage ?: "Error occurred"))
@@ -30,11 +28,11 @@ class SignupRepository(
         }
     }
 
-    suspend fun createUser(userRequest: UserRequest): Flow<Result<UserResponse>> {
+    suspend fun signUp(signUpRequest: SignUpRequest): Flow<Result<String>> {
         return flow {
             try {
-                val response = api.createUser(userRequest)
-                emit(Result.Success(response))
+                val response = api.signUp(signUpRequest)
+                emit(Result.Success(response.message))
             } catch (e: HttpException) {
                 val errorMessage = e.response()?.errorBody()?.string()
                 emit(Result.Error(message = errorMessage ?: "Error occurred"))
