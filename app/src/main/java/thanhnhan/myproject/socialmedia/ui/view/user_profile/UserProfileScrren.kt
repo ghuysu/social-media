@@ -50,42 +50,57 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import coil.compose.rememberAsyncImagePainter
 import thanhnhan.myproject.socialmedia.R
+import thanhnhan.myproject.socialmedia.data.model.SignInUserResponse
+import thanhnhan.myproject.socialmedia.data.model.UserSession
 import thanhnhan.myproject.socialmedia.ui.theme.AppTheme
 
 @Composable
 fun ProfileScreen() {
-    Column(
-        modifier = Modifier
-            .fillMaxSize()
-            .background(Color(0xFF22272E))
-            .padding(16.dp)
-    ) {
-        val userAvatar by remember{ mutableStateOf("") }
+    // Lấy thông tin người dùng từ UserSession
+    val user = UserSession.user
 
+    if (user != null) {
+        Column(
+            modifier = Modifier
+                .fillMaxSize()
+                .background(Color(0xFF22272E))
+                .padding(16.dp)
+        ) {
+            // Profile Section
+            ProfileSection(
+                userAvatar = user.profileImageUrl,
+                userName = user.fullname
+            )
 
-        // Profile Section
-        ProfileSection(userAvatar = userAvatar)
+            Spacer(modifier = Modifier.height(40.dp))
 
-        Spacer(modifier = Modifier.height(40.dp))
+            // Invite Section
+            InviteSection(userAvatar = user.profileImageUrl)
 
-        // Invite Section
-        InviteSection(userAvatar = userAvatar)
+            Spacer(modifier = Modifier.height(16.dp))
 
-        Spacer(modifier = Modifier.height(16.dp))
+            // Settings Section
+            SettingsSection()
 
-        // Settings Section
-        SettingsSection()
+            Spacer(modifier = Modifier.height(16.dp))
 
-        Spacer(modifier = Modifier.height(16.dp))
-
-        // Summary Section
-        SummarySection()
+            // Summary Section
+            SummarySection()
+        }
+    } else {
+        Text(
+            text = "No user data available",
+            style = TextStyle(color = Color.White),
+            modifier = Modifier.fillMaxSize(),
+            textAlign = TextAlign.Center
+        )
     }
 }
 
 @Composable
 fun ProfileSection(
-    userAvatar: String
+    userAvatar: String,
+    userName: String
 ) {
     Column(
         horizontalAlignment = Alignment.CenterHorizontally,
@@ -129,9 +144,9 @@ fun ProfileSection(
 
         Spacer(modifier = Modifier.height(8.dp))
 
-        // Name
+        // Display user's name
         Text(
-            text = "User Name",
+            text = userName,  // Hiển thị tên người dùng từ UserSession
             style = TextStyle(color = Color.White, fontSize = 24.sp)
         )
 
@@ -152,6 +167,7 @@ fun ProfileSection(
         }
     }
 }
+
 
 @Composable
 fun CircularImageView(
@@ -309,5 +325,19 @@ fun SettingItem(
 @Preview(showBackground = true)
 @Composable
 fun ProfileScreenPreview() {
-    ProfileScreen()
+    UserSession.setUserData(
+        SignInUserResponse.Metadata.User(
+            _id = "12345",
+            email = "ndhuynh13@gmail.com",
+            fullname = "Nguyen Huynh",
+            birthday = "13/07/2003",
+            profileImageUrl = "https://via.placeholder.com/150",  // URL ảnh đại diện giả lập
+            friendList = listOf(),
+            friendInvites = listOf(),
+            country = "VN"
+        ),
+        token = "mockToken"
+    )
+
+    ProfileScreen()  // Gọi ProfileScreen với dữ liệu đã giả lập
 }

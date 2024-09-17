@@ -29,3 +29,25 @@ data class SignInUserResponse(
     }
 }
 
+object UserSession {
+    var user: SignInUserResponse.Metadata.User? = null
+    var signInToken: String? = null
+
+    // Hàm để đặt thông tin người dùng và token sau khi đăng nhập thành công
+    fun setUserData(user: SignInUserResponse.Metadata.User?, token: String?) {
+        this.user = user
+        this.signInToken = token
+    }
+
+    // Hàm để xóa thông tin người dùng và token khi đăng xuất
+    fun clearSession() {
+        user = null
+        signInToken = null
+    }
+
+    // Hàm kiểm tra xem người dùng đã đăng nhập chưa
+    fun isLoggedIn(): Boolean {
+        return user != null && signInToken != null
+    }
+}
+

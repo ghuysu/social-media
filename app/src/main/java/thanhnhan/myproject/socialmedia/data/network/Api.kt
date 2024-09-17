@@ -1,8 +1,6 @@
 package thanhnhan.myproject.socialmedia.data.network
 import retrofit2.http.Body
 import retrofit2.http.POST
-import thanhnhan.myproject.socialmedia.data.model.SignInAdminRequest
-import thanhnhan.myproject.socialmedia.data.model.SignInAdminResponse
 import thanhnhan.myproject.socialmedia.data.model.SignInUserRequest
 import thanhnhan.myproject.socialmedia.data.model.SignInUserResponse
 import thanhnhan.myproject.socialmedia.data.model.EmailVerificationRequest
@@ -26,8 +24,6 @@ interface Api {
     @POST("/api/user/sign-in")
     suspend fun signInUser(@Body request: SignInUserRequest): SignInUserResponse
 
-    @POST("/admin/sign-in")
-    suspend fun signInAdmin(@Body request: SignInAdminRequest): SignInAdminResponse
 
 }
 

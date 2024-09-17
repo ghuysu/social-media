@@ -1,5 +1,6 @@
 package thanhnhan.myproject.socialmedia.viewmodel
 
+import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -9,6 +10,7 @@ import kotlinx.coroutines.launch
 import thanhnhan.myproject.socialmedia.data.Result
 import thanhnhan.myproject.socialmedia.data.model.SignInUserRequest
 import thanhnhan.myproject.socialmedia.data.model.SignInUserResponse
+import thanhnhan.myproject.socialmedia.data.model.UserSession
 import thanhnhan.myproject.socialmedia.data.repository.SignInUserRepository
 import java.util.regex.Pattern
 
@@ -69,17 +71,34 @@ class SignInUserViewModel(
 
     // Function to sign in user
     fun signInUser(email: String, password: String) {
+        Log.d("SignInUserViewModel", "Attempting to sign in with email: $email")
         viewModelScope.launch {
-            _isLoading.value = true // Bắt đầu xử lý
             try {
                 signInUserRepository.signInUser(SignInUserRequest(email, password)).collect { result ->
-                    _signInResult.value = result // Đảm bảo rằng result là kiểu SignInUserResponse
+                    if (result is Result.Success) {
+                        Log.d("SignInUserViewModel", "Sign-in successful")
+
+                        // Lấy thông tin user và token từ metadata
+                        val user = result.data?.metadata?.user
+                        val token = result.data?.metadata?.signInToken
+
+                        // Lưu thông tin user và token vào UserSession
+                        UserSession.setUserData(user, token)
+
+                        // Kiểm tra dữ liệu đã lưu
+                        Log.d("SignInUserViewModel", "User: ${UserSession.user?.fullname}, Token: ${UserSession.signInToken}")
+                        _signInResult.value = result
+                    } else if (result is Result.Error) {
+                        Log.e("SignInUserViewModel", "Sign-in failed: ${result.message}")
+                        _signInResult.value = result
+                    }
                 }
             } catch (e: Exception) {
-                _signInResult.value = Result.Error(message = "Login failed: ${e.message}") // Truyền message
-            } finally {
-                _isLoading.value = false // Kết thúc xử lý
+                // Xử lý lỗi khi đăng nhập
+                Log.e("SignInUserViewModel", "Login failed: ${e.message}")
+                _signInResult.value = Result.Error(message = e.message)
             }
         }
     }
+
 }

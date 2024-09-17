@@ -61,35 +61,34 @@ fun SignInScreen(
             viewModel.checkPassword(it)
         },
         onContinueClick = {
+            Log.d("SignInScreen", "Button 'Continue' clicked")
+            Log.d("SignInScreen", "Email validation result: $emailValidationResult")
+            Log.d("SignInScreen", "Password validation result: $passwordValidationResult")
             if (emailValidationResult == true && passwordValidationResult == true) {
                 scope.launch {
+                    Log.d("SignInScreen", "Valid email and password. Attempting to sign in.")
                     viewModel.signInUser(email, password)
                 }
             } else {
-                Log.d("SignInScreen", "Đăng nhập thất bại")
+                Log.d("SignInScreen", "Sign-in failed: Invalid email or password")
                 errorMessage = "Email or password incorrect"
             }
         },
         emailError = emailValidationResult == false,
         passwordError = passwordValidationResult == false
     )
+
     // Xử lý kết quả đăng nhập
     signInResult?.let { result ->
         when (result) {
             is Result.Success -> {
+                Log.d("SignInScreen", "Sign-in successful")
                 onLoginSuccess()
-                Log.d("SignInScreen", "Đăng nhập thành công")
             }
             is Result.Error -> {
-                Log.e("SignInScreen", "Đăng nhập thất bại: ${result.message ?: "Unknown error"}")
-                errorMessage = "Email or password incorrect"
+                Log.e("SignInScreen", "Sign-in failed: ${result.message ?: "Unknown error"}")
             }
         }
-    }
-
-    // Hiển thị SignInReport nếu có lỗi
-    errorMessage?.let {
-        SignInReport(text = it)
     }
 }
 

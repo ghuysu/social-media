@@ -1,6 +1,7 @@
 package thanhnhan.myproject.socialmedia.ui.view
 
 import android.os.Bundle
+import android.provider.ContactsContract.Profile
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.compose.foundation.layout.fillMaxSize
@@ -23,6 +24,8 @@ import thanhnhan.myproject.socialmedia.ui.view.sign_up.ChooseEmailSignUp
 import thanhnhan.myproject.socialmedia.ui.view.sign_up.ChooseNameSignUp
 import thanhnhan.myproject.socialmedia.ui.view.sign_up.ChoosePasswordSignUp
 import thanhnhan.myproject.socialmedia.ui.view.sign_up.VerifyEmailCodeSignUp
+import thanhnhan.myproject.socialmedia.ui.view.user_profile.ProfileScreen
+
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -50,7 +53,7 @@ fun MainApp() {
             composable(route = "signInScreen") {
                 SignInScreen(
                     onLoginSuccess = {
-                        navController.navigate("homeScreen")  // Điều hướng đến màn hình chính sau khi đăng nhập thành công
+                        navController.navigate("UserProfile")  // Điều hướng đến màn hình chính sau khi đăng nhập thành công
                     }
                 )
             }
@@ -225,6 +228,10 @@ fun MainApp() {
                     )
                 }
             }
+            composable(route = "UserProfile") {
+                ProfileScreen()
+            }
+
 
 //            composable(
 //                route = "signIn/{email}",
