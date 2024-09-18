@@ -1,4 +1,5 @@
 import {
+  AWS_S3_SERVICE,
   ChangeBirthdayDto,
   ChangeCountryDto,
   ChangeEmailDto,
@@ -24,6 +25,7 @@ import { ClientProxy } from '@nestjs/microservices';
 import * as argon2 from 'argon2';
 import { ConfigService } from '@nestjs/config';
 import { JwtService } from '@nestjs/jwt';
+import * as Jimp from 'jimp';
 import { ChangeEmailPayloadInterface } from './interfaces/change-email-payload.interface';
 
 @Injectable()
@@ -33,9 +35,52 @@ export class UserService {
     @Inject(CACHE_MANAGER) private cacheManager: Cache,
     @Inject(NOTIFICATION_SERVICE)
     private readonly notificationClient: ClientProxy,
+    @Inject(AWS_S3_SERVICE)
+    private readonly awss3Client: ClientProxy,
     private readonly configService: ConfigService,
     private readonly jwtService: JwtService,
   ) {}
+
+  private createImageNameFromOriginalname(originalname: string): string {
+    const timestamp = new Date().getTime();
+    return `${timestamp}_${originalname.split('.').shift()}`;
+  }
+
+  private createDefaultImageNameFromFullname(fullname: string): string {
+    let imageName = fullname.split(' ').join('_');
+    //get current time
+    const timestamp = new Date().getTime();
+    imageName = `default_${timestamp}_${imageName}`;
+    return imageName;
+  }
+
+  private async createDefaultProfileImage(fullname: string): Promise<Buffer> {
+    // Lấy chữ cái đầu tiên của tên và họ
+    const firstnameLetter = fullname.split(' ')[0].charAt(0).toUpperCase();
+    const lastnameLetter = fullname.split(' ')[1].charAt(0).toUpperCase();
+    const name = `${firstnameLetter} ${lastnameLetter}`;
+
+    // Tạo ảnh mới với kích thước 100x100 và nền đen
+    const image = new Jimp(100, 100, '#000000');
+
+    // Tải font chữ
+    const font = await Jimp.loadFont(Jimp.FONT_SANS_32_WHITE);
+
+    // Vị trí của văn bản trong ảnh
+    const textPosition = {
+      text: name,
+      alignmentX: Jimp.HORIZONTAL_ALIGN_CENTER,
+      alignmentY: Jimp.VERTICAL_ALIGN_MIDDLE,
+    };
+
+    // Thêm văn bản vào ảnh
+    image.print(font, 0, 0, textPosition, 100, 100);
+
+    // Trả về Buffer thay vì lưu file
+    const buffer = await image.getBufferAsync(Jimp.MIME_JPEG);
+
+    return buffer;
+  }
 
   async getUser({ email, userId, role }: TokenPayloadInterface) {
     let needToSaveIntoRedis = false;
@@ -119,16 +164,56 @@ export class UserService {
   }
 
   async changeFullname(
-    { email, userId, role }: TokenPayloadInterface,
+    { email, userId }: TokenPayloadInterface,
     { fullname }: ChangeFullnameDto,
   ) {
+    //get redis infor
+    let infor: UserDocument = await this.cacheManager.get(`user:${email}`);
+
+    if (!infor) {
+      infor = await this.userRepository.findOne({ _id: userId });
+    }
+
+    if (!infor) {
+      throw new NotFoundException('Not Found Resource');
+    }
+
+    //check image is default or not
+    const imageName = infor.profileImageUrl.split('/').pop();
+    const isDefaultImage = imageName.startsWith('default');
+
+    //if default image, create new default image base on new fullname
+    if (isDefaultImage) {
+      //delete old image
+      this.awss3Client.emit('delete_image', {
+        imageName: imageName,
+      });
+
+      //create new default image
+      const newImageName = this.createDefaultImageNameFromFullname(fullname);
+
+      const image = await this.createDefaultProfileImage(fullname);
+
+      //upload new default image
+      this.awss3Client.emit('upload_image', {
+        image,
+        imageName: newImageName,
+      });
+
+      const profileImageUrl = `https://${this.configService.get('BUCKET_NAME')}.s3.${this.configService.get(
+        'AWSS3_REGION',
+      )}.amazonaws.com/${newImageName}`;
+
+      infor.profileImageUrl = profileImageUrl;
+    }
+
     //update infor in db
     let updatedUser;
 
     try {
       updatedUser = await this.userRepository.findOneAndUpdate(
         { _id: userId },
-        { fullname: fullname },
+        { fullname: fullname, profileImageUrl: infor.profileImageUrl },
         [{ path: 'friendList', select: '_id fullname profileImageUrl' }],
       );
     } catch (error) {
@@ -141,11 +226,8 @@ export class UserService {
     //delete sensetive data
     delete updatedUser.password;
 
-    // Generate key based on role
-    const cacheKey = `${role === 'normal_user' ? 'user' : 'admin'}:${email}`;
-
     //update cache
-    await this.cacheManager.set(cacheKey, updatedUser, {
+    await this.cacheManager.set(`user:${email}`, updatedUser, {
       ttl: createTTL(60 * 60 * 24 * 7, 60 * 60 * 24),
     });
 
@@ -153,9 +235,10 @@ export class UserService {
     this.notificationClient.emit('emit_message', {
       name: 'change_fullname',
       payload: {
-        clientId: updatedUser._id.toHexString(),
+        userId: updatedUser._id.toHexString(),
         metadata: {
           fullname: updatedUser.fullname,
+          profileImageUrl: updatedUser.profileImageUrl,
         },
       },
     });
@@ -198,7 +281,83 @@ export class UserService {
     return updatedUser;
   }
 
-  async changeProfileImageUrl() {}
+  async changeProfileImage(
+    { email, userId, role }: TokenPayloadInterface,
+    image: Buffer,
+    originalname: string,
+  ) {
+    // Generate key based on role
+    const cacheKey = `${role === 'normal_user' ? 'user' : 'admin'}:${email}`;
+
+    //get redis infor
+    let infor: UserDocument = await this.cacheManager.get(cacheKey);
+
+    if (!infor) {
+      infor = await this.userRepository.findOne({ _id: userId });
+    }
+
+    if (!infor) {
+      throw new NotFoundException('Not Found Resource');
+    }
+
+    //delete prev image
+    const prevImageName: string = infor.profileImageUrl.split('/').pop();
+    console.log(prevImageName);
+
+    this.awss3Client.emit('delete_image', {
+      imageName: prevImageName,
+    });
+
+    //upload new image
+    const imageName = this.createImageNameFromOriginalname(originalname);
+    console.log(imageName);
+
+    this.awss3Client.emit('upload_image', {
+      image,
+      imageName,
+    });
+
+    const profileImageUrl = `https://${this.configService.get('BUCKET_NAME')}.s3.${this.configService.get(
+      'AWSS3_REGION',
+    )}.amazonaws.com/${imageName}`;
+
+    //update db
+    let updatedUser;
+
+    try {
+      updatedUser = await this.userRepository.findOneAndUpdate(
+        { _id: userId },
+        { profileImageUrl: profileImageUrl },
+        [{ path: 'friendList', select: '_id fullname profileImageUrl' }],
+      );
+    } catch (error) {
+      if (error instanceof NotFoundException) {
+        throw new NotFoundException('Not Found Resource');
+      }
+      throw new InternalServerErrorException('Something is wrong');
+    }
+
+    //remove sensitive infor
+    delete updatedUser.password;
+
+    //update redis
+    this.cacheManager.set(cacheKey, updatedUser, {
+      ttl: createTTL(60 * 60 * 24 * 7, 60 * 60 * 24),
+    });
+
+    //emit message to all client
+    this.notificationClient.emit('emit_message', {
+      name: 'change_profile_image',
+      payload: {
+        userId: updatedUser._id.toHexString(),
+        metadata: {
+          profileImageUrl: updatedUser.profileImageUrl,
+        },
+      },
+    });
+
+    return updatedUser;
+  }
 
   async changeEmail(
     { email }: TokenPayloadInterface,

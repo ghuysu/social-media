@@ -15,6 +15,11 @@ export class SocketGateway implements OnGatewayConnection, OnGatewayDisconnect {
   @WebSocketServer()
   server: Server;
 
+  afterInit(server: Server) {
+    console.log(`Server initialized: ${server}`);
+    this.server = server;
+  }
+
   handleConnection(client: Socket) {
     console.log(`Client connected: ${client.id}`);
   }
@@ -24,6 +29,10 @@ export class SocketGateway implements OnGatewayConnection, OnGatewayDisconnect {
   }
 
   sendMessageToAllClient(name: string, payload: object) {
+    if (!this.server) {
+      console.error('WebSocket server is not initialized');
+      return;
+    }
     this.server.emit(name, payload);
   }
 }

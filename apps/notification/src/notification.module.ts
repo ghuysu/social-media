@@ -15,6 +15,7 @@ import { SocketGateway } from './gateways/socket-io.gateway';
         GOOGLE_OAUTH_CLIENT_SECRET: joi.string().required(),
         GOOGLE_OAUTH_REFRESH_TOKEN: joi.string().required(),
         SMTP_USER: joi.string().required(),
+        SOCKET_PORT: joi.number().required(),
       }),
     }),
   ],

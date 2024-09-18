@@ -383,7 +383,7 @@ export class AuthService {
 
     return {
       user,
-      accessToken: bearerToken,
+      signInToken: bearerToken,
     };
   }
 

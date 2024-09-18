@@ -16,6 +16,7 @@ import { ChangeFullnameInterface } from './interfaces/change-fullname.interface'
 import { ChangeCountryInterface } from './interfaces/change-country.interface';
 import { ChangeEmailInterface } from './interfaces/change-email.interface';
 import { CheckCodeToChangeEmailInterface } from './interfaces/check-code-to-change-email.interface';
+import { ChangeProfileImageInterface } from './interfaces/change-profile-image.interface';
 
 @Controller()
 export class UserController {
@@ -125,6 +126,27 @@ export class UserController {
         status: HttpStatus.OK,
         message: 'Changed email successfully.',
         metadata: result,
+      };
+    } catch (error) {
+      return this.handleError(error);
+    }
+  }
+
+  @MessagePattern('change_profile_image')
+  async changeProfileImage(
+    @Payload()
+    { image, originalname, userPayload }: ChangeProfileImageInterface,
+  ) {
+    try {
+      const accountInfor = await this.userService.changeProfileImage(
+        userPayload,
+        image,
+        originalname,
+      );
+      return {
+        status: HttpStatus.OK,
+        message: 'Changed profile image successfully.',
+        metadata: accountInfor,
       };
     } catch (error) {
       return this.handleError(error);

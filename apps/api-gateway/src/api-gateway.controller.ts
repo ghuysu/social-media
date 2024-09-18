@@ -17,11 +17,14 @@ import {
   Get,
   HttpCode,
   HttpStatus,
+  ParseFilePipeBuilder,
   Patch,
   Post,
   Req,
   Res,
+  UploadedFile,
   UseGuards,
+  UseInterceptors,
 } from '@nestjs/common';
 import { ApiGatewayService } from './api-gateway.service';
 import { CheckCodeDto } from '@app/common';
@@ -32,6 +35,7 @@ import { GoogleSignInInforInterface } from './interfaces/google-sign-in-infor.in
 import { ApiKeyGuard } from './guards/api-key.guard';
 import { JwtGuard } from './guards/jwt.guard';
 import { User } from './decorators/user.decorator';
+import { FileInterceptor } from '@nestjs/platform-express';
 
 @Controller('api')
 export class ApiGatewayController {
@@ -193,5 +197,28 @@ export class ApiGatewayController {
     @Body() dto: CheckCodeToChangeEmailDto,
   ) {
     return this.apiGatewayService.checkCodeToChangeEmail(userPayload, dto);
+  }
+
+  @UseGuards(ApiKeyGuard)
+  @Patch('user/profile-image')
+  @UseGuards(JwtGuard)
+  @UseInterceptors(FileInterceptor('file'))
+  async changeProfileImage(
+    @User() userPayload: TokenPayloadInterface,
+    @UploadedFile(
+      new ParseFilePipeBuilder()
+        .addFileTypeValidator({
+          fileType: /(jpg|jpeg|png)$/,
+        })
+        .addMaxSizeValidator({
+          maxSize: 10000000,
+        })
+        .build({
+          errorHttpStatusCode: HttpStatus.UNPROCESSABLE_ENTITY,
+        }),
+    )
+    file: Express.Multer.File,
+  ) {
+    return this.apiGatewayService.changeProfileImage(userPayload, file);
   }
 }

@@ -332,4 +332,31 @@ export class ApiGatewayService {
 
     return result;
   }
+
+  async changeProfileImage(
+    userPayload: TokenPayloadInterface,
+    file: Express.Multer.File,
+  ) {
+    const result = await lastValueFrom(
+      this.userService
+        .send('change_profile_image', {
+          image: file.buffer,
+          originalname: file.originalname,
+          userPayload,
+        })
+        .pipe(
+          map((response) => {
+            if (response.error) {
+              this.throwErrorBasedOnStatusCode(
+                response.statusCode,
+                response.message,
+              );
+            }
+            return response;
+          }),
+        ),
+    );
+
+    return result;
+  }
 }
