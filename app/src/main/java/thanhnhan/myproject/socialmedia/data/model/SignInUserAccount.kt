@@ -18,13 +18,19 @@ data class SignInUserResponse(
     ) {
         data class User(
             val _id: String,
-            val email: String,
+            var email: String,
+            var fullname: String,
+            var birthday: String,
+            var profileImageUrl: String,
+            var friendList: List<Friend>,
+            var friendInvites: List<Friend>,
+            var country: String
+        )
+
+        data class Friend(
+            val _id: String,
             val fullname: String,
-            val birthday: String,
             val profileImageUrl: String,
-            val friendList: List<String>,
-            val friendInvites: List<String>,
-            val country: String
         )
     }
 }

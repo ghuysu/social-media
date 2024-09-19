@@ -1,4 +1,4 @@
-package thanhnhan.myproject.socialmedia.ui.view.sign_up
+package thanhnhan.myproject.socialmedia.ui.view.user_profile.change_email
 
 import android.widget.Toast
 import androidx.compose.foundation.background
@@ -9,7 +9,7 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowForward
 import androidx.compose.material.icons.filled.Clear
-import androidx.compose.material.icons.filled.Create
+import androidx.compose.material.icons.filled.Email
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
@@ -25,49 +25,57 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import kotlinx.coroutines.delay
 import thanhnhan.myproject.socialmedia.data.network.RetrofitInstance
-import thanhnhan.myproject.socialmedia.data.repository.SignupRepository
 import thanhnhan.myproject.socialmedia.data.Result
 import thanhnhan.myproject.socialmedia.data.model.UserSession
+import thanhnhan.myproject.socialmedia.data.repository.SignupRepository
+import thanhnhan.myproject.socialmedia.data.repository.UserProfileRepository
 import thanhnhan.myproject.socialmedia.ui.theme.SocialMediaTheme
+import thanhnhan.myproject.socialmedia.ui.view.sign_up.AppName
+import thanhnhan.myproject.socialmedia.ui.view.sign_up.BackIconButton
+import thanhnhan.myproject.socialmedia.ui.view.sign_up.ContinueButton
+import thanhnhan.myproject.socialmedia.ui.view.sign_up.InputField
+import thanhnhan.myproject.socialmedia.ui.view.sign_up.LogoImage
+import thanhnhan.myproject.socialmedia.ui.view.sign_up.SignUpTitle
+import thanhnhan.myproject.socialmedia.ui.view.sign_up.TermsAndPolicyText
 import thanhnhan.myproject.socialmedia.viewmodel.SignupViewModel
 import thanhnhan.myproject.socialmedia.viewmodel.SignupViewModelFactory
+import thanhnhan.myproject.socialmedia.viewmodel.UserProfileViewModel
+import thanhnhan.myproject.socialmedia.viewmodel.UserProfileViewModelFactory
 
 @Composable
-fun VerifyEmailCodeSignUp(
-    email: String,
-    password: String,
-    name: String,
-    birthday: String,
-    country: String,
-    openSignin: (String) -> Unit,
-    backAction: () -> Unit = {},
+fun ChangeEmail(
+    openVerifyCode: (String) -> Unit,
 ) {
     val api = RetrofitInstance.api
     val repository = SignupRepository(api)
     val viewModel: SignupViewModel = viewModel(factory = SignupViewModelFactory(repository))
-    val signUpResult = viewModel.signUpResult.collectAsState().value
+
+    val userRepository = UserProfileRepository(api)
+    val userViewModel: UserProfileViewModel =
+        viewModel(factory = UserProfileViewModelFactory(userRepository))
+    val changeEmailResult by userViewModel.changeEmailResult.collectAsState()
 
     val context = LocalContext.current
-    val formattedBirthday = birthday.replace("-", "/")
+    var email by remember { mutableStateOf("") }
 
-    LaunchedEffect(key1 = signUpResult) {
-        signUpResult?.let { result ->
+
+    LaunchedEffect(changeEmailResult) {
+        changeEmailResult?.let { result ->
             when (result) {
                 is Result.Success -> {
                     Toast.makeText(
                         context,
-                        "Sign up result: ${result.data}",
+                        result.data?.message,
                         Toast.LENGTH_LONG
                     ).show()
-
                     delay(1000)
-
-                    openSignin(email)
+                    openVerifyCode(email)
                 }
+
                 is Result.Error -> {
                     Toast.makeText(
                         context,
-                        result.message ?: "Wrong code",
+                        result.message ?: "Error occurred",
                         Toast.LENGTH_LONG
                     ).show()
                 }
@@ -80,60 +88,50 @@ fun VerifyEmailCodeSignUp(
             .fillMaxSize()
             .background(color = Color(0xFF22272E))
     ) {
-        val codeValidationResult by viewModel.stringValidationResult.collectAsState()
-        var verifyCode by remember { mutableStateOf("") }
+        val emailValidationResult by viewModel.emailValidationResult.collectAsState()
 
-        BackIconButton(backAction)
+
+        BackIconButton {}
         LogoImage()
         AppName()
         Spacer(modifier = Modifier.height(80.dp))
-        SignUpTitle(text = "Code sent to your email?")
-        Spacer(modifier = Modifier.height(5.dp))
+        SignUpTitle(text = "What is a change email?")
         InputField(
-            placeHolder = "Verification code",
-            leadingIcon = Icons.Default.Create,
+            placeHolder = "Email",
+            leadingIcon = Icons.Default.Email,
             trailingIconVector = Icons.Default.Clear,
-            value = verifyCode,
+            value = email,
             onValueChange = {
-                verifyCode = it
-                viewModel.checkString(it)
+                email = it
+                viewModel.checkEmailFormat(it)
             },
             onTrailingIconClick = {
-                verifyCode = ""
-                viewModel.checkString(verifyCode)
-            },
+                email = ""
+                viewModel.checkEmailFormat(email)
+            }
         )
-        Spacer(modifier = Modifier.height(155.dp))
+        Spacer(modifier = Modifier.height(105.dp))
+        TermsAndPolicyText()
+        Spacer(modifier = Modifier.height(20.dp))
         ContinueButton(
             text = "Continue",
             icon = Icons.Default.ArrowForward,
             onClick = {
-                if (verifyCode.isNotEmpty()) {
-                    viewModel.signUp(verifyCode.toInt(), email, name, password, country, formattedBirthday)
+                if (email.isNotEmpty()) {
+                    userViewModel.changeEmail(UserSession.signInToken!!, email)
                 } else {
-                    Toast.makeText(
-                        context,
-                        "Please fill your code",
-                        Toast.LENGTH_SHORT
-                    ).show()
+                    Toast.makeText(context, "Please enter your email", Toast.LENGTH_LONG).show()
                 }
             },
-            isEnable = codeValidationResult == true
+            isEnable = emailValidationResult == true
         )
     }
 }
 
 @Composable
 @Preview(showBackground = true, showSystemUi = true)
-fun VerifyEmailCodeSignUpPreview() {
+fun ChangeEmailPreview() {
     SocialMediaTheme {
-        VerifyEmailCodeSignUp(
-            email = "example@email.com",
-            password = "password123",
-            name = "John Doe",
-            birthday = "1990-01-01",
-            country = "United States",
-            openSignin = { _ -> }
-        )
+        ChangeEmail({})
     }
 }

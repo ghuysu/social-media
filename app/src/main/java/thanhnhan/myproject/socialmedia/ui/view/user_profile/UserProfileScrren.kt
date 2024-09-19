@@ -4,7 +4,6 @@ import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -55,7 +54,11 @@ import thanhnhan.myproject.socialmedia.data.model.UserSession
 import thanhnhan.myproject.socialmedia.ui.theme.AppTheme
 
 @Composable
-fun ProfileScreen() {
+fun ProfileScreen(
+    openChangeEmail: () -> Unit,
+    openChangeBirthday: () -> Unit,
+    openChangeCountry: () -> Unit
+) {
     // Lấy thông tin người dùng từ UserSession
     val user = UserSession.user
 
@@ -80,7 +83,11 @@ fun ProfileScreen() {
             Spacer(modifier = Modifier.height(16.dp))
 
             // Settings Section
-            SettingsSection()
+            SettingsSection(
+                openChangeEmail = openChangeEmail,
+                openChangeBirthday = openChangeBirthday,
+                openChangeCountry = openChangeCountry
+            )
 
             Spacer(modifier = Modifier.height(16.dp))
 
@@ -234,7 +241,11 @@ fun InviteSection(
 }
 
 @Composable
-fun SettingsSection() {
+fun SettingsSection(
+    openChangeEmail: () -> Unit,
+    openChangeBirthday: () -> Unit,
+    openChangeCountry: () -> Unit
+) {
     Column(
         modifier = Modifier
             .fillMaxWidth()
@@ -245,23 +256,25 @@ fun SettingsSection() {
             icon = Icons.Default.Email,
             text = "Change your email",
             onClick = {
-                // TODO: Change email
+                openChangeEmail()
             }
         )
         Divider(color = Color.Gray)
+        Spacer(modifier = Modifier.height(10.dp))
         SettingItem(
             icon = Icons.Default.DateRange,
             text = "Change your birthday",
             onClick = {
-                // TODO: Change birthday
+                openChangeBirthday()
             }
         )
+        Spacer(modifier = Modifier.height(10.dp))
         Divider(color = Color.Gray)
         SettingItem(
             icon = Icons.Default.Place,
             text = "Change your country",
             onClick = {
-                // TODO: Change country
+                openChangeCountry()
             }
         )
     }
@@ -339,5 +352,9 @@ fun ProfileScreenPreview() {
         token = "mockToken"
     )
 
-    ProfileScreen()  // Gọi ProfileScreen với dữ liệu đã giả lập
+    ProfileScreen(
+        openChangeEmail = {},
+        openChangeBirthday = {},
+        openChangeCountry = {}
+    )  // Gọi ProfileScreen với dữ liệu đã giả lập
 }
