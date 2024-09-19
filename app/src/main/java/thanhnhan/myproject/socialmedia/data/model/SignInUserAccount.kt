@@ -1,5 +1,7 @@
 package thanhnhan.myproject.socialmedia.data.model
 
+import android.util.Log
+
 // Request model for signing in a user
 data class SignInUserRequest(
     val email: String,
@@ -37,6 +39,8 @@ object UserSession {
     fun setUserData(user: SignInUserResponse.Metadata.User?, token: String?) {
         this.user = user
         this.signInToken = token
+        // Thêm log để kiểm tra giá trị của token
+        Log.d("UserSession", "setUserData - User: ${user?.fullname}, Token: $token")
     }
 
     // Hàm để xóa thông tin người dùng và token khi đăng xuất

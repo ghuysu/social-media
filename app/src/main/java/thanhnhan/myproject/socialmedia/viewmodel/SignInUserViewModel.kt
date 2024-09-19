@@ -76,11 +76,17 @@ class SignInUserViewModel(
             try {
                 signInUserRepository.signInUser(SignInUserRequest(email, password)).collect { result ->
                     if (result is Result.Success) {
+                        // Thêm log để kiểm tra phản hồi thô từ API
+                        Log.d("SignInUserViewModel", "Raw API Response: ${result.data}")
+
                         Log.d("SignInUserViewModel", "Sign-in successful")
 
                         // Lấy thông tin user và token từ metadata
                         val user = result.data?.metadata?.user
                         val token = result.data?.metadata?.signInToken
+
+                        // Thêm log để kiểm tra giá trị của token
+                        Log.d("SignInUserViewModel", "API Response - User: ${user?.fullname}, Token: $token")
 
                         // Lưu thông tin user và token vào UserSession
                         UserSession.setUserData(user, token)
