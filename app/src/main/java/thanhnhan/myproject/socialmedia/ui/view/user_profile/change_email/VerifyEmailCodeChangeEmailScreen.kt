@@ -1,4 +1,4 @@
-package thanhnhan.myproject.socialmedia.ui.view.sign_up
+package thanhnhan.myproject.socialmedia.ui.view.user_profile.change_email
 
 import android.widget.Toast
 import androidx.compose.foundation.background
@@ -25,49 +25,56 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import kotlinx.coroutines.delay
 import thanhnhan.myproject.socialmedia.data.network.RetrofitInstance
-import thanhnhan.myproject.socialmedia.data.repository.SignupRepository
 import thanhnhan.myproject.socialmedia.data.Result
 import thanhnhan.myproject.socialmedia.data.model.UserSession
+import thanhnhan.myproject.socialmedia.data.repository.SignupRepository
+import thanhnhan.myproject.socialmedia.data.repository.UserProfileRepository
 import thanhnhan.myproject.socialmedia.ui.theme.SocialMediaTheme
+import thanhnhan.myproject.socialmedia.ui.view.sign_up.AppName
+import thanhnhan.myproject.socialmedia.ui.view.sign_up.BackIconButton
+import thanhnhan.myproject.socialmedia.ui.view.sign_up.ContinueButton
+import thanhnhan.myproject.socialmedia.ui.view.sign_up.InputField
+import thanhnhan.myproject.socialmedia.ui.view.sign_up.LogoImage
+import thanhnhan.myproject.socialmedia.ui.view.sign_up.SignUpTitle
 import thanhnhan.myproject.socialmedia.viewmodel.SignupViewModel
 import thanhnhan.myproject.socialmedia.viewmodel.SignupViewModelFactory
+import thanhnhan.myproject.socialmedia.viewmodel.UserProfileViewModel
+import thanhnhan.myproject.socialmedia.viewmodel.UserProfileViewModelFactory
 
 @Composable
-fun VerifyEmailCodeSignUp(
+fun VerifyEmailCodeChangeEmail(
     email: String,
-    password: String,
-    name: String,
-    birthday: String,
-    country: String,
-    openSignin: (String) -> Unit,
+    openUserProfile: () -> Unit,
     backAction: () -> Unit = {},
 ) {
     val api = RetrofitInstance.api
     val repository = SignupRepository(api)
     val viewModel: SignupViewModel = viewModel(factory = SignupViewModelFactory(repository))
-    val signUpResult = viewModel.signUpResult.collectAsState().value
+
+    val userRepository = UserProfileRepository(api)
+    val userViewModel: UserProfileViewModel =
+        viewModel(factory = UserProfileViewModelFactory(userRepository))
+    val checkEmailCodeResult by userViewModel.checkEmailCodeResult.collectAsState()
 
     val context = LocalContext.current
-    val formattedBirthday = birthday.replace("-", "/")
 
-    LaunchedEffect(key1 = signUpResult) {
-        signUpResult?.let { result ->
+    LaunchedEffect(checkEmailCodeResult) {
+        checkEmailCodeResult?.let { result ->
             when (result) {
                 is Result.Success -> {
                     Toast.makeText(
                         context,
-                        "Sign up result: ${result.data}",
+                        result.data?.message,
                         Toast.LENGTH_LONG
                     ).show()
-
                     delay(1000)
-
-                    openSignin(email)
+                    UserSession.user?.email = email
+                    openUserProfile()
                 }
                 is Result.Error -> {
                     Toast.makeText(
                         context,
-                        result.message ?: "Wrong code",
+                        result.message ?: "Error occurred",
                         Toast.LENGTH_LONG
                     ).show()
                 }
@@ -109,7 +116,7 @@ fun VerifyEmailCodeSignUp(
             icon = Icons.Default.ArrowForward,
             onClick = {
                 if (verifyCode.isNotEmpty()) {
-                    viewModel.signUp(verifyCode.toInt(), email, name, password, country, formattedBirthday)
+                    userViewModel.checkEmailCode(UserSession.signInToken!!, email, verifyCode.toInt())
                 } else {
                     Toast.makeText(
                         context,
@@ -125,15 +132,12 @@ fun VerifyEmailCodeSignUp(
 
 @Composable
 @Preview(showBackground = true, showSystemUi = true)
-fun VerifyEmailCodeSignUpPreview() {
+fun VerifyEmailCodeChangeEmailPreview() {
     SocialMediaTheme {
-        VerifyEmailCodeSignUp(
+        VerifyEmailCodeChangeEmail(
             email = "example@email.com",
-            password = "password123",
-            name = "John Doe",
-            birthday = "1990-01-01",
-            country = "United States",
-            openSignin = { _ -> }
+            openUserProfile = {},
+            backAction = {}
         )
     }
 }

@@ -24,7 +24,11 @@ import thanhnhan.myproject.socialmedia.ui.view.sign_up.ChooseEmailSignUp
 import thanhnhan.myproject.socialmedia.ui.view.sign_up.ChooseNameSignUp
 import thanhnhan.myproject.socialmedia.ui.view.sign_up.ChoosePasswordSignUp
 import thanhnhan.myproject.socialmedia.ui.view.sign_up.VerifyEmailCodeSignUp
+import thanhnhan.myproject.socialmedia.ui.view.user_profile.ChangeBirthday
+import thanhnhan.myproject.socialmedia.ui.view.user_profile.ChangeCountry
 import thanhnhan.myproject.socialmedia.ui.view.user_profile.ProfileScreen
+import thanhnhan.myproject.socialmedia.ui.view.user_profile.change_email.ChangeEmail
+import thanhnhan.myproject.socialmedia.ui.view.user_profile.change_email.VerifyEmailCodeChangeEmail
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -229,24 +233,66 @@ fun MainApp() {
                 }
             }
             composable(route = "UserProfile") {
-                ProfileScreen()
+                ProfileScreen(
+                    openChangeEmail = {
+                        navController.navigate("changeEmail")
+                    },
+                    openChangeBirthday = {
+                        navController.navigate("changeBirthday")
+                    },
+                    openChangeCountry = {
+                        navController.navigate("changeCountry")
+                    },
+                )
             }
 
+            composable(route = "changeEmail") {
+                ChangeEmail(
+                    openVerifyCode = { email ->
+                        navController.navigate("verifyEmailCodeChangeEmail/$email")
+                    }
+                )
+            }
 
-//            composable(
-//                route = "signIn/{email}",
-//                arguments = listOf(
-//                    navArgument("email") {
-//                        type = NavType.StringType
-//                    }
-//                )
-//            ) { backStackEntry ->
-//                val email = backStackEntry.arguments?.getString("email")
-//                requireNotNull(email)
-//                SignIn(
-//                    sentEmail = email
-//                )
-//            }
+            composable(
+                route = "verifyEmailCodeChangeEmail/{email}",
+                arguments = listOf(
+                    navArgument("email") {
+                        type = NavType.StringType
+                    }
+                )
+            ) { backStackEntry ->
+                val email = backStackEntry.arguments?.getString("email")
+                requireNotNull(email)
+                VerifyEmailCodeChangeEmail(
+                    email = email,
+                    openUserProfile = {
+                        navController.navigate("UserProfile")
+                    }
+                )
+            }
+
+            composable(route = "changeBirthday") {
+                ChangeBirthday(
+                    openUserProfile = {
+                        navController.navigate("UserProfile")
+                    },
+                    backAction = {
+                        navController.popBackStack()
+                    }
+                )
+            }
+
+            composable(route = "changeCountry") {
+                ChangeCountry(
+                    openUserProfile = {
+                        navController.navigate("UserProfile")
+                    },
+                    backAction = {
+                        navController.popBackStack()
+                    }
+                )
+            }
         }
     }
 }
