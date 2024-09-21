@@ -224,7 +224,23 @@ export class AuthService {
         {
           email,
         },
-        [{ path: 'friendList', select: '_id fullname profileImageUrl' }],
+        [
+          { path: 'friendList', select: '_id fullname profileImageUrl' },
+          {
+            path: 'friendInvites',
+            select: '_id sender receiver createdAt',
+            populate: [
+              {
+                path: 'sender',
+                select: '_id fullname profileImageUrl',
+              },
+              {
+                path: 'receiver',
+                select: '_id fullname profileImageUrl',
+              },
+            ],
+          },
+        ],
       );
     }
 
@@ -342,7 +358,23 @@ export class AuthService {
         email,
         role: 'normal_user',
       },
-      [{ path: 'friendList', select: '_id fullname profileImageUrl' }],
+      [
+        { path: 'friendList', select: '_id fullname profileImageUrl' },
+        {
+          path: 'friendInvites',
+          select: '_id sender receiver createdAt',
+          populate: [
+            {
+              path: 'sender',
+              select: '_id fullname profileImageUrl',
+            },
+            {
+              path: 'receiver',
+              select: '_id fullname profileImageUrl',
+            },
+          ],
+        },
+      ],
     );
 
     // if user doesn't exist
@@ -394,7 +426,23 @@ export class AuthService {
         email,
         $or: [{ role: 'admin' }, { role: 'root_admin' }],
       },
-      [{ path: 'friendList', select: '_id fullname profileImageUrl' }],
+      [
+        { path: 'friendList', select: '_id fullname profileImageUrl' },
+        {
+          path: 'friendInvites',
+          select: '_id sender receiver createdAt',
+          populate: [
+            {
+              path: 'sender',
+              select: '_id fullname profileImageUrl',
+            },
+            {
+              path: 'receiver',
+              select: '_id fullname profileImageUrl',
+            },
+          ],
+        },
+      ],
     );
 
     //if admin doesn't exist
@@ -506,7 +554,23 @@ export class AuthService {
           email,
           role: 'normal_user',
         },
-        [{ path: 'friendList', select: '_id fullname profileImageUrl' }],
+        [
+          { path: 'friendList', select: '_id fullname profileImageUrl' },
+          {
+            path: 'friendInvites',
+            select: '_id sender receiver createdAt',
+            populate: [
+              {
+                path: 'sender',
+                select: '_id fullname profileImageUrl',
+              },
+              {
+                path: 'receiver',
+                select: '_id fullname profileImageUrl',
+              },
+            ],
+          },
+        ],
       );
     }
 

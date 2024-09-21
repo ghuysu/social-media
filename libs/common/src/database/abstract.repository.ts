@@ -21,15 +21,18 @@ export abstract class AbstractRepository<TDocument extends AbstractDocument> {
     populate?: Array<{
       path: string;
       select?: string;
+      populate?: any; // Thêm thuộc tính này để hỗ trợ populate lồng nhau
     }>,
   ): Promise<TDocument> {
-    let query = this.model.findOne(filterQuery).lean<TDocument>(true);
+    let query = this.model.findOne(filterQuery);
 
     if (populate) {
       query = query.populate(populate);
     }
 
-    return query;
+    const document = await query.lean<TDocument>(true);
+
+    return document;
   }
 
   async find(
@@ -37,15 +40,18 @@ export abstract class AbstractRepository<TDocument extends AbstractDocument> {
     populate?: Array<{
       path: string;
       select?: string;
+      populate?: any; // Thêm thuộc tính này để hỗ trợ populate lồng nhau
     }>,
   ): Promise<TDocument[]> {
-    let query = this.model.find(filterQuery).lean<TDocument[]>(true);
+    let query = this.model.find(filterQuery);
 
     if (populate) {
       query = query.populate(populate);
     }
 
-    return query;
+    const documents = await query.lean<TDocument[]>(true);
+
+    return documents;
   }
 
   async findOneAndUpdate(
@@ -54,19 +60,19 @@ export abstract class AbstractRepository<TDocument extends AbstractDocument> {
     populate?: Array<{
       path: string;
       select?: string;
+      populate?: any; // Thêm thuộc tính này để hỗ trợ populate lồng nhau
     }>,
   ): Promise<TDocument> {
-    let query = this.model
-      .findOneAndUpdate(filterQuery, updateQuery, {
-        new: true,
-      })
-      .lean<TDocument>(true);
+    let query = this.model.findOneAndUpdate(filterQuery, updateQuery, {
+      new: true,
+    });
 
     if (populate) {
       query = query.populate(populate);
     }
 
-    const document = await query;
+    const document = await query.lean<TDocument>(true);
+
     if (!document) {
       this.logger.warn('Document was not found with filterQuery', filterQuery);
       throw new NotFoundException('Document was not found');
@@ -79,14 +85,17 @@ export abstract class AbstractRepository<TDocument extends AbstractDocument> {
     populate?: Array<{
       path: string;
       select?: string;
+      populate?: any; // Thêm thuộc tính này để hỗ trợ populate lồng nhau
     }>,
   ): Promise<TDocument> {
-    let query = this.model.findOneAndDelete(filterQuery).lean<TDocument>(true);
+    let query = this.model.findOneAndDelete(filterQuery);
 
     if (populate) {
       query = query.populate(populate);
     }
 
-    return query;
+    const document = await query.lean<TDocument>(true);
+
+    return document;
   }
 }

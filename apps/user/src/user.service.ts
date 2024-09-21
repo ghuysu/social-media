@@ -7,6 +7,7 @@ import {
   CheckCodeToChangeEmailDto,
   createTTL,
   NOTIFICATION_SERVICE,
+  SendInviteDto,
   TokenPayloadInterface,
   UserDocument,
 } from '@app/common';
@@ -20,18 +21,20 @@ import {
   NotFoundException,
 } from '@nestjs/common';
 import { Cache } from 'cache-manager';
-import { UserRepository } from './user.repository';
+import { UserRepository } from './repositories/user.repository';
 import { ClientProxy } from '@nestjs/microservices';
 import * as argon2 from 'argon2';
 import { ConfigService } from '@nestjs/config';
 import { JwtService } from '@nestjs/jwt';
 import * as Jimp from 'jimp';
 import { ChangeEmailPayloadInterface } from './interfaces/change-email-payload.interface';
+import { FriendInviteRepository } from './repositories/friend-invite.repository';
 
 @Injectable()
 export class UserService {
   constructor(
     private readonly userRepository: UserRepository,
+    private readonly friendInviteRepository: FriendInviteRepository,
     @Inject(CACHE_MANAGER) private cacheManager: Cache,
     @Inject(NOTIFICATION_SERVICE)
     private readonly notificationClient: ClientProxy,
@@ -101,7 +104,23 @@ export class UserService {
           {
             _id: userId,
           },
-          [{ path: 'friendList', select: '_id fullname profileImageUrl' }],
+          [
+            { path: 'friendList', select: '_id fullname profileImageUrl' },
+            {
+              path: 'friendInvites',
+              select: '_id sender receiver createdAt',
+              populate: [
+                {
+                  path: 'sender',
+                  select: '_id fullname profileImageUrl',
+                },
+                {
+                  path: 'receiver',
+                  select: '_id fullname profileImageUrl',
+                },
+              ],
+            },
+          ],
         );
       } else {
         account = await this.userRepository.findOne({
@@ -139,7 +158,23 @@ export class UserService {
       updatedUser = await this.userRepository.findOneAndUpdate(
         { _id: userId },
         { birthday: birthday },
-        [{ path: 'friendList', select: '_id fullname profileImageUrl' }],
+        [
+          { path: 'friendList', select: '_id fullname profileImageUrl' },
+          {
+            path: 'friendInvites',
+            select: '_id sender receiver createdAt',
+            populate: [
+              {
+                path: 'sender',
+                select: '_id fullname profileImageUrl',
+              },
+              {
+                path: 'receiver',
+                select: '_id fullname profileImageUrl',
+              },
+            ],
+          },
+        ],
       );
     } catch (error) {
       if (error instanceof NotFoundException) {
@@ -214,7 +249,23 @@ export class UserService {
       updatedUser = await this.userRepository.findOneAndUpdate(
         { _id: userId },
         { fullname: fullname, profileImageUrl: infor.profileImageUrl },
-        [{ path: 'friendList', select: '_id fullname profileImageUrl' }],
+        [
+          { path: 'friendList', select: '_id fullname profileImageUrl' },
+          {
+            path: 'friendInvites',
+            select: '_id sender receiver createdAt',
+            populate: [
+              {
+                path: 'sender',
+                select: '_id fullname profileImageUrl',
+              },
+              {
+                path: 'receiver',
+                select: '_id fullname profileImageUrl',
+              },
+            ],
+          },
+        ],
       );
     } catch (error) {
       if (error instanceof NotFoundException) {
@@ -258,7 +309,23 @@ export class UserService {
       updatedUser = await this.userRepository.findOneAndUpdate(
         { _id: userId },
         { country: country },
-        [{ path: 'friendList', select: '_id fullname profileImageUrl' }],
+        [
+          { path: 'friendList', select: '_id fullname profileImageUrl' },
+          {
+            path: 'friendInvites',
+            select: '_id sender receiver createdAt',
+            populate: [
+              {
+                path: 'sender',
+                select: '_id fullname profileImageUrl',
+              },
+              {
+                path: 'receiver',
+                select: '_id fullname profileImageUrl',
+              },
+            ],
+          },
+        ],
       );
     } catch (error) {
       if (error instanceof NotFoundException) {
@@ -328,7 +395,23 @@ export class UserService {
       updatedUser = await this.userRepository.findOneAndUpdate(
         { _id: userId },
         { profileImageUrl: profileImageUrl },
-        [{ path: 'friendList', select: '_id fullname profileImageUrl' }],
+        [
+          { path: 'friendList', select: '_id fullname profileImageUrl' },
+          {
+            path: 'friendInvites',
+            select: '_id sender receiver createdAt',
+            populate: [
+              {
+                path: 'sender',
+                select: '_id fullname profileImageUrl',
+              },
+              {
+                path: 'receiver',
+                select: '_id fullname profileImageUrl',
+              },
+            ],
+          },
+        ],
       );
     } catch (error) {
       if (error instanceof NotFoundException) {
@@ -375,7 +458,23 @@ export class UserService {
           email: newEmail,
           role: 'normal_user',
         },
-        [{ path: 'friendList', select: '_id fullname profileImageUrl' }],
+        [
+          { path: 'friendList', select: '_id fullname profileImageUrl' },
+          {
+            path: 'friendInvites',
+            select: '_id sender receiver createdAt',
+            populate: [
+              {
+                path: 'sender',
+                select: '_id fullname profileImageUrl',
+              },
+              {
+                path: 'receiver',
+                select: '_id fullname profileImageUrl',
+              },
+            ],
+          },
+        ],
       );
     }
 
@@ -461,7 +560,23 @@ export class UserService {
       updatedUser = await this.userRepository.findOneAndUpdate(
         { _id: userId },
         { email: newEmail },
-        [{ path: 'friendList', select: '_id fullname profileImageUrl' }],
+        [
+          { path: 'friendList', select: '_id fullname profileImageUrl' },
+          {
+            path: 'friendInvites',
+            select: '_id sender receiver createdAt',
+            populate: [
+              {
+                path: 'sender',
+                select: '_id fullname profileImageUrl',
+              },
+              {
+                path: 'receiver',
+                select: '_id fullname profileImageUrl',
+              },
+            ],
+          },
+        ],
       );
     } catch (error) {
       if (error instanceof NotFoundException) {
@@ -499,5 +614,184 @@ export class UserService {
       user: updatedUser,
       signInToken: bearerToken,
     };
+  }
+
+  async getStrangerInfor(userId) {
+    //get infor from db
+    const infor: UserDocument = await this.userRepository.findOne({
+      _id: userId,
+    });
+
+    //if not found throw not found exception
+    if (!infor) {
+      throw new NotFoundException('Not Found Resouces');
+    }
+
+    //if have, return needed infor
+    return {
+      _id: infor._id,
+      profileImageUrl: infor.profileImageUrl,
+      fullname: infor.fullname,
+    };
+  }
+
+  async sendInvite(
+    { email, userId }: TokenPayloadInterface,
+    { userId: friendId }: SendInviteDto,
+  ) {
+    //get user infor
+    let user: UserDocument = await this.cacheManager.get(`user:${email}`);
+
+    if (!user) {
+      user = await this.userRepository.findOne({ _id: userId }, [
+        { path: 'friendList', select: '_id fullname profileImageUrl' },
+        {
+          path: 'friendInvites',
+          select: '_id sender receiver createdAt',
+          populate: [
+            {
+              path: 'sender',
+              select: '_id fullname profileImageUrl',
+            },
+            {
+              path: 'receiver',
+              select: '_id fullname profileImageUrl',
+            },
+          ],
+        },
+      ]);
+
+      //if user infor not found throw not found exception
+      if (!user) {
+        throw new NotFoundException('Not Found Resource');
+      }
+    }
+
+    this.cacheManager.set(`user:${email}`, user, {
+      ttl: createTTL(60 * 60 * 24 * 7, 60 * 60 * 24),
+    });
+
+    //check if they are already friends
+    const isAlreadyFriends = user.friendList.some(
+      (friend) => friend._id.toString() === friendId.toString(),
+    );
+
+    if (isAlreadyFriends) {
+      throw new BadRequestException('Processed Resources');
+    }
+
+    //check if invite has sent
+    const sentInvites = user.friendInvites.some(
+      (f) => f.receiver._id.toString() === friendId.toString(),
+    );
+
+    if (sentInvites) {
+      throw new ConflictException('Duplicate Resources');
+    }
+
+    //check if friend is existing or not
+    const friend = await this.userRepository.findOne({ _id: friendId });
+
+    if (!friend) {
+      throw new NotFoundException('Not Found Resources');
+    }
+
+    //create friend invite record
+    const friendInviteRecord = await this.friendInviteRepository.create({
+      sender: userId,
+      receiver: friendId,
+    });
+
+    //update user and friend records
+    const [updatedUser, updatedFriend] = await Promise.all([
+      this.userRepository.findOneAndUpdate(
+        { _id: userId },
+        { $push: { friendInvites: friendInviteRecord._id } },
+        [
+          { path: 'friendList', select: '_id fullname profileImageUrl' },
+          {
+            path: 'friendInvites',
+            select: '_id sender receiver createdAt',
+            populate: [
+              {
+                path: 'sender',
+                select: '_id fullname profileImageUrl',
+              },
+              {
+                path: 'receiver',
+                select: '_id fullname profileImageUrl',
+              },
+            ],
+          },
+        ],
+      ),
+
+      this.userRepository.findOneAndUpdate(
+        { _id: friendId },
+        { $push: { friendInvites: friendInviteRecord._id } },
+        [
+          { path: 'friendList', select: '_id fullname profileImageUrl' },
+          {
+            path: 'friendInvites',
+            select: '_id sender receiver createdAt',
+            populate: [
+              {
+                path: 'sender',
+                select: '_id fullname profileImageUrl',
+              },
+              {
+                path: 'receiver',
+                select: '_id fullname profileImageUrl',
+              },
+            ],
+          },
+        ],
+      ),
+    ]);
+
+    //delete sensitive infor
+    delete updatedUser.password;
+    delete updatedFriend.password;
+
+    //update redis
+    this.cacheManager.set(`user:${updatedUser.email}`, updatedUser, {
+      ttl: createTTL(60 * 60 * 24 * 7, 60 * 60 * 24),
+    });
+
+    this.cacheManager.set(`user:${updatedFriend.email}`, updatedFriend, {
+      ttl: createTTL(60 * 60 * 24 * 7, 60 * 60 * 24),
+    });
+
+    this.cacheManager.set(
+      `friend_invite:${friendInviteRecord._id}`,
+      friendInviteRecord,
+      {
+        ttl: createTTL(60 * 60 * 24 * 30, 60 * 60 * 24),
+      },
+    );
+
+    //emit friend infor
+    this.notificationClient.emit('emit_message', {
+      name: 'send_invite',
+      payload: {
+        userId: updatedFriend._id.toHexString(),
+        metadata: {
+          ...friendInviteRecord,
+          sender: {
+            _id: updatedUser._id,
+            fullname: updatedUser.fullname,
+            profileImageUrl: updatedUser.profileImageUrl,
+          },
+          receiver: {
+            _id: updatedFriend._id,
+            fullname: updatedFriend.fullname,
+            profileImageUrl: updatedFriend.profileImageUrl,
+          },
+        },
+      },
+    });
+
+    //return user information
+    return updatedUser;
   }
 }

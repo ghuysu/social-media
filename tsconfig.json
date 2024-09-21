@@ -26,11 +26,9 @@
       ],
       "@app/aws-s3": [
         "libs/aws-s3/src",
-        "libs/aws-s3/src"
       ],
       "@app/aws-s3/*": [
         "libs/aws-s3/src/*",
-        "libs/aws-s3/src/*"
       ]
     }
   }

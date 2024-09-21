@@ -9,6 +9,8 @@ import {
   CheckEmailDto,
   CreateNormalUserDto,
   GoogleSignInDto,
+  RemoveInviteDto,
+  SendInviteDto,
   SignInDto,
   TokenPayloadInterface,
   USER_SERVICE,
@@ -27,6 +29,7 @@ import {
 } from '@nestjs/common';
 import { ClientProxy } from '@nestjs/microservices';
 import { lastValueFrom, map } from 'rxjs';
+import { GetStrangerInforInterface } from './interfaces/get-stranger-infor.interface';
 
 @Injectable()
 export class ApiGatewayService {
@@ -342,6 +345,76 @@ export class ApiGatewayService {
         .send('change_profile_image', {
           image: file.buffer,
           originalname: file.originalname,
+          userPayload,
+        })
+        .pipe(
+          map((response) => {
+            if (response.error) {
+              this.throwErrorBasedOnStatusCode(
+                response.statusCode,
+                response.message,
+              );
+            }
+            return response;
+          }),
+        ),
+    );
+
+    return result;
+  }
+
+  async getStrangerInfor(userId) {
+    const infor: GetStrangerInforInterface | null = await lastValueFrom(
+      this.userService.send('get_stranger_infor', { userId }).pipe(
+        map((response) => {
+          if (response.error) {
+            this.throwErrorBasedOnStatusCode(
+              response.statusCode,
+              response.message,
+            );
+          }
+          return response;
+        }),
+      ),
+    );
+
+    return infor;
+  }
+
+  async sendInvite(
+    userPayload: TokenPayloadInterface,
+    { userId }: SendInviteDto,
+  ) {
+    const result = await lastValueFrom(
+      this.userService
+        .send('send_invite', {
+          payload: { userId },
+          userPayload,
+        })
+        .pipe(
+          map((response) => {
+            if (response.error) {
+              this.throwErrorBasedOnStatusCode(
+                response.statusCode,
+                response.message,
+              );
+            }
+            return response;
+          }),
+        ),
+    );
+
+    return result;
+  }
+
+  async removeInvite(
+    userPayload: TokenPayloadInterface,
+    { inviteId }: RemoveInviteDto,
+  ) {
+    const result = await lastValueFrom(
+      this.userService
+        .send('remove_invite', {
+          inviteId: inviteId,
           userPayload,
         })
         .pipe(

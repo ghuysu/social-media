@@ -7,7 +7,10 @@ import {
   CheckCodeToChangeEmailDto,
   CheckEmailDto,
   CreateNormalUserDto,
+  GetStrangerInforDto,
   GoogleSignInDto,
+  RemoveInviteDto,
+  SendInviteDto,
   SignInDto,
   TokenPayloadInterface,
 } from '@app/common';
@@ -17,6 +20,7 @@ import {
   Get,
   HttpCode,
   HttpStatus,
+  Param,
   ParseFilePipeBuilder,
   Patch,
   Post,
@@ -220,5 +224,32 @@ export class ApiGatewayController {
     file: Express.Multer.File,
   ) {
     return this.apiGatewayService.changeProfileImage(userPayload, file);
+  }
+
+  @UseGuards(ApiKeyGuard)
+  @Get(':userId')
+  async getStrangerInfor(@Param() { userId }: GetStrangerInforDto) {
+    return this.apiGatewayService.getStrangerInfor(userId);
+  }
+
+  @UseGuards(ApiKeyGuard)
+  @Post('user/friend/invite/add')
+  @HttpCode(HttpStatus.OK)
+  @UseGuards(JwtGuard)
+  async sendInvite(
+    @User() userPayload: TokenPayloadInterface,
+    @Body() dto: SendInviteDto,
+  ) {
+    return this.apiGatewayService.sendInvite(userPayload, dto);
+  }
+
+  @UseGuards(ApiKeyGuard)
+  @Post('user/friend/invite/remove')
+  @UseGuards(JwtGuard)
+  async sentInvite(
+    @User() userPayload: TokenPayloadInterface,
+    @Body() dto: RemoveInviteDto,
+  ) {
+    return this.apiGatewayService.removeInvite(userPayload, dto);
   }
 }

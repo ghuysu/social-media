@@ -1,6 +1,6 @@
 import { UserService } from './user.service';
 import { MessagePattern, Payload } from '@nestjs/microservices';
-import { TokenPayloadInterface } from '@app/common';
+import { GetStrangerInforDto, TokenPayloadInterface } from '@app/common';
 import {
   // Body,
   Controller,
@@ -17,6 +17,7 @@ import { ChangeCountryInterface } from './interfaces/change-country.interface';
 import { ChangeEmailInterface } from './interfaces/change-email.interface';
 import { CheckCodeToChangeEmailInterface } from './interfaces/check-code-to-change-email.interface';
 import { ChangeProfileImageInterface } from './interfaces/change-profile-image.interface';
+import { SendInviteInterface } from './interfaces/send-invite.interface';
 
 @Controller()
 export class UserController {
@@ -153,7 +154,36 @@ export class UserController {
     }
   }
 
+  @MessagePattern('get_stranger_infor')
+  async getStrangerInfor(@Payload() { userId }: GetStrangerInforDto) {
+    try {
+      const accountInfor = await this.userService.getStrangerInfor(userId);
+      return {
+        status: HttpStatus.OK,
+        message: 'Get stranger information successfully.',
+        metadata: accountInfor,
+      };
+    } catch (error) {
+      return this.handleError(error);
+    }
+  }
+
+  @MessagePattern('send_invite')
+  async sendInvtie(@Payload() { payload, userPayload }: SendInviteInterface) {
+    try {
+      const result = await this.userService.sendInvite(userPayload, payload);
+      return {
+        status: HttpStatus.OK,
+        message: 'Sent invite successfully.',
+        metadata: result,
+      };
+    } catch (error) {
+      return this.handleError(error);
+    }
+  }
+
   private handleError(error: any) {
+    console.log(error);
     if (error instanceof ConflictException) {
       return {
         statusCode: HttpStatus.CONFLICT,
@@ -189,7 +219,7 @@ export class UserController {
     if (error instanceof InternalServerErrorException) {
       return {
         statusCode: HttpStatus.INTERNAL_SERVER_ERROR,
-        message: 'An unexpected error occurred',
+        message: error.message,
         error: 'Internal Server Error',
       };
     }
@@ -197,7 +227,7 @@ export class UserController {
     // Default case for other errors
     return {
       statusCode: HttpStatus.INTERNAL_SERVER_ERROR,
-      message: 'An unexpected error occurred',
+      message: error.message,
       error: 'Internal Server Error',
     };
   }

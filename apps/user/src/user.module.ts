@@ -1,10 +1,11 @@
 import { Module } from '@nestjs/common';
 import { UserController } from './user.controller';
 import { UserService } from './user.service';
-import { UserRepository } from './user.repository';
+import { UserRepository } from './repositories/user.repository';
 import {
   AWS_S3_SERVICE,
   DatabaseModule,
+  FRIEND_INVITE_DOCUMENT,
   LoggerModule,
   NOTIFICATION_SERVICE,
   USER_DOCUMENT,
@@ -16,6 +17,8 @@ import { ClientsModule, Transport } from '@nestjs/microservices';
 import { CacheModule } from '@nestjs/cache-manager';
 import * as redisStore from 'cache-manager-redis-store';
 import { JwtModule } from '@nestjs/jwt';
+import { FriendInviteSchema } from '@app/common';
+import { FriendInviteRepository } from './repositories/friend-invite.repository';
 
 @Module({
   imports: [
@@ -42,7 +45,10 @@ import { JwtModule } from '@nestjs/jwt';
     JwtModule.register({
       global: true,
     }),
-    DatabaseModule.forFeature([{ name: USER_DOCUMENT, schema: UserSchema }]),
+    DatabaseModule.forFeature([
+      { name: USER_DOCUMENT, schema: UserSchema },
+      { name: FRIEND_INVITE_DOCUMENT, schema: FriendInviteSchema },
+    ]),
     ClientsModule.registerAsync([
       {
         name: NOTIFICATION_SERVICE,
@@ -79,6 +85,6 @@ import { JwtModule } from '@nestjs/jwt';
     }),
   ],
   controllers: [UserController],
-  providers: [UserService, UserRepository],
+  providers: [UserService, UserRepository, FriendInviteRepository],
 })
 export class UserModule {}

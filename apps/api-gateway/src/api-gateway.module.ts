@@ -23,6 +23,7 @@ import { JwtStrategy } from './strategies/jwt.strategy';
         GOOGLE_CLIENT_ID: joi.string().required(),
         GOOGLE_SECRET: joi.string().required(),
         GOOGLE_REDIRECT: joi.string().required(),
+        CLIENT_REDIRECT: joi.string().required(),
       }),
     }),
     ClientsModule.registerAsync([

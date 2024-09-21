@@ -1,0 +1,12 @@
+[
+  {
+    "relation": ["delegate_permission/common.handle_all_urls"],
+    "target": {
+      "namespace": "android_app",
+      "package_name": "thanhnhan.jetpackcompose.deeplink",
+      "sha256_cert_fingerprints": [
+        "CC:C5:57:62:65:57:2B:11:60:9E:68:93:CC:19:AC:D2:83:F0:91:F4:17:E2:D3:FD:2D:52:64:FB:60:27:EF:69"
+      ]
+    }
+  }
+]

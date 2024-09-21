@@ -1,5 +1,5 @@
 import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
-import { AbstractDocument } from '@app/common';
+import { AbstractDocument, FriendInviteDocument } from '@app/common';
 import { SchemaTypes, Types } from 'mongoose';
 
 @Schema({ versionKey: false, collection: 'users' })
@@ -20,10 +20,10 @@ export class UserDocument extends AbstractDocument {
   profileImageUrl: string;
 
   @Prop({ type: [SchemaTypes.ObjectId], ref: 'users', default: [] })
-  friendList: Types.ObjectId[];
+  friendList: Types.ObjectId[] | UserDocument[];
 
-  @Prop({ type: [SchemaTypes.ObjectId], ref: 'users', default: [] })
-  friendInvites: Types.ObjectId[];
+  @Prop({ type: [SchemaTypes.ObjectId], ref: 'friendInvites', default: [] })
+  friendInvites: Types.ObjectId[] | FriendInviteDocument[];
 
   @Prop({ type: String })
   country: string;
