@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 
 const UserProfile = () => {
@@ -10,12 +10,15 @@ const UserProfile = () => {
   useEffect(() => {
     const fetchUserInfo = async () => {
       try {
-        const response = await fetch(`http://localhost:10000/api/${userId}`, {
-          method: 'GET',
-          headers: {
-            'x-api-key': 'abc-xyz-www',
+        const response = await fetch(
+          `https://skn7vgp9-10000.asse.devtunnels.ms/api/${userId}`,
+          {
+            method: 'GET',
+            headers: {
+              'x-api-key': 'abc-xyz-www',
+            },
           },
-        });
+        );
 
         const data = await response.json();
 
@@ -47,7 +50,8 @@ const UserProfile = () => {
   };
 
   const handleOpenApp = () => {
-    const deepLinkUrl = `app://open.my.app`;
+    const { _id, fullname, profileImageUrl } = infor;
+    const deepLinkUrl = `app://open.my.app/${_id}/${encodeURIComponent(fullname)}/${encodeURIComponent(profileImageUrl)}`;
     window.location.href = deepLinkUrl; // Redirect to the mobile app
   };
 

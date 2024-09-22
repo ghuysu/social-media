@@ -2,7 +2,13 @@ import { Module } from '@nestjs/common';
 import { AuthService } from './auth.service';
 import { AuthController } from './auth.controller';
 import { AuthRepository } from './auth.repository';
-import { DatabaseModule, LoggerModule, USER_DOCUMENT } from '@app/common';
+import {
+  DatabaseModule,
+  FRIEND_INVITE_DOCUMENT,
+  FriendInviteSchema,
+  LoggerModule,
+  USER_DOCUMENT,
+} from '@app/common';
 import { UserSchema } from '@app/common';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import * as joi from 'joi';
@@ -38,7 +44,10 @@ import * as redisStore from 'cache-manager-redis-store';
     JwtModule.register({
       global: true,
     }),
-    DatabaseModule.forFeature([{ name: USER_DOCUMENT, schema: UserSchema }]),
+    DatabaseModule.forFeature([
+      { name: USER_DOCUMENT, schema: UserSchema },
+      { name: FRIEND_INVITE_DOCUMENT, schema: FriendInviteSchema },
+    ]),
     ClientsModule.registerAsync([
       {
         name: NOTIFICATION_SERVICE,

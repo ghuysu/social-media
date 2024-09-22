@@ -7,6 +7,7 @@ import {
   CheckCodeToChangeEmailDto,
   CheckEmailDto,
   CreateNormalUserDto,
+  DeleteFriendDto,
   GetStrangerInforDto,
   GoogleSignInDto,
   RemoveInviteDto,
@@ -17,6 +18,7 @@ import {
 import {
   Body,
   Controller,
+  Delete,
   Get,
   HttpCode,
   HttpStatus,
@@ -40,6 +42,7 @@ import { ApiKeyGuard } from './guards/api-key.guard';
 import { JwtGuard } from './guards/jwt.guard';
 import { User } from './decorators/user.decorator';
 import { FileInterceptor } from '@nestjs/platform-express';
+import { AcceptInviteDto } from '@app/common';
 
 @Controller('api')
 export class ApiGatewayController {
@@ -233,7 +236,7 @@ export class ApiGatewayController {
   }
 
   @UseGuards(ApiKeyGuard)
-  @Post('user/friend/invite/add')
+  @Patch('user/invite/add')
   @HttpCode(HttpStatus.OK)
   @UseGuards(JwtGuard)
   async sendInvite(
@@ -244,12 +247,32 @@ export class ApiGatewayController {
   }
 
   @UseGuards(ApiKeyGuard)
-  @Post('user/friend/invite/remove')
+  @Delete('user/invite/remove/:inviteId')
   @UseGuards(JwtGuard)
   async sentInvite(
     @User() userPayload: TokenPayloadInterface,
-    @Body() dto: RemoveInviteDto,
+    @Param() dto: RemoveInviteDto,
   ) {
     return this.apiGatewayService.removeInvite(userPayload, dto);
+  }
+
+  @UseGuards(ApiKeyGuard)
+  @Patch('user/invite/accept/:inviteId')
+  @UseGuards(JwtGuard)
+  async acceptInvite(
+    @User() userPayload: TokenPayloadInterface,
+    @Param() dto: AcceptInviteDto,
+  ) {
+    return this.apiGatewayService.acceptInvite(userPayload, dto);
+  }
+
+  @UseGuards(ApiKeyGuard)
+  @Delete('user/friend/delete/:friendId')
+  @UseGuards(JwtGuard)
+  async deleteFriend(
+    @User() userPayload: TokenPayloadInterface,
+    @Param() dto: DeleteFriendDto,
+  ) {
+    return this.apiGatewayService.deleteFriend(userPayload, dto);
   }
 }

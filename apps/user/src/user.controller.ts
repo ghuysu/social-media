@@ -18,6 +18,8 @@ import { ChangeEmailInterface } from './interfaces/change-email.interface';
 import { CheckCodeToChangeEmailInterface } from './interfaces/check-code-to-change-email.interface';
 import { ChangeProfileImageInterface } from './interfaces/change-profile-image.interface';
 import { SendInviteInterface } from './interfaces/send-invite.interface';
+import { RemoveInviteInterface } from './interfaces/remove-invite.interface';
+import { DeleteFriendInterface } from './interfaces/delete-friend.interface';
 
 @Controller()
 export class UserController {
@@ -175,6 +177,54 @@ export class UserController {
       return {
         status: HttpStatus.OK,
         message: 'Sent invite successfully.',
+        metadata: result,
+      };
+    } catch (error) {
+      return this.handleError(error);
+    }
+  }
+
+  @MessagePattern('remove_invite')
+  async removeInvtie(
+    @Payload() { payload, userPayload }: RemoveInviteInterface,
+  ) {
+    try {
+      const result = await this.userService.removeInvite(userPayload, payload);
+      return {
+        status: HttpStatus.OK,
+        message: 'Remove invite successfully.',
+        metadata: result,
+      };
+    } catch (error) {
+      return this.handleError(error);
+    }
+  }
+
+  @MessagePattern('accept_invite')
+  async acceptInvtie(
+    @Payload() { payload, userPayload }: RemoveInviteInterface,
+  ) {
+    try {
+      const result = await this.userService.acceptInvite(userPayload, payload);
+      return {
+        status: HttpStatus.OK,
+        message: 'Accepted invite successfully.',
+        metadata: result,
+      };
+    } catch (error) {
+      return this.handleError(error);
+    }
+  }
+
+  @MessagePattern('delete_friend')
+  async deleteFriend(
+    @Payload() { payload, userPayload }: DeleteFriendInterface,
+  ) {
+    try {
+      const result = await this.userService.deleteFriend(userPayload, payload);
+      return {
+        status: HttpStatus.OK,
+        message: 'Delete friend successfully.',
         metadata: result,
       };
     } catch (error) {

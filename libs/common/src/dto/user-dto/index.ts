@@ -6,3 +6,5 @@ export * from './checkCodeToChangeEmail.dto';
 export * from './get-stranger-infor.dto';
 export * from './sendInvite.dto';
 export * from './removeInvite.dto';
+export * from './acceptInvite.dto';
+export * from './deleteFriend.dto';

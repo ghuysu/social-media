@@ -8,6 +8,7 @@ import {
   CheckCodeToChangeEmailDto,
   CheckEmailDto,
   CreateNormalUserDto,
+  DeleteFriendDto,
   GoogleSignInDto,
   RemoveInviteDto,
   SendInviteDto,
@@ -30,6 +31,7 @@ import {
 import { ClientProxy } from '@nestjs/microservices';
 import { lastValueFrom, map } from 'rxjs';
 import { GetStrangerInforInterface } from './interfaces/get-stranger-infor.interface';
+import { AcceptInviteDto } from '@app/common';
 
 @Injectable()
 export class ApiGatewayService {
@@ -407,14 +409,57 @@ export class ApiGatewayService {
     return result;
   }
 
-  async removeInvite(
-    userPayload: TokenPayloadInterface,
-    { inviteId }: RemoveInviteDto,
-  ) {
+  async removeInvite(userPayload: TokenPayloadInterface, dto: RemoveInviteDto) {
     const result = await lastValueFrom(
       this.userService
         .send('remove_invite', {
-          inviteId: inviteId,
+          payload: dto,
+          userPayload,
+        })
+        .pipe(
+          map((response) => {
+            if (response.error) {
+              this.throwErrorBasedOnStatusCode(
+                response.statusCode,
+                response.message,
+              );
+            }
+            return response;
+          }),
+        ),
+    );
+
+    return result;
+  }
+
+  async acceptInvite(userPayload: TokenPayloadInterface, dto: AcceptInviteDto) {
+    const result = await lastValueFrom(
+      this.userService
+        .send('accept_invite', {
+          payload: dto,
+          userPayload,
+        })
+        .pipe(
+          map((response) => {
+            if (response.error) {
+              this.throwErrorBasedOnStatusCode(
+                response.statusCode,
+                response.message,
+              );
+            }
+            return response;
+          }),
+        ),
+    );
+
+    return result;
+  }
+
+  async deleteFriend(userPayload: TokenPayloadInterface, dto: DeleteFriendDto) {
+    const result = await lastValueFrom(
+      this.userService
+        .send('delete_friend', {
+          payload: dto,
           userPayload,
         })
         .pipe(

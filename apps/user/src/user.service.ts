@@ -6,7 +6,11 @@ import {
   ChangeFullnameDto,
   CheckCodeToChangeEmailDto,
   createTTL,
+  DeleteFriendDto,
+  FriendInviteDocument,
+  FriendInviteStatus,
   NOTIFICATION_SERVICE,
+  RemoveInviteDto,
   SendInviteDto,
   TokenPayloadInterface,
   UserDocument,
@@ -792,6 +796,383 @@ export class UserService {
     });
 
     //return user information
+    return updatedUser;
+  }
+
+  async removeInvite(
+    { userId }: TokenPayloadInterface,
+    { inviteId }: RemoveInviteDto,
+  ) {
+    //get feed record from redis
+    let inviteRecord: FriendInviteDocument = await this.cacheManager.get(
+      `friend_invite:${inviteId}`,
+    );
+
+    if (!inviteRecord) {
+      inviteRecord = await this.friendInviteRepository.findOne({
+        _id: inviteId,
+      });
+
+      if (!inviteRecord) {
+        throw new NotFoundException('Not Found Resource');
+      }
+    }
+
+    //check if invite record is exist with userId equal to receiver
+    if (inviteRecord.receiver.toString() !== userId.toString()) {
+      throw new BadRequestException('Invalid Request');
+    }
+
+    //check if invite record is exist with pending status
+    if (inviteRecord.status !== 'pending') {
+      throw new BadRequestException('Processed Resource');
+    }
+
+    //if valid, update status
+    //and delete inviteId from sender and receiver
+    const [updatedFriendInvite, updatedUser, updatedFriend] = await Promise.all(
+      [
+        //update status
+        this.friendInviteRepository.findOneAndUpdate(
+          { _id: inviteId },
+          { status: FriendInviteStatus.Rejected },
+        ),
+
+        //delete inviteId from sender and receiver
+        this.userRepository.findOneAndUpdate(
+          { _id: inviteRecord.receiver },
+          {
+            $pull: { friendInvites: inviteId },
+          },
+          [
+            { path: 'friendList', select: '_id fullname profileImageUrl' },
+            {
+              path: 'friendInvites',
+              select: '_id sender receiver createdAt',
+              populate: [
+                {
+                  path: 'sender',
+                  select: '_id fullname profileImageUrl',
+                },
+                {
+                  path: 'receiver',
+                  select: '_id fullname profileImageUrl',
+                },
+              ],
+            },
+          ],
+        ),
+
+        this.userRepository.findOneAndUpdate(
+          { _id: inviteRecord.sender },
+          {
+            $pull: { friendInvites: inviteId },
+          },
+          [
+            { path: 'friendList', select: '_id fullname profileImageUrl' },
+            {
+              path: 'friendInvites',
+              select: '_id sender receiver createdAt',
+              populate: [
+                {
+                  path: 'sender',
+                  select: '_id fullname profileImageUrl',
+                },
+                {
+                  path: 'receiver',
+                  select: '_id fullname profileImageUrl',
+                },
+              ],
+            },
+          ],
+        ),
+      ],
+    );
+
+    //delete sensitive infor
+    delete updatedUser.password;
+    delete updatedFriend.password;
+
+    //update redis
+    await Promise.all([
+      this.cacheManager.set(`friend_invite:${inviteId}`, updatedFriendInvite, {
+        ttl: createTTL(60 * 60 * 24 * 30, 60 * 60 * 24),
+      }),
+
+      this.cacheManager.set(`user:${updatedUser.email}`, updatedUser, {
+        ttl: createTTL(60 * 60 * 24 * 7, 60 * 60 * 24),
+      }),
+
+      this.cacheManager.set(`user:${updatedFriend.email}`, updatedFriend, {
+        ttl: createTTL(60 * 60 * 24 * 7, 60 * 60 * 24),
+      }),
+    ]);
+
+    //emit infor
+    this.notificationClient.emit('emit_message', {
+      name: 'remove_invite',
+      payload: {
+        userId: updatedFriend._id.toHexString(),
+        metadata: {
+          _id: updatedFriendInvite._id,
+        },
+      },
+    });
+
+    //return user infor
+    return updatedUser;
+  }
+
+  async acceptInvite(
+    { userId }: TokenPayloadInterface,
+    { inviteId }: RemoveInviteDto,
+  ) {
+    //  Get invite
+    let inviteRecord: FriendInviteDocument = await this.cacheManager.get(
+      `friend_invite:${inviteId}`,
+    );
+
+    if (!inviteRecord) {
+      inviteRecord = await this.friendInviteRepository.findOne({
+        _id: inviteId,
+      });
+
+      if (!inviteRecord) {
+        throw new NotFoundException('Not Found Resource');
+      }
+    }
+
+    //  Check invite status is pending or not
+    if (inviteRecord.status !== FriendInviteStatus.Pending) {
+      throw new BadRequestException('Processed Resource');
+    }
+
+    //  Check receiver is correct or not
+    if (inviteRecord.receiver.toString() !== userId.toString()) {
+      throw new BadRequestException('Invalid Request');
+    }
+
+    //  Update status invite record
+    //  Delete invite id from user and friend record
+    //  Add friend into user and friend record
+    const [updatedFriendInvite, updatedUser, updatedFriend] = await Promise.all(
+      [
+        //update status
+        this.friendInviteRepository.findOneAndUpdate(
+          { _id: inviteId },
+          { status: FriendInviteStatus.Accepted },
+        ),
+
+        //delete inviteId from sender and receiver
+        this.userRepository.findOneAndUpdate(
+          { _id: inviteRecord.receiver },
+          {
+            $pull: { friendInvites: inviteId },
+            $push: { friendList: inviteRecord.sender },
+          },
+          [
+            { path: 'friendList', select: '_id fullname profileImageUrl' },
+            {
+              path: 'friendInvites',
+              select: '_id sender receiver createdAt',
+              populate: [
+                {
+                  path: 'sender',
+                  select: '_id fullname profileImageUrl',
+                },
+                {
+                  path: 'receiver',
+                  select: '_id fullname profileImageUrl',
+                },
+              ],
+            },
+          ],
+        ),
+
+        this.userRepository.findOneAndUpdate(
+          { _id: inviteRecord.sender },
+          {
+            $pull: { friendInvites: inviteId },
+            $push: { friendList: inviteRecord.receiver },
+          },
+          [
+            { path: 'friendList', select: '_id fullname profileImageUrl' },
+            {
+              path: 'friendInvites',
+              select: '_id sender receiver createdAt',
+              populate: [
+                {
+                  path: 'sender',
+                  select: '_id fullname profileImageUrl',
+                },
+                {
+                  path: 'receiver',
+                  select: '_id fullname profileImageUrl',
+                },
+              ],
+            },
+          ],
+        ),
+      ],
+    );
+
+    //delete sensitive infor
+    delete updatedUser.password;
+    delete updatedFriend.password;
+
+    await Promise.all([
+      this.cacheManager.set(`friend_invite:${inviteId}`, updatedFriendInvite, {
+        ttl: createTTL(60 * 60 * 24 * 30, 60 * 60 * 24),
+      }),
+
+      this.cacheManager.set(`user:${updatedUser.email}`, updatedUser, {
+        ttl: createTTL(60 * 60 * 24 * 7, 60 * 60 * 24),
+      }),
+
+      this.cacheManager.set(`user:${updatedFriend.email}`, updatedFriend, {
+        ttl: createTTL(60 * 60 * 24 * 7, 60 * 60 * 24),
+      }),
+    ]);
+
+    //emit infor
+    this.notificationClient.emit('emit_message', {
+      name: 'accept_invite',
+      payload: {
+        userId: updatedFriend._id.toHexString(),
+        metadata: {
+          friendInviteId: updatedFriendInvite._id,
+          friend: {
+            _id: updatedUser._id,
+            fullname: updatedUser,
+            profileImageUrl: updatedUser.profileImageUrl,
+          },
+        },
+      },
+    });
+
+    //return user infor
+    return updatedUser;
+  }
+
+  async deleteFriend(
+    { userId, email }: TokenPayloadInterface,
+    { friendId }: DeleteFriendDto,
+  ) {
+    //get user record
+    let user: UserDocument = await this.cacheManager.get(`user:${email}`);
+
+    if (!user) {
+      user = await this.userRepository.findOne({ _id: userId }, [
+        { path: 'friendList', select: '_id fullname profileImageUrl' },
+        {
+          path: 'friendInvites',
+          select: '_id sender receiver createdAt',
+          populate: [
+            {
+              path: 'sender',
+              select: '_id fullname profileImageUrl',
+            },
+            {
+              path: 'receiver',
+              select: '_id fullname profileImageUrl',
+            },
+          ],
+        },
+      ]);
+
+      if (!user) {
+        throw new NotFoundException('Not Found Resource');
+      }
+    }
+
+    //check if friendId is existing or not
+    const isFriends: boolean = user.friendList.some(
+      (f) => f._id.toString() === friendId,
+    );
+
+    if (!isFriends) {
+      throw new BadRequestException('No Relation Resources');
+    }
+
+    //delete friend from user
+    //delete user from friend
+    const [updatedUser, updatedFriend] = await Promise.all([
+      this.userRepository.findOneAndUpdate(
+        { _id: userId },
+        {
+          $pull: { friendList: friendId },
+        },
+        [
+          { path: 'friendList', select: '_id fullname profileImageUrl' },
+          {
+            path: 'friendInvites',
+            select: '_id sender receiver createdAt',
+            populate: [
+              {
+                path: 'sender',
+                select: '_id fullname profileImageUrl',
+              },
+              {
+                path: 'receiver',
+                select: '_id fullname profileImageUrl',
+              },
+            ],
+          },
+        ],
+      ),
+
+      this.userRepository.findOneAndUpdate(
+        { _id: friendId },
+        {
+          $pull: { friendList: userId },
+        },
+        [
+          { path: 'friendList', select: '_id fullname profileImageUrl' },
+          {
+            path: 'friendInvites',
+            select: '_id sender receiver createdAt',
+            populate: [
+              {
+                path: 'sender',
+                select: '_id fullname profileImageUrl',
+              },
+              {
+                path: 'receiver',
+                select: '_id fullname profileImageUrl',
+              },
+            ],
+          },
+        ],
+      ),
+    ]);
+
+    //delete sensitive infor
+    delete updatedUser.password;
+    delete updatedFriend.password;
+
+    //update record
+    await Promise.all([
+      this.cacheManager.set(`user:${updatedUser.email}`, updatedUser, {
+        ttl: createTTL(60 * 60 * 24 * 7, 60 * 60 * 24),
+      }),
+
+      this.cacheManager.set(`user:${updatedFriend.email}`, updatedFriend, {
+        ttl: createTTL(60 * 60 * 24 * 7, 60 * 60 * 24),
+      }),
+    ]);
+
+    //emit infor
+    this.notificationClient.emit('emit_message', {
+      name: 'delete_friend',
+      payload: {
+        userId: updatedFriend._id.toHexString(),
+        metadata: {
+          _id: updatedUser._id,
+        },
+      },
+    });
+
+    //return user infor
     return updatedUser;
   }
 }
