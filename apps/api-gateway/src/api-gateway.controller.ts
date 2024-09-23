@@ -1,4 +1,5 @@
 import {
+  ALL_ROLE,
   ChangeBirthdayDto,
   ChangeCountryDto,
   ChangeEmailDto,
@@ -10,6 +11,7 @@ import {
   DeleteFriendDto,
   GetStrangerInforDto,
   GoogleSignInDto,
+  NORMAL_USER_ROLE,
   RemoveInviteDto,
   SendInviteDto,
   SignInDto,
@@ -43,6 +45,8 @@ import { JwtGuard } from './guards/jwt.guard';
 import { User } from './decorators/user.decorator';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { AcceptInviteDto } from '@app/common';
+import { RoleGuard } from './guards/role.guard';
+import { Roles } from './decorators/role.decorator';
 
 @Controller('api')
 export class ApiGatewayController {
@@ -149,16 +153,20 @@ export class ApiGatewayController {
   }
 
   //user
-  @UseGuards(ApiKeyGuard)
-  @Get('user')
+  @UseGuards(RoleGuard)
   @UseGuards(JwtGuard)
+  @UseGuards(ApiKeyGuard)
+  @Roles(NORMAL_USER_ROLE)
+  @Get('user')
   async getUser(@User() userPayload: TokenPayloadInterface) {
     return this.apiGatewayService.getUser(userPayload);
   }
 
-  @UseGuards(ApiKeyGuard)
-  @Patch('user/birthday')
+  @UseGuards(RoleGuard)
   @UseGuards(JwtGuard)
+  @UseGuards(ApiKeyGuard)
+  @Roles(NORMAL_USER_ROLE)
+  @Patch('user/birthday')
   async changeBirthday(
     @User() userPayload: TokenPayloadInterface,
     @Body() dto: ChangeBirthdayDto,
@@ -166,9 +174,11 @@ export class ApiGatewayController {
     return this.apiGatewayService.changeBirthday(userPayload, dto);
   }
 
-  @UseGuards(ApiKeyGuard)
-  @Patch('user/fullname')
+  @UseGuards(RoleGuard)
   @UseGuards(JwtGuard)
+  @UseGuards(ApiKeyGuard)
+  @Roles(NORMAL_USER_ROLE)
+  @Patch('user/fullname')
   async changeFullname(
     @User() userPayload: TokenPayloadInterface,
     @Body() dto: ChangeFullnameDto,
@@ -176,9 +186,11 @@ export class ApiGatewayController {
     return this.apiGatewayService.changeFullname(userPayload, dto);
   }
 
-  @UseGuards(ApiKeyGuard)
-  @Patch('user/country')
+  @UseGuards(RoleGuard)
   @UseGuards(JwtGuard)
+  @UseGuards(ApiKeyGuard)
+  @Roles(NORMAL_USER_ROLE)
+  @Patch('user/country')
   async changeCountry(
     @User() userPayload: TokenPayloadInterface,
     @Body() dto: ChangeCountryDto,
@@ -186,9 +198,11 @@ export class ApiGatewayController {
     return this.apiGatewayService.changeCountry(userPayload, dto);
   }
 
-  @UseGuards(ApiKeyGuard)
-  @Post('user/email')
+  @UseGuards(RoleGuard)
   @UseGuards(JwtGuard)
+  @UseGuards(ApiKeyGuard)
+  @Roles(NORMAL_USER_ROLE)
+  @Post('user/email')
   async changeEmail(
     @User() userPayload: TokenPayloadInterface,
     @Body() dto: ChangeEmailDto,
@@ -196,9 +210,11 @@ export class ApiGatewayController {
     return this.apiGatewayService.changeEmail(userPayload, dto);
   }
 
-  @UseGuards(ApiKeyGuard)
-  @Patch('user/email/check')
+  @UseGuards(RoleGuard)
   @UseGuards(JwtGuard)
+  @UseGuards(ApiKeyGuard)
+  @Roles(NORMAL_USER_ROLE)
+  @Patch('user/email/check')
   async checkCodeToChangeEmail(
     @User() userPayload: TokenPayloadInterface,
     @Body() dto: CheckCodeToChangeEmailDto,
@@ -206,9 +222,11 @@ export class ApiGatewayController {
     return this.apiGatewayService.checkCodeToChangeEmail(userPayload, dto);
   }
 
-  @UseGuards(ApiKeyGuard)
-  @Patch('user/profile-image')
+  @UseGuards(RoleGuard)
   @UseGuards(JwtGuard)
+  @UseGuards(ApiKeyGuard)
+  @Roles(...ALL_ROLE)
+  @Patch('user/profile-image')
   @UseInterceptors(FileInterceptor('file'))
   async changeProfileImage(
     @User() userPayload: TokenPayloadInterface,
@@ -235,10 +253,12 @@ export class ApiGatewayController {
     return this.apiGatewayService.getStrangerInfor(userId);
   }
 
+  @UseGuards(RoleGuard)
+  @UseGuards(JwtGuard)
   @UseGuards(ApiKeyGuard)
+  @Roles(NORMAL_USER_ROLE)
   @Patch('user/invite/add')
   @HttpCode(HttpStatus.OK)
-  @UseGuards(JwtGuard)
   async sendInvite(
     @User() userPayload: TokenPayloadInterface,
     @Body() dto: SendInviteDto,
@@ -246,9 +266,11 @@ export class ApiGatewayController {
     return this.apiGatewayService.sendInvite(userPayload, dto);
   }
 
-  @UseGuards(ApiKeyGuard)
-  @Delete('user/invite/remove/:inviteId')
+  @UseGuards(RoleGuard)
   @UseGuards(JwtGuard)
+  @UseGuards(ApiKeyGuard)
+  @Roles(NORMAL_USER_ROLE)
+  @Delete('user/invite/remove/:inviteId')
   async sentInvite(
     @User() userPayload: TokenPayloadInterface,
     @Param() dto: RemoveInviteDto,
@@ -256,9 +278,11 @@ export class ApiGatewayController {
     return this.apiGatewayService.removeInvite(userPayload, dto);
   }
 
-  @UseGuards(ApiKeyGuard)
-  @Patch('user/invite/accept/:inviteId')
+  @UseGuards(RoleGuard)
   @UseGuards(JwtGuard)
+  @UseGuards(ApiKeyGuard)
+  @Roles(NORMAL_USER_ROLE)
+  @Patch('user/invite/accept/:inviteId')
   async acceptInvite(
     @User() userPayload: TokenPayloadInterface,
     @Param() dto: AcceptInviteDto,
@@ -266,9 +290,11 @@ export class ApiGatewayController {
     return this.apiGatewayService.acceptInvite(userPayload, dto);
   }
 
-  @UseGuards(ApiKeyGuard)
-  @Delete('user/friend/delete/:friendId')
+  @UseGuards(RoleGuard)
   @UseGuards(JwtGuard)
+  @UseGuards(ApiKeyGuard)
+  @Roles(NORMAL_USER_ROLE)
+  @Delete('user/friend/delete/:friendId')
   async deleteFriend(
     @User() userPayload: TokenPayloadInterface,
     @Param() dto: DeleteFriendDto,

@@ -30,6 +30,7 @@ const UserProfile = () => {
           }
         }
       } catch (error) {
+        console.log(error);
         navigate('/404');
       } finally {
         setLoading(false);
@@ -51,7 +52,7 @@ const UserProfile = () => {
 
   const handleOpenApp = () => {
     const { _id, fullname, profileImageUrl } = infor;
-    const deepLinkUrl = `app://open.my.app/${_id}/${encodeURIComponent(fullname)}/${encodeURIComponent(profileImageUrl)}`;
+    const deepLinkUrl = `app://add.friend.skyline/${_id}/${encodeURIComponent(fullname)}/${encodeURIComponent(profileImageUrl)}`;
     window.location.href = deepLinkUrl; // Redirect to the mobile app
   };
 
