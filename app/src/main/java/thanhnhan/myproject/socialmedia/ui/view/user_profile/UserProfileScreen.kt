@@ -1,13 +1,16 @@
 package thanhnhan.myproject.socialmedia.ui.view.user_profile
 
+import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -27,18 +30,24 @@ import androidx.compose.material.icons.filled.Share
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Divider
+import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.Text
+import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.painter.Painter
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.painterResource
@@ -48,6 +57,7 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import coil.compose.rememberAsyncImagePainter
+import kotlinx.coroutines.launch
 import thanhnhan.myproject.socialmedia.R
 import thanhnhan.myproject.socialmedia.data.model.SignInUserResponse
 import thanhnhan.myproject.socialmedia.data.model.UserSession
@@ -57,7 +67,8 @@ import thanhnhan.myproject.socialmedia.ui.theme.AppTheme
 fun ProfileScreen(
     openChangeEmail: () -> Unit,
     openChangeBirthday: () -> Unit,
-    openChangeCountry: () -> Unit
+    openChangeCountry: () -> Unit,
+    openChangeFullname: () -> Unit
 ) {
     // Lấy thông tin người dùng từ UserSession
     val user = UserSession.user
@@ -72,7 +83,9 @@ fun ProfileScreen(
             // Profile Section
             ProfileSection(
                 userAvatar = user.profileImageUrl,
-                userName = user.fullname
+                userName = user.fullname,
+                openChangeFullname = openChangeFullname
+
             )
 
             Spacer(modifier = Modifier.height(40.dp))
@@ -107,7 +120,8 @@ fun ProfileScreen(
 @Composable
 fun ProfileSection(
     userAvatar: String,
-    userName: String
+    userName: String,
+    openChangeFullname: () -> Unit
 ) {
     Column(
         horizontalAlignment = Alignment.CenterHorizontally,
@@ -134,18 +148,7 @@ fun ProfileSection(
                     .align(Alignment.BottomEnd)
             ) {
 
-                IconButton(
-                    onClick = {
-                        // TODO: Change avatar
-                    }
-                ) {
-                    Icon(
-                        modifier = Modifier
-                            .background(color = AppTheme.appButtonStyle.backgroundColor),
-                        imageVector = Icons.Default.Add,
-                        contentDescription = null
-                    )
-                }
+                AvatarChangeButton()
             }
         }
 
@@ -162,7 +165,7 @@ fun ProfileSection(
         // Edit Button
         Button(
             onClick = {
-                // TODO: Edit username
+                openChangeFullname()
             },
             colors = ButtonDefaults.buttonColors(
                 containerColor = AppTheme.appButtonStyle.backgroundColor,
@@ -334,7 +337,82 @@ fun SettingItem(
     }
 }
 
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+fun AvatarChangeButton() {
+    var showModalSheet by remember { mutableStateOf(false) }  // Trạng thái để kiểm soát hiển thị ModalBottomSheet
 
+    // IconButton khi được nhấn sẽ hiển thị ModalBottomSheet
+    IconButton(onClick = {
+        showModalSheet = true
+    }) {
+        Icon(
+            imageVector = Icons.Default.Add,
+            contentDescription = "Change avatar",
+            tint = Color.White
+        )
+    }
+
+    // ModalBottomSheet khi `showModalSheet` là true
+    if (showModalSheet) {
+        ModalBottomSheet(
+            onDismissRequest = { showModalSheet = false },  // Đóng Modal khi nhấn ra ngoài
+            modifier = Modifier.fillMaxHeight(0.4f)  // Hiển thị modal chiếm toàn bộ chiều cao
+        ) {
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .background(color = Color(0xFF22272E))
+                    .padding(16.dp),
+                horizontalAlignment = Alignment.CenterHorizontally,
+                verticalArrangement = Arrangement.spacedBy(16.dp)
+            ) {
+                Text("Choose an option", style = MaterialTheme.typography.titleMedium, color = Color.White)
+
+                // Tùy chọn 1: Choose from Gallery
+                Button(
+                    onClick = {
+                        // TODO: Implement gallery picker
+                        showModalSheet = false  // Ẩn modal sau khi chọn
+                    },
+                    modifier = Modifier.fillMaxWidth()
+                        .height(70.dp)
+                        .padding(horizontal = 8.dp, vertical = 8.dp),
+                    colors =ButtonDefaults.buttonColors(Color(0xFF3C434A))
+                ) {
+                    Text("Choose from Gallery")
+                }
+
+                // Tùy chọn 2: Shot by camera
+                Button(
+                    onClick = {
+                        // TODO: Implement camera capture
+                        showModalSheet = false  // Ẩn modal sau khi chọn
+                    },
+                    modifier = Modifier.fillMaxWidth()
+                        .height(70.dp)
+                        .padding(horizontal = 8.dp, vertical = 8.dp),
+                    colors =ButtonDefaults.buttonColors(Color(0xFF3C434A))
+                ) {
+                    Text("Shot by camera")
+                }
+
+                // Tùy chọn 3: Exit
+                Button(
+                    onClick = {
+                        showModalSheet = false  // Đóng modal
+                    },
+                    modifier = Modifier.fillMaxWidth()
+                        .height(70.dp)
+                        .padding(horizontal = 8.dp, vertical = 8.dp),
+                    colors = ButtonDefaults.buttonColors(containerColor = Color.Red)
+                ) {
+                    Text("Exit")
+                }
+            }
+        }
+    }
+}
 @Preview(showBackground = true)
 @Composable
 fun ProfileScreenPreview() {
@@ -355,6 +433,7 @@ fun ProfileScreenPreview() {
     ProfileScreen(
         openChangeEmail = {},
         openChangeBirthday = {},
-        openChangeCountry = {}
+        openChangeCountry = {},
+        openChangeFullname = {}
     )  // Gọi ProfileScreen với dữ liệu đã giả lập
 }

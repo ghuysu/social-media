@@ -3,6 +3,8 @@ import retrofit2.http.Body
 import retrofit2.http.Header
 import retrofit2.http.PATCH
 import retrofit2.http.POST
+import thanhnhan.myproject.socialmedia.data.model.ChangeAvatarRequest
+import thanhnhan.myproject.socialmedia.data.model.ChangeAvatarResponse
 
 import thanhnhan.myproject.socialmedia.data.model.SignInUserRequest
 import thanhnhan.myproject.socialmedia.data.model.SignInUserResponse
@@ -12,6 +14,8 @@ import thanhnhan.myproject.socialmedia.data.model.ChangeCountryRequest
 import thanhnhan.myproject.socialmedia.data.model.ChangeCountryResponse
 import thanhnhan.myproject.socialmedia.data.model.ChangeEmailRequest
 import thanhnhan.myproject.socialmedia.data.model.ChangeEmailResponse
+import thanhnhan.myproject.socialmedia.data.model.ChangeFullnameRequest
+import thanhnhan.myproject.socialmedia.data.model.ChangeFullnameResponse
 import thanhnhan.myproject.socialmedia.data.model.CheckEmailCodeRequest
 import thanhnhan.myproject.socialmedia.data.model.CheckEmailCodeResponse
 
@@ -59,5 +63,17 @@ interface Api {
         @Header("authorization") authToken: String,
         @Body request: CheckEmailCodeRequest
     ): CheckEmailCodeResponse
+
+    @PATCH("api/user/fullname")
+    suspend fun changeFullname(
+        @Header("authorization") authToken: String,
+            @Body request: ChangeFullnameRequest
+    ): ChangeFullnameResponse
+
+    @PATCH("api/user/profile-image")
+    suspend fun changeAvatar(
+        @Header("authorization") authToken: String,
+        @Body request: ChangeAvatarRequest
+    ): ChangeAvatarResponse
 }
 

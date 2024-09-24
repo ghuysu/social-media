@@ -9,6 +9,7 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.navigation.NavType
 import androidx.navigation.compose.NavHost
@@ -26,6 +27,7 @@ import thanhnhan.myproject.socialmedia.ui.view.sign_up.ChoosePasswordSignUp
 import thanhnhan.myproject.socialmedia.ui.view.sign_up.VerifyEmailCodeSignUp
 import thanhnhan.myproject.socialmedia.ui.view.user_profile.ChangeBirthday
 import thanhnhan.myproject.socialmedia.ui.view.user_profile.ChangeCountry
+import thanhnhan.myproject.socialmedia.ui.view.user_profile.ChangeFullname
 import thanhnhan.myproject.socialmedia.ui.view.user_profile.ProfileScreen
 import thanhnhan.myproject.socialmedia.ui.view.user_profile.change_email.ChangeEmail
 import thanhnhan.myproject.socialmedia.ui.view.user_profile.change_email.VerifyEmailCodeChangeEmail
@@ -50,12 +52,14 @@ class MainActivity : ComponentActivity() {
 @Composable
 fun MainApp() {
     val navController = rememberNavController()
+    val context = LocalContext.current
     SocialMediaTheme {
         NavHost(navController = navController, startDestination = "signInScreen") {
 
             // Thêm SignInScreen vào NavHost
             composable(route = "signInScreen") {
                 SignInScreen(
+                    context = context,
                     onLoginSuccess = {
                         navController.navigate("UserProfile")  // Điều hướng đến màn hình chính sau khi đăng nhập thành công
                     }
@@ -243,6 +247,9 @@ fun MainApp() {
                     openChangeCountry = {
                         navController.navigate("changeCountry")
                     },
+                    openChangeFullname = {
+                        navController.navigate("changeFullname")
+                    }
                 )
             }
 
@@ -285,6 +292,17 @@ fun MainApp() {
 
             composable(route = "changeCountry") {
                 ChangeCountry(
+                    openUserProfile = {
+                        navController.navigate("UserProfile")
+                    },
+                    backAction = {
+                        navController.popBackStack()
+                    }
+                )
+            }
+
+            composable(route = "changeFullname") {
+                ChangeFullname(
                     openUserProfile = {
                         navController.navigate("UserProfile")
                     },

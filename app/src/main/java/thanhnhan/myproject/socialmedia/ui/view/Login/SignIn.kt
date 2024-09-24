@@ -1,5 +1,6 @@
 package thanhnhan.myproject.socialmedia.ui.view.Login
 
+import android.content.Context
 import android.util.Log
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
@@ -33,16 +34,21 @@ import thanhnhan.myproject.socialmedia.data.repository.SignInUserRepository
 
 @Composable
 fun SignInScreen(
+    context: Context,
     onLoginSuccess: () -> Unit
 ) {
     // Khởi tạo ViewModelFactory với SignInUserRepository
-    val viewModelFactory = SignInUserViewModelFactory(SignInUserRepository(RetrofitInstance.api))
+    val viewModelFactory = SignInUserViewModelFactory(SignInUserRepository(RetrofitInstance.api), context)
     val viewModel: SignInUserViewModel = viewModel(factory = viewModelFactory)
 
     // Lấy các trạng thái từ ViewModel
     val emailValidationResult by viewModel.emailValidationResult.collectAsState()
     val passwordValidationResult by viewModel.passwordValidationResult.collectAsState()
     val signInResult by viewModel.signInResult.collectAsState() // Kết quả đăng nhập
+//     Gọi autoSignIn khi SignInScreen được khởi tạo
+    LaunchedEffect(Unit) {
+        viewModel.autoSignIn()  // Thực hiện auto sign-in
+    }
 
     var email by remember { mutableStateOf("") }
     var password by remember { mutableStateOf("") }
@@ -71,11 +77,12 @@ fun SignInScreen(
                 }
             } else {
                 Log.d("SignInScreen", "Sign-in failed: Invalid email or password")
-                errorMessage = "Email or password incorrect"
+                errorMessage = "Incorrect username or password"  // Cập nhật thông báo lỗi
             }
         },
         emailError = emailValidationResult == false,
-        passwordError = passwordValidationResult == false
+        passwordError = passwordValidationResult == false,
+        errorMessage = errorMessage // Truyền errorMessage vào SignInContent
     )
 
     // Xử lý kết quả đăng nhập
@@ -87,6 +94,7 @@ fun SignInScreen(
             }
             is Result.Error -> {
                 Log.e("SignInScreen", "Sign-in failed: ${result.message ?: "Unknown error"}")
+                errorMessage = "Incorrect username or password"  // Thông báo lỗi khi đăng nhập thất bại
             }
         }
     }
@@ -100,7 +108,8 @@ fun SignInContent(
     onPasswordChange: (String) -> Unit,
     onContinueClick: () -> Unit,
     emailError: Boolean,
-    passwordError: Boolean
+    passwordError: Boolean,
+    errorMessage: String?
 ) {
     AppTheme {
         Box(
@@ -129,7 +138,7 @@ fun SignInContent(
                     isError = passwordError
                 )
                 Spacer(modifier = Modifier.height(30.dp))
-                SignInReport("")
+                SignInReport(text = errorMessage ?: "")
 
                 Spacer(modifier = Modifier.height(100.dp))
                 SignInAgreementText()
@@ -192,7 +201,7 @@ fun SignInEmailField(email: String, onEmailChange: (String) -> Unit, isError: Bo
     TextField(
         value = email,
         onValueChange = onEmailChange,
-        placeholder = { Text("Enter your email", color = Color.Gray) },
+        placeholder = { Text("Enter your email", color = Color.White) },
         modifier = Modifier
             .fillMaxWidth()
             .padding(horizontal = 0.dp),
@@ -213,7 +222,7 @@ fun SignInPasswordField(password: String, onPasswordChange: (String) -> Unit, is
     TextField(
         value = password,
         onValueChange = onPasswordChange,
-        placeholder = { Text("Enter your password", color = Color.Gray) },
+        placeholder = { Text("Enter your password", color = Color.White) },
         modifier = Modifier
             .fillMaxWidth()
             .padding(horizontal = 0.dp),
@@ -274,7 +283,6 @@ fun SignInButton(onClick: () -> Unit) {
         )
     }
 }
-
 @Preview(showBackground = true)
 @Composable
 fun SignInScreenPreview() {
@@ -285,6 +293,7 @@ fun SignInScreenPreview() {
         onPasswordChange = {},
         onContinueClick = {},
         emailError = false,
-        passwordError = false
+        passwordError = false,
+        errorMessage = null
     )
 }

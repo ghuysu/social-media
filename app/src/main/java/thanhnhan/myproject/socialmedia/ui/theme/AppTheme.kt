@@ -1,8 +1,14 @@
 package thanhnhan.myproject.socialmedia.ui.theme
 
+import androidx.compose.foundation.background
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.staticCompositionLocalOf
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.Font
@@ -36,6 +42,13 @@ data class AppButtonStyle(
     val height: Dp = 60.dp,
     val textStyle: TextStyle = TextStyle.Default
 )
+data class AppTextFieldStyle(
+    val backgroundColor: Color = Color.Gray,
+    val contentColor: Color = Color.White,
+    val cornerRadius: Int = 8,
+    val padding: Int = 16,
+    val textStyle: TextStyle = TextStyle.Default.copy(fontSize = 16.sp)
+)
 val LocalAppTypography = staticCompositionLocalOf {
     AppTypography()
 }
@@ -49,6 +62,9 @@ val quicksandFontFamily = FontFamily(
 val quicksandFontBoldFamily = FontFamily(
     Font(R.font.quicksand_bold, FontWeight.Normal) // Sử dụng tệp font từ res/font
 )
+val LocalAppTextFieldStyle = staticCompositionLocalOf {
+    AppTextFieldStyle()
+}
 @Composable
 fun AppTheme(
     content: @Composable () -> Unit
@@ -96,8 +112,15 @@ fun AppTheme(
         padding = 16,
         textStyle = typography.buttonText, // Có thể áp dụng kiểu chữ từ typography
     )
+    val textFieldStyle = AppTextFieldStyle(
+        backgroundColor = Color.White,
+        contentColor = Color.Black,
+        cornerRadius = 8,
+        padding = 16,
+        textStyle = typography.subtitle.copy(fontSize = 16.sp)
+    )
 
-    CompositionLocalProvider(LocalAppTypography provides typography, LocalAppButtonStyle provides buttonStyle) {
+    CompositionLocalProvider(LocalAppTypography provides typography, LocalAppButtonStyle provides buttonStyle, LocalAppTextFieldStyle provides textFieldStyle) {
         content.invoke()
     }
 }
@@ -109,4 +132,25 @@ object AppTheme {
     val appButtonStyle: AppButtonStyle
         @Composable
         get() = LocalAppButtonStyle.current
+    val appTextFieldStyle: AppTextFieldStyle
+        @Composable
+        get() = LocalAppTextFieldStyle.current
+}
+
+@Composable
+fun AppTextField(
+    value: String,
+    onValueChange: (String) -> Unit,
+    modifier: Modifier = Modifier
+) {
+    val style = AppTheme.appTextFieldStyle
+    BasicTextField(
+        value = value,
+        onValueChange = onValueChange,
+        textStyle = style.textStyle,
+        modifier = modifier
+            .clip(RoundedCornerShape(style.cornerRadius.dp)) // Áp dụng cornerRadius
+            .background(style.backgroundColor)
+            .padding(style.padding.dp)
+    )
 }

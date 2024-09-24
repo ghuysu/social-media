@@ -6,10 +6,13 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.launch
 import thanhnhan.myproject.socialmedia.data.repository.UserProfileRepository
 import thanhnhan.myproject.socialmedia.data.Result
+import thanhnhan.myproject.socialmedia.data.model.ChangeAvatarResponse
 import thanhnhan.myproject.socialmedia.data.model.ChangeBirthdayResponse
 import thanhnhan.myproject.socialmedia.data.model.ChangeCountryResponse
 import thanhnhan.myproject.socialmedia.data.model.ChangeEmailResponse
+import thanhnhan.myproject.socialmedia.data.model.ChangeFullnameResponse
 import thanhnhan.myproject.socialmedia.data.model.CheckEmailCodeResponse
+import java.io.File
 
 class UserProfileViewModel(
     private val repository: UserProfileRepository
@@ -55,6 +58,26 @@ class UserProfileViewModel(
         viewModelScope.launch {
             repository.checkEmailCode(authToken, newEmail, code).collect {
                 _checkEmailCodeResult.value = it
+            }
+        }
+    }
+    private val _changeFullnameResult = MutableStateFlow<Result<ChangeFullnameResponse>?>(null)
+    val changeFullnameResult: MutableStateFlow<Result<ChangeFullnameResponse>?> = _changeFullnameResult
+
+    fun changeFullname(authToken: String, fullname: String) {
+        viewModelScope.launch {
+            repository.changeFullname(authToken, fullname).collect {
+                _changeFullnameResult.value = it
+            }
+        }
+    }
+    private val _changeAvatarResult = MutableStateFlow<Result<ChangeAvatarResponse>?>(null)
+    val changeAvatarResult: MutableStateFlow<Result<ChangeAvatarResponse>?> = _changeAvatarResult
+
+    fun changeAvatar(authToken: String, avatar: File) {
+        viewModelScope.launch {
+            repository.changeAvatar(authToken, avatar).collect {
+                _changeAvatarResult.value = it
             }
         }
     }

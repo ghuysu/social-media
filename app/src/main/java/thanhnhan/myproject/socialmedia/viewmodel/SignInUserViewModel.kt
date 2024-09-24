@@ -1,13 +1,13 @@
 package thanhnhan.myproject.socialmedia.viewmodel
 
-import android.util.Log
+import android.content.Context
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
-import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 import thanhnhan.myproject.socialmedia.data.Result
+import thanhnhan.myproject.socialmedia.data.database.UserDatabaseHelper
 import thanhnhan.myproject.socialmedia.data.model.SignInUserRequest
 import thanhnhan.myproject.socialmedia.data.model.SignInUserResponse
 import thanhnhan.myproject.socialmedia.data.model.UserSession
@@ -15,7 +15,8 @@ import thanhnhan.myproject.socialmedia.data.repository.SignInUserRepository
 import java.util.regex.Pattern
 
 class SignInUserViewModel(
-    private val signInUserRepository: SignInUserRepository
+    private val signInUserRepository: SignInUserRepository,
+    private val context: Context
 ) : ViewModel() {
 
     // Check email format
@@ -71,40 +72,74 @@ class SignInUserViewModel(
 
     // Function to sign in user
     fun signInUser(email: String, password: String) {
-        Log.d("SignInUserViewModel", "Attempting to sign in with email: $email")
         viewModelScope.launch {
             try {
+                _isLoading.value = true  // Đặt loading state trước khi thực hiện đăng nhập
                 signInUserRepository.signInUser(SignInUserRequest(email, password)).collect { result ->
                     if (result is Result.Success) {
-                        // Thêm log để kiểm tra phản hồi thô từ API
-                        Log.d("SignInUserViewModel", "Raw API Response: ${result.data}")
-
-                        Log.d("SignInUserViewModel", "Sign-in successful")
-
-                        // Lấy thông tin user và token từ metadata
                         val user = result.data?.metadata?.user
                         val token = result.data?.metadata?.signInToken
 
-                        // Thêm log để kiểm tra giá trị của token
-                        Log.d("SignInUserViewModel", "API Response - User: ${user?.fullname}, Token: $token")
-
-                        // Lưu thông tin user và token vào UserSession
-                        UserSession.setUserData(user, token)
-
-                        // Kiểm tra dữ liệu đã lưu
-                        Log.d("SignInUserViewModel", "User: ${UserSession.user?.fullname}, Token: ${UserSession.signInToken}")
-                        _signInResult.value = result
+                        // Lưu dữ liệu vào SQLite
+                        if (user != null && token != null) {
+                            val dbHelper = UserDatabaseHelper(context)
+                            dbHelper.insertUserData(
+                                id = user._id,
+                                email = user.email,
+                                fullname = user.fullname,
+                                birthday = user.birthday,
+                                token = token,
+                                profileImageUrl = user.profileImageUrl,
+                                country = user.country
+                            )
+                            // Cập nhật trạng thái đăng nhập thành công
+                            _signInResult.value = result
+                        }
                     } else if (result is Result.Error) {
-                        Log.e("SignInUserViewModel", "Sign-in failed: ${result.message}")
+                        // Cập nhật kết quả đăng nhập thất bại
                         _signInResult.value = result
                     }
                 }
             } catch (e: Exception) {
-                // Xử lý lỗi khi đăng nhập
-                Log.e("SignInUserViewModel", "Login failed: ${e.message}")
+                // Cập nhật trạng thái lỗi
                 _signInResult.value = Result.Error(message = e.message)
+            } finally {
+                _isLoading.value = false // Tắt loading state
             }
         }
     }
+    fun autoSignIn() {
+        val dbHelper = UserDatabaseHelper(context)
+        val savedUser = dbHelper.getUserData()
 
+        if (savedUser != null) {
+            // Thiết lập session người dùng
+            UserSession.setUserData(
+                user = SignInUserResponse.Metadata.User(
+                    _id = savedUser.id,
+                    email = savedUser.email,
+                    fullname = savedUser.fullname,
+                    birthday = savedUser.birthday,
+                    profileImageUrl = savedUser.profileImageUrl,
+                    friendList = listOf(),
+                    friendInvites = listOf(),
+                    country = savedUser.country
+                ),
+                token = savedUser.token
+            )
+            // Cập nhật trạng thái auto-sign-in thành công
+            _signInResult.value = Result.Success(SignInUserResponse(status = 200, message = "Auto sign-in success", metadata = null))
+        } else {
+            // Không có dữ liệu để tự động đăng nhập, cập nhật trạng thái thất bại
+            _signInResult.value = Result.Error(message = "No saved user data for auto login")
+        }
+    }
+
+
+    //Chức năng cho Sign out :
+//    fun logout() {
+//        val dbHelper = UserDatabaseHelper(context)
+//        dbHelper.clearUserData()
+//        UserSession.clearSession()
+//    }
 }
