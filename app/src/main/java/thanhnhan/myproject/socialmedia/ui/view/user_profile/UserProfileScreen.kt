@@ -1,5 +1,8 @@
 package thanhnhan.myproject.socialmedia.ui.view.user_profile
 
+import android.net.Uri
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
@@ -50,6 +53,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.style.TextAlign
@@ -341,7 +345,15 @@ fun SettingItem(
 @Composable
 fun AvatarChangeButton() {
     var showModalSheet by remember { mutableStateOf(false) }  // Trạng thái để kiểm soát hiển thị ModalBottomSheet
-
+    val context = LocalContext.current
+    val launcher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.GetContent()
+    ) { uri: Uri? ->
+        // Xử lý URI của bức ảnh đã chọn
+        if (uri != null) {
+            // TODO: Cập nhật avatar của bạn với URI
+        }
+    }
     // IconButton khi được nhấn sẽ hiển thị ModalBottomSheet
     IconButton(onClick = {
         showModalSheet = true
@@ -350,6 +362,7 @@ fun AvatarChangeButton() {
             imageVector = Icons.Default.Add,
             contentDescription = "Change avatar",
             tint = Color.White
+
         )
     }
 
@@ -372,7 +385,7 @@ fun AvatarChangeButton() {
                 // Tùy chọn 1: Choose from Gallery
                 Button(
                     onClick = {
-                        // TODO: Implement gallery picker
+                        launcher.launch("image/*")  // Mở Gallery để chọn ảnh
                         showModalSheet = false  // Ẩn modal sau khi chọn
                     },
                     modifier = Modifier.fillMaxWidth()
