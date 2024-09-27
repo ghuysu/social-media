@@ -7,13 +7,33 @@ export abstract class AbstractRepository<TDocument extends AbstractDocument> {
 
   constructor(protected readonly model: Model<TDocument>) {}
 
-  async create(document: Partial<Omit<TDocument, '_id'>>): Promise<TDocument> {
+  async create(
+    document: Partial<Omit<TDocument, '_id'>>,
+    populate?: Array<{
+      path: string;
+      select?: string;
+      populate?: any;
+    }>,
+  ): Promise<TDocument> {
     const createDocument = new this.model({
       ...document,
       _id: new Types.ObjectId(),
     });
 
-    return (await createDocument.save()).toJSON() as unknown as TDocument;
+    const savedDocument = await createDocument.save();
+
+    // Nếu không cần populate, trả về tài liệu đã lưu
+    if (!populate) {
+      return savedDocument.toJSON() as unknown as TDocument;
+    }
+
+    // Thực hiện truy vấn lại với populate
+    let query = this.model.findById(savedDocument._id);
+    query = query.populate(populate);
+
+    const populatedDocument = await query.lean<TDocument>(true);
+
+    return populatedDocument;
   }
 
   async findOne(
@@ -67,16 +87,17 @@ export abstract class AbstractRepository<TDocument extends AbstractDocument> {
       new: true,
     });
 
+    if (!query) {
+      this.logger.warn('Document was not found with filterQuery', filterQuery);
+      throw new NotFoundException('Document was not found');
+    }
+
     if (populate) {
       query = query.populate(populate);
     }
 
     const document = await query.lean<TDocument>(true);
 
-    if (!document) {
-      this.logger.warn('Document was not found with filterQuery', filterQuery);
-      throw new NotFoundException('Document was not found');
-    }
     return document;
   }
 
@@ -89,6 +110,11 @@ export abstract class AbstractRepository<TDocument extends AbstractDocument> {
     }>,
   ): Promise<TDocument> {
     let query = this.model.findOneAndDelete(filterQuery);
+
+    if (!query) {
+      this.logger.warn('Document was not found with filterQuery', filterQuery);
+      throw new NotFoundException('Document was not found');
+    }
 
     if (populate) {
       query = query.populate(populate);

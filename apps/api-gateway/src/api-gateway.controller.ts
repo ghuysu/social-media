@@ -16,6 +16,8 @@ import {
   SendInviteDto,
   SignInDto,
   TokenPayloadInterface,
+  CheckCodeDto,
+  AcceptInviteDto,
 } from '@app/common';
 import {
   Body,
@@ -35,7 +37,6 @@ import {
   UseInterceptors,
 } from '@nestjs/common';
 import { ApiGatewayService } from './api-gateway.service';
-import { CheckCodeDto } from '@app/common';
 import { Request } from 'express';
 import { AuthGuard } from '@nestjs/passport';
 import { ConfigService } from '@nestjs/config';
@@ -44,9 +45,13 @@ import { ApiKeyGuard } from './guards/api-key.guard';
 import { JwtGuard } from './guards/jwt.guard';
 import { User } from './decorators/user.decorator';
 import { FileInterceptor } from '@nestjs/platform-express';
-import { AcceptInviteDto } from '@app/common';
 import { RoleGuard } from './guards/role.guard';
 import { Roles } from './decorators/role.decorator';
+import {
+  CreateFeedDto,
+  ReactFeedDto,
+  UpdateFeedDto,
+} from '@app/common/dto/feed-dto';
 
 @Controller('api')
 export class ApiGatewayController {
@@ -300,5 +305,92 @@ export class ApiGatewayController {
     @Param() dto: DeleteFriendDto,
   ) {
     return this.apiGatewayService.deleteFriend(userPayload, dto);
+  }
+
+  //feed
+  @UseGuards(RoleGuard)
+  @UseGuards(JwtGuard)
+  @UseGuards(ApiKeyGuard)
+  @Roles(NORMAL_USER_ROLE)
+  @Post('feed')
+  @UseInterceptors(FileInterceptor('image'))
+  @HttpCode(HttpStatus.CREATED)
+  async createFeed(
+    @User() userPayload: TokenPayloadInterface,
+    @Body() dto: CreateFeedDto,
+    @UploadedFile(
+      new ParseFilePipeBuilder()
+        .addFileTypeValidator({
+          fileType: /(jpg|jpeg|png)$/,
+        })
+        .addMaxSizeValidator({
+          maxSize: 10000000,
+        })
+        .build({
+          errorHttpStatusCode: HttpStatus.UNPROCESSABLE_ENTITY,
+        }),
+    )
+    image: Express.Multer.File,
+  ) {
+    return this.apiGatewayService.createFeed(userPayload, dto, image);
+  }
+
+  @UseGuards(RoleGuard)
+  @UseGuards(JwtGuard)
+  @UseGuards(ApiKeyGuard)
+  @Roles(NORMAL_USER_ROLE)
+  @Patch('feed/:feedId')
+  async updateFeed(
+    @User() userPayload: TokenPayloadInterface,
+    @Param('feedId') feedId: string,
+    @Body() dto: UpdateFeedDto,
+  ) {
+    return this.apiGatewayService.updateFeed(userPayload, dto, feedId);
+  }
+
+  @UseGuards(RoleGuard)
+  @UseGuards(JwtGuard)
+  @UseGuards(ApiKeyGuard)
+  @Roles(NORMAL_USER_ROLE)
+  @Delete('feed/:feedId')
+  async deleteFeed(
+    @User() userPayload: TokenPayloadInterface,
+    @Param('feedId') feedId: string,
+  ) {
+    return this.apiGatewayService.deleteFeed(userPayload, feedId);
+  }
+
+  @UseGuards(RoleGuard)
+  @UseGuards(JwtGuard)
+  @UseGuards(ApiKeyGuard)
+  @Roles(NORMAL_USER_ROLE)
+  @Post('feed/reaction/:feedId')
+  async reactFeed(
+    @User() userPayload: TokenPayloadInterface,
+    @Param('feedId') feedId: string,
+    @Body() dto: ReactFeedDto,
+  ) {
+    return this.apiGatewayService.reactFeed(userPayload, dto, feedId);
+  }
+
+  @UseGuards(RoleGuard)
+  @UseGuards(JwtGuard)
+  @UseGuards(ApiKeyGuard)
+  @Roles(NORMAL_USER_ROLE)
+  @Get('feed/everyone')
+  async getEveryoneFeeds(@User() userPayload: TokenPayloadInterface) {
+    return this.apiGatewayService.getEveryoneFeeds(userPayload);
+  }
+
+  @UseGuards(RoleGuard)
+  @UseGuards(JwtGuard)
+  @UseGuards(ApiKeyGuard)
+  @Roles(NORMAL_USER_ROLE)
+  @Get('feed/certain/:userId')
+  async getCertainUserFeeds(
+    @User() userPayload: TokenPayloadInterface,
+    @Param('userId') userId: string,
+  ) {
+    return this.apiGatewayService.getCertainUserFeeds(userPayload, userId);
   }
 }

@@ -20,6 +20,7 @@ export class NotificationService {
       clientId: this.configService.get('GOOGLE_OAUTH_CLIENT_ID'),
       clientSecret: this.configService.get('GOOGLE_OAUTH_CLIENT_SECRET'),
       refreshToken: this.configService.get('GOOGLE_OAUTH_REFRESH_TOKEN'),
+      accessToken: this.configService.get('GOOGLE_OAUTH_ACCESS_TOKEN'),
     },
   });
 

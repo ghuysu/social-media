@@ -9,6 +9,7 @@ import {
   CheckEmailDto,
   CreateNormalUserDto,
   DeleteFriendDto,
+  FEED_SERVICE,
   GoogleSignInDto,
   RemoveInviteDto,
   SendInviteDto,
@@ -32,12 +33,18 @@ import { ClientProxy } from '@nestjs/microservices';
 import { lastValueFrom, map } from 'rxjs';
 import { GetStrangerInforInterface } from './interfaces/get-stranger-infor.interface';
 import { AcceptInviteDto } from '@app/common';
+import {
+  CreateFeedDto,
+  ReactFeedDto,
+  UpdateFeedDto,
+} from '@app/common/dto/feed-dto';
 
 @Injectable()
 export class ApiGatewayService {
   constructor(
     @Inject(AUTH_SERVICE) private readonly authService: ClientProxy,
     @Inject(USER_SERVICE) private readonly userService: ClientProxy,
+    @Inject(FEED_SERVICE) private readonly feedService: ClientProxy,
   ) {}
 
   throwErrorBasedOnStatusCode(statusCode: number, message: string) {
@@ -460,6 +467,163 @@ export class ApiGatewayService {
       this.userService
         .send('delete_friend', {
           payload: dto,
+          userPayload,
+        })
+        .pipe(
+          map((response) => {
+            if (response.error) {
+              this.throwErrorBasedOnStatusCode(
+                response.statusCode,
+                response.message,
+              );
+            }
+            return response;
+          }),
+        ),
+    );
+
+    return result;
+  }
+
+  //feed
+  async createFeed(
+    userPayload: TokenPayloadInterface,
+    dto: CreateFeedDto,
+    image: Express.Multer.File,
+  ) {
+    const result = await lastValueFrom(
+      this.feedService
+        .send('create_feed', {
+          payload: {
+            ...dto,
+            image: image.buffer,
+            originalname: image.originalname,
+          },
+          userPayload,
+        })
+        .pipe(
+          map((response) => {
+            if (response.error) {
+              this.throwErrorBasedOnStatusCode(
+                response.statusCode,
+                response.message,
+              );
+            }
+            return response;
+          }),
+        ),
+    );
+
+    return result;
+  }
+
+  async updateFeed(
+    userPayload: TokenPayloadInterface,
+    dto: UpdateFeedDto,
+    feedId: string,
+  ) {
+    const result = await lastValueFrom(
+      this.feedService
+        .send('update_feed', {
+          payload: { ...dto, feedId },
+          userPayload,
+        })
+        .pipe(
+          map((response) => {
+            if (response.error) {
+              this.throwErrorBasedOnStatusCode(
+                response.statusCode,
+                response.message,
+              );
+            }
+            return response;
+          }),
+        ),
+    );
+
+    return result;
+  }
+
+  async deleteFeed(userPayload: TokenPayloadInterface, feedId: string) {
+    const result = await lastValueFrom(
+      this.feedService
+        .send('delete_feed', {
+          payload: { feedId },
+          userPayload,
+        })
+        .pipe(
+          map((response) => {
+            if (response.error) {
+              this.throwErrorBasedOnStatusCode(
+                response.statusCode,
+                response.message,
+              );
+            }
+            return response;
+          }),
+        ),
+    );
+
+    return result;
+  }
+
+  async reactFeed(
+    userPayload: TokenPayloadInterface,
+    dto: ReactFeedDto,
+    feedId: string,
+  ) {
+    const result = await lastValueFrom(
+      this.feedService
+        .send('react_feed', {
+          payload: { ...dto, feedId },
+          userPayload,
+        })
+        .pipe(
+          map((response) => {
+            if (response.error) {
+              this.throwErrorBasedOnStatusCode(
+                response.statusCode,
+                response.message,
+              );
+            }
+            return response;
+          }),
+        ),
+    );
+
+    return result;
+  }
+
+  async getEveryoneFeeds(userPayload: TokenPayloadInterface) {
+    const result = await lastValueFrom(
+      this.feedService
+        .send('get_everyone_feeds', {
+          userPayload,
+        })
+        .pipe(
+          map((response) => {
+            if (response.error) {
+              this.throwErrorBasedOnStatusCode(
+                response.statusCode,
+                response.message,
+              );
+            }
+            return response;
+          }),
+        ),
+    );
+
+    return result;
+  }
+
+  async getCertainUserFeeds(
+    userPayload: TokenPayloadInterface,
+    userId: string,
+  ) {
+    const result = await lastValueFrom(
+      this.feedService
+        .send('get_certain_user_feeds', {
+          payload: { userId },
           userPayload,
         })
         .pipe(

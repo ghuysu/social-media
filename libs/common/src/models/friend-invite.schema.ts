@@ -1,5 +1,7 @@
 import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
 import { AbstractDocument, UserDocument } from '@app/common';
+
+import { FRIEND_INVITE_DOCUMENT, USER_DOCUMENT } from '../constants/schema';
 import { SchemaTypes, Types } from 'mongoose';
 
 export enum FriendInviteStatus {
@@ -8,12 +10,12 @@ export enum FriendInviteStatus {
   Rejected = 'rejected',
 }
 
-@Schema({ versionKey: false, collection: 'friendInvites' })
+@Schema({ versionKey: false, collection: FRIEND_INVITE_DOCUMENT })
 export class FriendInviteDocument extends AbstractDocument {
   @Prop({
     required: true,
     type: SchemaTypes.ObjectId,
-    ref: 'users',
+    ref: USER_DOCUMENT,
     index: true,
   })
   sender: Types.ObjectId | UserDocument;
@@ -21,7 +23,7 @@ export class FriendInviteDocument extends AbstractDocument {
   @Prop({
     required: true,
     type: SchemaTypes.ObjectId,
-    ref: 'users',
+    ref: USER_DOCUMENT,
     index: true,
   })
   receiver: Types.ObjectId | UserDocument;

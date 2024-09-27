@@ -1,8 +1,9 @@
 import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
 import { AbstractDocument, FriendInviteDocument } from '@app/common';
+import { FRIEND_INVITE_DOCUMENT, USER_DOCUMENT } from '../constants/schema';
 import { SchemaTypes, Types } from 'mongoose';
 
-@Schema({ versionKey: false, collection: 'users' })
+@Schema({ versionKey: false, collection: USER_DOCUMENT })
 export class UserDocument extends AbstractDocument {
   @Prop({ required: true, type: String, index: true })
   email: string;
@@ -19,10 +20,14 @@ export class UserDocument extends AbstractDocument {
   @Prop({ type: String, required: true })
   profileImageUrl: string;
 
-  @Prop({ type: [SchemaTypes.ObjectId], ref: 'users', default: [] })
+  @Prop({ type: [SchemaTypes.ObjectId], ref: USER_DOCUMENT, default: [] })
   friendList: Types.ObjectId[] | UserDocument[];
 
-  @Prop({ type: [SchemaTypes.ObjectId], ref: 'friendInvites', default: [] })
+  @Prop({
+    type: [SchemaTypes.ObjectId],
+    ref: FRIEND_INVITE_DOCUMENT,
+    default: [],
+  })
   friendInvites: Types.ObjectId[] | FriendInviteDocument[];
 
   @Prop({ type: String })
