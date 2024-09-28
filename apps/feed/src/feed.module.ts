@@ -12,6 +12,7 @@ import {
   REACTION_DOCUMENT,
   ReactionSchema,
   USER_DOCUMENT,
+  USER_SERVICE,
   UserSchema,
 } from '@app/common';
 import { ConfigModule, ConfigService } from '@nestjs/config';
@@ -34,6 +35,8 @@ import { ReactionRepository } from './repositories/reaction.repository';
         NOTIFICATION_PORT: joi.number().required(),
         AWS_S3_HOST: joi.string().required(),
         AWS_S3_PORT: joi.number().required(),
+        USER_HOST: joi.string().required(),
+        USER_PORT: joi.number().required(),
         REDIS_HOST: joi.string().required(),
         REDIS_PORT: joi.number().required(),
         BUCKET_NAME: joi.string().required(),
@@ -65,6 +68,17 @@ import { ReactionRepository } from './repositories/reaction.repository';
           options: {
             host: configService.get('AWS_S3_HOST'),
             port: configService.get('AWS_S3_PORT'),
+          },
+        }),
+        inject: [ConfigService],
+      },
+      {
+        name: USER_SERVICE,
+        useFactory: (configService: ConfigService) => ({
+          transport: Transport.TCP,
+          options: {
+            host: configService.get('USER_HOST'),
+            port: configService.get('USER_PORT'),
           },
         }),
         inject: [ConfigService],

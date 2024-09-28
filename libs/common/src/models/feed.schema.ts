@@ -32,6 +32,15 @@ export class FeedDocument extends AbstractDocument {
       sad: { type: Number, default: 0 },
       angry: { type: Number, default: 0 },
     },
+    default: {
+      like: 0,
+      love: 0,
+      haha: 0,
+      wow: 0,
+      sad: 0,
+      angry: 0,
+    },
+    _id: false,
   })
   reactionStatistic: {
     like: number;

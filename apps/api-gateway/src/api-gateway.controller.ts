@@ -49,6 +49,7 @@ import { RoleGuard } from './guards/role.guard';
 import { Roles } from './decorators/role.decorator';
 import {
   CreateFeedDto,
+  GetEveryoneFeedsDto,
   ReactFeedDto,
   UpdateFeedDto,
 } from '@app/common/dto/feed-dto';
@@ -378,8 +379,11 @@ export class ApiGatewayController {
   @UseGuards(ApiKeyGuard)
   @Roles(NORMAL_USER_ROLE)
   @Get('feed/everyone')
-  async getEveryoneFeeds(@User() userPayload: TokenPayloadInterface) {
-    return this.apiGatewayService.getEveryoneFeeds(userPayload);
+  async getEveryoneFeeds(
+    @User() userPayload: TokenPayloadInterface,
+    @Body() dto: GetEveryoneFeedsDto,
+  ) {
+    return this.apiGatewayService.getEveryoneFeeds(userPayload, dto);
   }
 
   @UseGuards(RoleGuard)

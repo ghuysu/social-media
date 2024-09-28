@@ -35,6 +35,7 @@ import { GetStrangerInforInterface } from './interfaces/get-stranger-infor.inter
 import { AcceptInviteDto } from '@app/common';
 import {
   CreateFeedDto,
+  GetEveryoneFeedsDto,
   ReactFeedDto,
   UpdateFeedDto,
 } from '@app/common/dto/feed-dto';
@@ -594,11 +595,15 @@ export class ApiGatewayService {
     return result;
   }
 
-  async getEveryoneFeeds(userPayload: TokenPayloadInterface) {
+  async getEveryoneFeeds(
+    userPayload: TokenPayloadInterface,
+    payload: GetEveryoneFeedsDto,
+  ) {
     const result = await lastValueFrom(
       this.feedService
         .send('get_everyone_feeds', {
           userPayload,
+          payload,
         })
         .pipe(
           map((response) => {

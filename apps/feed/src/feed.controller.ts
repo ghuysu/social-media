@@ -12,6 +12,7 @@ import { MessagePattern, Payload } from '@nestjs/microservices';
 import { CreateFeedInterface } from './interfaces/create-feed.interface';
 import { UpdateFeedInterface } from './interfaces/update-feed.interface';
 import { DeleteFeedInterface } from './interfaces/delete-feed.interface';
+import { GetEveryoneFeedsInterface } from './interfaces/get-everyone-feeds.interface';
 
 @Controller()
 export class FeedController {
@@ -109,10 +110,36 @@ export class FeedController {
   }
 
   @MessagePattern('react_feed')
-  async reactFeed() {}
+  async reactFeed(@Payload() { userPayload, payload }: DeleteFeedInterface) {
+    try {
+      await this.feedService.deleteFeed(userPayload, payload);
+      return {
+        status: HttpStatus.OK,
+        message: 'Deleted feed successfully.',
+      };
+    } catch (error) {
+      return this.handleError(error);
+    }
+  }
 
   @MessagePattern('get_everyone_feeds')
-  async getEveryoneFeeds() {}
+  async getEveryoneFeeds(
+    @Payload() { userPayload, payload }: GetEveryoneFeedsInterface,
+  ) {
+    try {
+      const result = await this.feedService.getEveryoneFeeds(
+        userPayload,
+        payload,
+      );
+      return {
+        status: HttpStatus.OK,
+        message: 'Get everyone feeds successfully.',
+        metadata: result,
+      };
+    } catch (error) {
+      return this.handleError(error);
+    }
+  }
 
   @MessagePattern('get_certain_user_feeds')
   async getCertainUserFeeds() {}
