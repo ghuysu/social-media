@@ -33,10 +33,12 @@ import androidx.compose.ui.unit.dp
 import thanhnhan.myproject.socialmedia.R
 import thanhnhan.myproject.socialmedia.ui.theme.AppTheme
 
-class IntroLogin {
-    @Composable
-    fun LocketIntroScreen() {
-        AppTheme {
+@Composable
+fun LocketIntroScreen(
+    openSignIn: () -> Unit,
+    openSignUp: () -> Unit,
+) {
+    AppTheme {
 
         Box(
             modifier = Modifier
@@ -57,10 +59,10 @@ class IntroLogin {
                         .size(200.dp)
                         .clip(CircleShape)
                 )
-                    Text(
-                        text = "SkyLine",
-                        style = AppTheme.appTypography.largeTitle
-                    )
+                Text(
+                    text = "SkyLine",
+                    style = AppTheme.appTypography.largeTitle
+                )
 
                 Spacer(modifier = Modifier.height(50.dp))
 
@@ -73,7 +75,9 @@ class IntroLogin {
                 Spacer(modifier = Modifier.height(150.dp))
 
                 Button(
-                    onClick = { /* TODO: Add your logic here */ },
+                    onClick = {
+                        openSignUp()
+                    },
                     colors = ButtonDefaults.buttonColors(
                         containerColor = AppTheme.appButtonStyle.backgroundColor,
                         contentColor = AppTheme.appButtonStyle.contentColor
@@ -93,7 +97,9 @@ class IntroLogin {
 
                 // Nút "Đăng nhập"
                 Button(
-                    onClick = { /* TODO: Add your logic here */ },
+                    onClick = {
+                        openSignIn()
+                    },
                     colors = ButtonDefaults.buttonColors(
                         containerColor = AppTheme.appButtonStyle.backgroundColor,
                         contentColor = AppTheme.appButtonStyle.contentColor
@@ -112,11 +118,13 @@ class IntroLogin {
             }
         }
     }
-    }
+}
 
-    @Preview(showBackground = true)
-    @Composable
-    fun LocketIntroScreenPreview() {
-        LocketIntroScreen()
-    }
+@Preview(showBackground = true)
+@Composable
+fun LocketIntroScreenPreview() {
+    LocketIntroScreen(
+        openSignIn = {},
+        openSignUp = {}
+    )
 }

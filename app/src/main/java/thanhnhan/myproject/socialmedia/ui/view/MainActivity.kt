@@ -1,7 +1,7 @@
 package thanhnhan.myproject.socialmedia.ui.view
 
+import android.content.Intent
 import android.os.Bundle
-import android.provider.ContactsContract.Profile
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.compose.foundation.layout.fillMaxSize
@@ -16,9 +16,12 @@ import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navArgument
+import androidx.navigation.navDeepLink
 import thanhnhan.myproject.socialmedia.ui.theme.SocialMediaTheme
 import thanhnhan.myproject.socialmedia.ui.view.HomeScreen.LocketScreen
+import thanhnhan.myproject.socialmedia.ui.view.Login.LocketIntroScreen
 import thanhnhan.myproject.socialmedia.ui.view.Login.SignInScreen
+import thanhnhan.myproject.socialmedia.ui.view.add_friend.AddFriendScreen
 import thanhnhan.myproject.socialmedia.ui.view.sign_up.ChooseBirthdaySignUp
 import thanhnhan.myproject.socialmedia.ui.view.sign_up.ChooseCountrySignUp
 import thanhnhan.myproject.socialmedia.ui.view.sign_up.ChooseEmailSignUp
@@ -55,6 +58,16 @@ fun MainApp() {
     val context = LocalContext.current
     SocialMediaTheme {
         NavHost(navController = navController, startDestination = "signInScreen") {
+            composable(route = "intro") {
+                LocketIntroScreen(
+                    openSignIn = {
+                        navController.navigate("signInScreen")
+                    },
+                    openSignUp = {
+                        navController.navigate("chooseEmailSignUp")
+                    }
+                )
+            }
 
             // Thêm SignInScreen vào NavHost
             composable(route = "signInScreen") {
@@ -249,6 +262,9 @@ fun MainApp() {
                     },
                     openChangeFullname = {
                         navController.navigate("changeFullname")
+                    },
+                    openIntro = {
+                        navController.navigate("intro")
                     }
                 )
             }
@@ -310,6 +326,44 @@ fun MainApp() {
                         navController.popBackStack()
                     }
                 )
+            }
+
+            composable(
+                route = "addFriend/{_id}/{fullname}/{profileImageUrl}",
+                deepLinks = listOf(
+                    navDeepLink {
+                        uriPattern = "app://add.friend.skyline/{_id}/{fullname}/{profileImageUrl}"
+                        action = Intent.ACTION_VIEW
+                    }
+                ),
+                arguments = listOf(
+                    navArgument("_id") {
+                        type = NavType.StringType
+                        defaultValue = "0"
+                    },
+                    navArgument("fullname") {
+                        type = NavType.StringType
+                        defaultValue = "Not Found"
+                    },
+                    navArgument("profileImageUrl") {
+                        type = NavType.StringType
+                        defaultValue = ""
+                    }
+                )
+            ) { navBackStackEntry ->
+                navBackStackEntry.arguments?.let { argument ->
+                    val id = argument.getString("_id")!!
+                    val name = argument.getString("fullname")!!
+                    val image = argument.getString("profileImageUrl")!!
+                    AddFriendScreen(
+                        idOfFriend = id,
+                        nameOfFriend = name,
+                        urlOfFriend = image,
+                        openUserProfile = {
+                            navController.navigate("UserProfile")
+                        }
+                    )
+                }
             }
         }
     }
