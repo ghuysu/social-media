@@ -21,6 +21,8 @@ import thanhnhan.myproject.socialmedia.data.model.CheckEmailCodeResponse
 
 import thanhnhan.myproject.socialmedia.data.model.EmailVerificationRequest
 import thanhnhan.myproject.socialmedia.data.model.EmailVerificationResponse
+import thanhnhan.myproject.socialmedia.data.model.SendInviteRequest
+import thanhnhan.myproject.socialmedia.data.model.SendInviteResponse
 import thanhnhan.myproject.socialmedia.data.model.SignUpRequest
 import thanhnhan.myproject.socialmedia.data.model.SignUpResponse
 
@@ -75,5 +77,10 @@ interface Api {
         @Header("authorization") authToken: String,
         @Body request: ChangeAvatarRequest
     ): ChangeAvatarResponse
+    @PATCH("api/user/invite/add")
+    suspend fun sendInvite(
+        @Header("authorization") authToken: String,
+        @Body request: SendInviteRequest
+    ): SendInviteResponse
 }
 

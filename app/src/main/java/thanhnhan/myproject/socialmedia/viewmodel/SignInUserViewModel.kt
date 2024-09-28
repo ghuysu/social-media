@@ -135,11 +135,10 @@ class SignInUserViewModel(
         }
     }
 
-
     //Chức năng cho Sign out :
-//    fun logout() {
-//        val dbHelper = UserDatabaseHelper(context)
-//        dbHelper.clearUserData()
-//        UserSession.clearSession()
-//    }
+    fun logout() {
+        val dbHelper = UserDatabaseHelper(context)
+        dbHelper.clearUserData()
+        UserSession.clearSession()
+    }
 }
