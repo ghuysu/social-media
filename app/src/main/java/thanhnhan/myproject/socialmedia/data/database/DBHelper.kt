@@ -4,6 +4,7 @@ import android.content.ContentValues
 import android.content.Context
 import android.database.sqlite.SQLiteDatabase
 import android.database.sqlite.SQLiteOpenHelper
+import android.util.Log
 import thanhnhan.myproject.socialmedia.data.model.User
 import thanhnhan.myproject.socialmedia.data.model.UserSession
 
@@ -43,6 +44,8 @@ class UserDatabaseHelper(context: Context) : SQLiteOpenHelper(context, DATABASE_
         val db = this.writableDatabase
         val insertQuery = "INSERT OR REPLACE INTO $TABLE_NAME (id, email, fullname, birthday, token, profile_image_url, country) VALUES (?, ?, ?, ?, ?, ?, ?)"
         db.execSQL(insertQuery, arrayOf(id, email, fullname, birthday, token, profileImageUrl, country))
+        // Log để kiểm tra xem profileImageUrl có được lưu chính xác không
+        Log.d("UserDatabaseHelper", "Inserted: Profile Image URL - $profileImageUrl")
     }
 
     fun getUserData(): User? {
@@ -50,7 +53,7 @@ class UserDatabaseHelper(context: Context) : SQLiteOpenHelper(context, DATABASE_
         val query = "SELECT * FROM $TABLE_NAME LIMIT 1"
         val cursor = db.rawQuery(query, null)
         return if (cursor.moveToFirst()) {
-            User(
+            val user = User(
                 id = cursor.getString(cursor.getColumnIndexOrThrow(COLUMN_ID)),
                 email = cursor.getString(cursor.getColumnIndexOrThrow(COLUMN_EMAIL)),
                 fullname = cursor.getString(cursor.getColumnIndexOrThrow(COLUMN_FULLNAME)),
@@ -59,6 +62,10 @@ class UserDatabaseHelper(context: Context) : SQLiteOpenHelper(context, DATABASE_
                 profileImageUrl = cursor.getString(cursor.getColumnIndexOrThrow(COLUMN_PROFILE_IMAGE_URL)),
                 country = cursor.getString(cursor.getColumnIndexOrThrow(COLUMN_COUNTRY))
             )
+
+            // Log để kiểm tra profileImageUrl đã được lấy chính xác chưa
+            Log.d("UserDatabaseHelper", "Fetched: Profile Image URL - ${user.profileImageUrl}")
+            user
         } else {
             null
         }

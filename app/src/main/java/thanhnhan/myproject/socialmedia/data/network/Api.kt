@@ -1,8 +1,11 @@
 package thanhnhan.myproject.socialmedia.data.network
+import okhttp3.MultipartBody
 import retrofit2.http.Body
 import retrofit2.http.Header
+import retrofit2.http.Multipart
 import retrofit2.http.PATCH
 import retrofit2.http.POST
+import retrofit2.http.Part
 import thanhnhan.myproject.socialmedia.data.model.ChangeAvatarRequest
 import thanhnhan.myproject.socialmedia.data.model.ChangeAvatarResponse
 
@@ -70,10 +73,11 @@ interface Api {
             @Body request: ChangeFullnameRequest
     ): ChangeFullnameResponse
 
+    @Multipart
     @PATCH("api/user/profile-image")
     suspend fun changeAvatar(
         @Header("authorization") authToken: String,
-        @Body request: ChangeAvatarRequest
+        @Part avatar: MultipartBody.Part
     ): ChangeAvatarResponse
 }
 

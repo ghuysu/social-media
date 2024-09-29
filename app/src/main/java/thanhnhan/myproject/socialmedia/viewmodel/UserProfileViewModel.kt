@@ -1,9 +1,12 @@
 package thanhnhan.myproject.socialmedia.viewmodel
 
+import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.launch
+import okhttp3.MultipartBody
 import thanhnhan.myproject.socialmedia.data.repository.UserProfileRepository
 import thanhnhan.myproject.socialmedia.data.Result
 import thanhnhan.myproject.socialmedia.data.model.ChangeAvatarResponse
@@ -72,12 +75,22 @@ class UserProfileViewModel(
         }
     }
     private val _changeAvatarResult = MutableStateFlow<Result<ChangeAvatarResponse>?>(null)
-    val changeAvatarResult: MutableStateFlow<Result<ChangeAvatarResponse>?> = _changeAvatarResult
+    val changeAvatarResult: StateFlow<Result<ChangeAvatarResponse>?> get() = _changeAvatarResult
 
-    fun changeAvatar(authToken: String, avatar: File) {
+    // Cập nhật hàm để nhận MultipartBody.Part thay vì File
+    fun changeAvatar(authToken: String, avatar: MultipartBody.Part) {
+        Log.d("ChangeAvatar", "Starting avatar change with token: $authToken")
         viewModelScope.launch {
-            repository.changeAvatar(authToken, avatar).collect {
-                _changeAvatarResult.value = it
+            repository.changeAvatar(authToken, avatar).collect { result ->
+                when (result) {
+                    is Result.Success -> {
+                        Log.d("ChangeAvatar", "Avatar changed successfully. New avatar URL: ${result.data?.metadata?.profileImageUrl}")
+                    }
+                    is Result.Error -> {
+                        Log.e("ChangeAvatar", "Error changing avatar: ${result.message}")
+                    }
+                }
+                _changeAvatarResult.value = result
             }
         }
     }

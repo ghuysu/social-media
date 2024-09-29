@@ -1,9 +1,11 @@
 package thanhnhan.myproject.socialmedia.ui.view.user_profile
 
+import android.graphics.Bitmap
 import android.net.Uri
+import android.util.Log
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
-import androidx.compose.animation.core.animateFloatAsState
+import androidx.activity.result.launch
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -39,16 +41,13 @@ import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.Text
-import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
@@ -60,19 +59,30 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.lifecycle.viewmodel.compose.viewModel
 import coil.compose.rememberAsyncImagePainter
-import kotlinx.coroutines.launch
+import okhttp3.MediaType.Companion.toMediaTypeOrNull
+import okhttp3.MultipartBody
+import okhttp3.RequestBody
 import thanhnhan.myproject.socialmedia.R
 import thanhnhan.myproject.socialmedia.data.model.SignInUserResponse
 import thanhnhan.myproject.socialmedia.data.model.UserSession
+import thanhnhan.myproject.socialmedia.data.network.RetrofitInstance
+import thanhnhan.myproject.socialmedia.data.repository.UserProfileRepository
 import thanhnhan.myproject.socialmedia.ui.theme.AppTheme
+import thanhnhan.myproject.socialmedia.utils.FileUtils.bitmapToFile
+import thanhnhan.myproject.socialmedia.utils.FileUtils.uriToFile
+import thanhnhan.myproject.socialmedia.viewmodel.UserProfileViewModel
+import thanhnhan.myproject.socialmedia.viewmodel.UserProfileViewModelFactory
 
 @Composable
 fun ProfileScreen(
     openChangeEmail: () -> Unit,
     openChangeBirthday: () -> Unit,
     openChangeCountry: () -> Unit,
-    openChangeFullname: () -> Unit
+    openChangeFullname: () -> Unit,
+    repository: UserProfileRepository,  // Truyền repository từ đây
+    authToken: String  // Nhận authToken
 ) {
     // Lấy thông tin người dùng từ UserSession
     val user = UserSession.user
@@ -88,8 +98,9 @@ fun ProfileScreen(
             ProfileSection(
                 userAvatar = user.profileImageUrl,
                 userName = user.fullname,
-                openChangeFullname = openChangeFullname
-
+                openChangeFullname = openChangeFullname,
+                repository = repository,
+                authToken = authToken
             )
 
             Spacer(modifier = Modifier.height(40.dp))
@@ -125,7 +136,9 @@ fun ProfileScreen(
 fun ProfileSection(
     userAvatar: String,
     userName: String,
-    openChangeFullname: () -> Unit
+    openChangeFullname: () -> Unit,
+    repository: UserProfileRepository,  // Nhận repository
+    authToken: String  // Nhận authToken
 ) {
     Column(
         horizontalAlignment = Alignment.CenterHorizontally,
@@ -152,7 +165,7 @@ fun ProfileSection(
                     .align(Alignment.BottomEnd)
             ) {
 
-                AvatarChangeButton()
+                AvatarChangeButton(authToken = authToken, repository = repository)
             }
         }
 
@@ -188,10 +201,13 @@ fun CircularImageView(
     url: String,
     size: Int,
 ) {
+    // Thêm log để kiểm tra URL hình ảnh
+    Log.d("CircularImageView", "Image URL: $url")
     Image(
         painter = rememberAsyncImagePainter(
             model = url,
-            placeholder = painterResource(id = R.drawable.ic_launcher_background)
+            placeholder = painterResource(id = R.drawable.ic_launcher_background),
+            error = painterResource(id = R.drawable.ic_launcher_foreground) // Hình ảnh hiển thị khi có lỗi
         ),
         contentDescription = null,
         contentScale = ContentScale.Crop,
@@ -343,15 +359,57 @@ fun SettingItem(
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun AvatarChangeButton() {
+fun AvatarChangeButton(authToken: String, repository: UserProfileRepository) {
     var showModalSheet by remember { mutableStateOf(false) }  // Trạng thái để kiểm soát hiển thị ModalBottomSheet
     val context = LocalContext.current
-    val launcher = rememberLauncherForActivityResult(
+    val userProfileViewModel: UserProfileViewModel = viewModel(
+        factory = UserProfileViewModelFactory(repository) // Sử dụng factory để khởi tạo viewModel
+    )
+
+    // Launcher để mở thư viện ảnh
+    val galleryLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.GetContent()
     ) { uri: Uri? ->
-        // Xử lý URI của bức ảnh đã chọn
-        if (uri != null) {
-            // TODO: Cập nhật avatar của bạn với URI
+        uri?.let {
+            // Chuyển đổi Uri thành File
+            val avatarFile = uriToFile(uri, context)
+            avatarFile?.let {
+                // Chuyển đổi File thành MultipartBody.Part
+                val requestFile = RequestBody.create("image/jpeg".toMediaTypeOrNull(), it) // Hoặc "image/png" nếu tệp là PNG
+                val body = MultipartBody.Part.createFormData("file", it.name, requestFile)
+
+                Log.d("ChangeAvatar", "File path: ${it.absolutePath}, File name: ${it.name}, File size: ${it.length()} bytes")
+                Log.d("ChangeAvatar", "Selected image from gallery: ${it.name}")
+
+                // Gọi ViewModel để cập nhật avatar
+                userProfileViewModel.changeAvatar(authToken, body)
+                showModalSheet = false
+            } ?: run {
+                Log.e("ChangeAvatar", "Failed to convert Uri to File")
+            }
+        }
+    }
+
+    // Launcher để mở Camera và chụp ảnh
+    val cameraLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.TakePicturePreview()
+    ) { bitmap: Bitmap? ->
+        bitmap?.let {
+            // Chuyển đổi Bitmap thành File
+            val avatarFile = bitmapToFile(bitmap, context)
+            avatarFile?.let {
+                // Chuyển đổi File thành MultipartBody.Part
+                val requestFile = RequestBody.create("image/*".toMediaTypeOrNull(), it)
+                val body = MultipartBody.Part.createFormData("file", it.name, requestFile)
+
+                Log.d("ChangeAvatar", "Captured image from camera: ${it.name}")
+
+                // Gọi ViewModel để cập nhật avatar
+                userProfileViewModel.changeAvatar(authToken, body)
+                showModalSheet = false
+            } ?: run {
+                Log.e("ChangeAvatar", "Failed to convert Bitmap to File")
+            }
         }
     }
     // IconButton khi được nhấn sẽ hiển thị ModalBottomSheet
@@ -385,7 +443,7 @@ fun AvatarChangeButton() {
                 // Tùy chọn 1: Choose from Gallery
                 Button(
                     onClick = {
-                        launcher.launch("image/*")  // Mở Gallery để chọn ảnh
+                        galleryLauncher.launch("image/*")  // Mở Gallery để chọn ảnh
                         showModalSheet = false  // Ẩn modal sau khi chọn
                     },
                     modifier = Modifier.fillMaxWidth()
@@ -399,6 +457,8 @@ fun AvatarChangeButton() {
                 // Tùy chọn 2: Shot by camera
                 Button(
                     onClick = {
+                        cameraLauncher.launch()  // Mở camera để chụp ảnh
+                        showModalSheet = false  // Ẩn modal sau khi chọn
                         // TODO: Implement camera capture
                         showModalSheet = false  // Ẩn modal sau khi chọn
                     },
@@ -429,6 +489,7 @@ fun AvatarChangeButton() {
 @Preview(showBackground = true)
 @Composable
 fun ProfileScreenPreview() {
+    val mockRepository = UserProfileRepository(RetrofitInstance.api)
     UserSession.setUserData(
         SignInUserResponse.Metadata.User(
             _id = "12345",
@@ -447,6 +508,8 @@ fun ProfileScreenPreview() {
         openChangeEmail = {},
         openChangeBirthday = {},
         openChangeCountry = {},
-        openChangeFullname = {}
+        openChangeFullname = {},
+        repository = mockRepository,  // Truyền repository giả lập
+        authToken = "mockToken"
     )  // Gọi ProfileScreen với dữ liệu đã giả lập
 }

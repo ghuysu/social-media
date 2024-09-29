@@ -1,5 +1,6 @@
 package thanhnhan.myproject.socialmedia.data.repository
 
+import android.util.Log
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flow
 import okhttp3.MediaType.Companion.toMediaTypeOrNull
@@ -9,7 +10,6 @@ import okio.IOException
 import retrofit2.HttpException
 import thanhnhan.myproject.socialmedia.data.network.Api
 import thanhnhan.myproject.socialmedia.data.Result
-import thanhnhan.myproject.socialmedia.data.model.ChangeAvatarRequest
 import thanhnhan.myproject.socialmedia.data.model.ChangeAvatarResponse
 import thanhnhan.myproject.socialmedia.data.model.ChangeBirthdayRequest
 import thanhnhan.myproject.socialmedia.data.model.ChangeBirthdayResponse
@@ -119,25 +119,22 @@ class UserProfileRepository(
             }
         }
     }
-    suspend fun changeAvatar(authToken: String, avatar: File): Flow<Result<ChangeAvatarResponse>> {
+    suspend fun changeAvatar(authToken: String, avatar: MultipartBody.Part): Flow<Result<ChangeAvatarResponse>> {
         return flow {
-            // Tạo request body cho file
-            val requestFile = RequestBody.create("image/*".toMediaTypeOrNull(), avatar)
-            val body = MultipartBody.Part.createFormData("file", avatar.name, requestFile)
-
-            // Tạo đối tượng ChangeAvatarRequest
-            val changeAvatarRequest = ChangeAvatarRequest(avatar = body)
-
-            // Thực hiện gọi API
             try {
-                val response = api.changeAvatar(authToken, changeAvatarRequest)
+                // Gọi API để thay đổi avatar
+                Log.d("ChangeAvatar", "Sending request to change avatar with token: $authToken")
+                val response = api.changeAvatar(authToken, avatar)
                 emit(Result.Success(response))
             } catch (e: HttpException) {
                 val errorMessage = e.response()?.errorBody()?.string() ?: "Error occurred"
+                Log.e("ChangeAvatar", "HTTP Exception: $errorMessage")
                 emit(Result.Error(message = errorMessage))
             } catch (e: IOException) {
+                Log.e("ChangeAvatar", "Network error: ${e.message}")
                 emit(Result.Error(message = "Network error: ${e.message}"))
             } catch (e: Exception) {
+                Log.e("ChangeAvatar", "Unexpected error: ${e.message}")
                 emit(Result.Error(message = "Unexpected error: ${e.message}"))
             }
         }

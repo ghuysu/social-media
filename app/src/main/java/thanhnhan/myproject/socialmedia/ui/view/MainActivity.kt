@@ -16,6 +16,9 @@ import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navArgument
+import thanhnhan.myproject.socialmedia.data.database.UserDatabaseHelper
+import thanhnhan.myproject.socialmedia.data.network.RetrofitInstance
+import thanhnhan.myproject.socialmedia.data.repository.UserProfileRepository
 import thanhnhan.myproject.socialmedia.ui.theme.SocialMediaTheme
 import thanhnhan.myproject.socialmedia.ui.view.HomeScreen.LocketScreen
 import thanhnhan.myproject.socialmedia.ui.view.Login.SignInScreen
@@ -237,20 +240,32 @@ fun MainApp() {
                 }
             }
             composable(route = "UserProfile") {
-                ProfileScreen(
-                    openChangeEmail = {
-                        navController.navigate("changeEmail")
-                    },
-                    openChangeBirthday = {
-                        navController.navigate("changeBirthday")
-                    },
-                    openChangeCountry = {
-                        navController.navigate("changeCountry")
-                    },
-                    openChangeFullname = {
-                        navController.navigate("changeFullname")
-                    }
-                )
+                val context = LocalContext.current  // Lấy context bằng LocalContext
+                val dbHelper = UserDatabaseHelper(context)
+                val savedUser = dbHelper.getUserData()
+
+                if (savedUser != null) {
+                    val authToken = savedUser.token  // Lấy token từ SQLite
+                    ProfileScreen(
+                        openChangeEmail = {
+                            navController.navigate("changeEmail")
+                        },
+                        openChangeBirthday = {
+                            navController.navigate("changeBirthday")
+                        },
+                        openChangeCountry = {
+                            navController.navigate("changeCountry")
+                        },
+                        openChangeFullname = {
+                            navController.navigate("changeFullname")
+                        },
+                        repository = UserProfileRepository(RetrofitInstance.api),  // Sử dụng repository
+                        authToken = authToken  // Truyền token đã lưu vào ProfileScreen
+                    )
+                } else {
+                    // Nếu không có token, có thể chuyển hướng người dùng về màn hình đăng nhập
+                    navController.navigate("SignIn")
+                }
             }
 
             composable(route = "changeEmail") {
