@@ -92,6 +92,22 @@ class SignInUserViewModel(
                                 profileImageUrl = user.profileImageUrl,
                                 country = user.country
                             )
+
+                            // Lưu thông tin người dùng vào UserSession
+                            UserSession.setUserData(
+                                user = SignInUserResponse.Metadata.User(
+                                    _id = user._id,
+                                    email = user.email,
+                                    fullname = user.fullname,
+                                    birthday = user.birthday,
+                                    profileImageUrl = user.profileImageUrl,
+                                    friendList = listOf(),
+                                    friendInvites = listOf(),
+                                    country = user.country
+                                ),
+                                token = token
+                            )
+
                             // Cập nhật trạng thái đăng nhập thành công
                             _signInResult.value = result
                         }
@@ -135,11 +151,10 @@ class SignInUserViewModel(
         }
     }
 
-
     //Chức năng cho Sign out :
-//    fun logout() {
-//        val dbHelper = UserDatabaseHelper(context)
-//        dbHelper.clearUserData()
-//        UserSession.clearSession()
-//    }
+    fun logout() {
+        val dbHelper = UserDatabaseHelper(context)
+        dbHelper.clearUserData()
+        UserSession.clearSession()
+    }
 }

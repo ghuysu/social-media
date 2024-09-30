@@ -8,6 +8,9 @@ import android.widget.Toast
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.activity.result.launch
+import android.content.ClipData
+import android.content.ClipboardManager
+import android.content.Context
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -60,6 +63,7 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -82,6 +86,9 @@ import thanhnhan.myproject.socialmedia.viewmodel.UserProfileViewModel
 import thanhnhan.myproject.socialmedia.viewmodel.UserProfileViewModelFactory
 import java.io.File
 import thanhnhan.myproject.socialmedia.data.Result
+import thanhnhan.myproject.socialmedia.data.repository.SignInUserRepository
+import thanhnhan.myproject.socialmedia.viewmodel.SignInUserViewModel
+import thanhnhan.myproject.socialmedia.viewmodel.SignInUserViewModelFactory
 
 @Composable
 fun ProfileScreen(
@@ -90,7 +97,8 @@ fun ProfileScreen(
     openChangeCountry: () -> Unit,
     openChangeFullname: () -> Unit,
     repository: UserProfileRepository,  // Truyền repository từ đây
-    authToken: String  // Nhận authToken
+    authToken: String,  // Nhận authToken
+    openIntro: () -> Unit
 ) {
     val user = UserSession.user
 
@@ -102,6 +110,12 @@ fun ProfileScreen(
                 .padding(16.dp)
         ) {
             // Profile Section
+            val linkAddFriend by remember {
+                mutableStateOf("https://selection-page.onrender.com/friend/" + user._id)
+            }
+            val context = LocalContext.current
+            val clipboardManager = context.getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager
+
             ProfileSection(
                 userAvatar = user.profileImageUrl,
                 userName = user.fullname,
@@ -113,7 +127,12 @@ fun ProfileScreen(
             Spacer(modifier = Modifier.height(40.dp))
 
             // Invite Section
-            InviteSection(userAvatar = user.profileImageUrl)
+            InviteSection(
+                userAvatar = user.profileImageUrl,
+                linkAddFriend = linkAddFriend,
+                context = context,
+                clipboardManager = clipboardManager
+            )
 
             Spacer(modifier = Modifier.height(16.dp))
 
@@ -127,7 +146,7 @@ fun ProfileScreen(
             Spacer(modifier = Modifier.height(16.dp))
 
             // Summary Section
-            SummarySection()
+            SummarySection(openIntro)
         }
     } else {
         Text(
@@ -231,7 +250,10 @@ fun CircularImageView(
 
 @Composable
 fun InviteSection(
-    userAvatar: String
+    userAvatar: String,
+    linkAddFriend: String,
+    context: Context,
+    clipboardManager: ClipboardManager
 ) {
     Column(
         modifier = Modifier
@@ -253,12 +275,17 @@ fun InviteSection(
             )
             Spacer(modifier = Modifier.width(8.dp))
             Text(
-                text = "skyline.com/username",
-                style = TextStyle(color = Color.Gray)
+                modifier = Modifier.width(250.dp),
+                text = linkAddFriend,
+                style = TextStyle(color = Color.Gray),
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis
             )
             Spacer(modifier = Modifier.width(8.dp))
             IconButton(onClick = {
-                // TODO: Copy URL
+                val clip = ClipData.newPlainText("simple text", linkAddFriend)
+                clipboardManager.setPrimaryClip(clip)
+                Toast.makeText(context, "Link copied to clipboard", Toast.LENGTH_SHORT).show()
             }) {
                 Icon(
                     imageVector = Icons.Default.Share,
@@ -311,7 +338,10 @@ fun SettingsSection(
 }
 
 @Composable
-fun SummarySection() {
+fun SummarySection(openIntro: () -> Unit) {
+    val context = LocalContext.current
+    val viewModelFactory = SignInUserViewModelFactory(SignInUserRepository(RetrofitInstance.api), context)
+    val viewModel: SignInUserViewModel = viewModel(factory = viewModelFactory)
     Column(
         modifier = Modifier
             .fillMaxWidth()
@@ -322,7 +352,8 @@ fun SummarySection() {
             icon = Icons.Default.ExitToApp,
             text = "Sign Out",
             onClick = {
-                // TODO: Sign out
+                viewModel.logout()
+                openIntro()
             }
         )
         Divider(color = Color.Gray)
@@ -572,6 +603,7 @@ fun ProfileScreenPreview() {
         openChangeCountry = {},
         openChangeFullname = {},
         repository = mockRepository,  // Truyền repository giả lập
-        authToken = "mockToken"
+        authToken = "mockToken",
+        openIntro = {}
     )  // Gọi ProfileScreen với dữ liệu đã giả lập
 }

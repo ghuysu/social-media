@@ -25,6 +25,7 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import kotlinx.coroutines.delay
 import thanhnhan.myproject.socialmedia.data.network.RetrofitInstance
 import thanhnhan.myproject.socialmedia.data.Result
+import thanhnhan.myproject.socialmedia.data.database.UserDatabaseHelper
 import thanhnhan.myproject.socialmedia.data.model.SignInUserResponse
 import thanhnhan.myproject.socialmedia.data.model.UserSession
 import thanhnhan.myproject.socialmedia.data.repository.UserProfileRepository
@@ -67,6 +68,8 @@ fun ChangeBirthday(
                     ).show()
                     delay(1000)
                     UserSession.user?.birthday = birthday
+                    val dbHelper = UserDatabaseHelper(context)
+                    dbHelper.updateBirthday(birthday)
                     openUserProfile()
                 }
                 is Result.Error -> {

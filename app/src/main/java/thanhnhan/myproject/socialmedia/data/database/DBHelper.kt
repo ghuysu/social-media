@@ -90,6 +90,31 @@ class UserDatabaseHelper(context: Context) : SQLiteOpenHelper(context, DATABASE_
     }
 
 
+    fun updateEmail(newEmail: String) {
+        val db = this.writableDatabase
+        val contentValues = ContentValues()
+        contentValues.put(COLUMN_EMAIL, newEmail)
+        db.update(TABLE_NAME, contentValues, "$COLUMN_ID = ?", arrayOf(UserSession.user?._id))
+        db.close()
+    }
+
+    fun updateBirthday(newBirthday: String) {
+        val db = this.writableDatabase
+        val contentValues = ContentValues()
+        contentValues.put(COLUMN_BIRTHDAY, newBirthday)
+        db.update(TABLE_NAME, contentValues, "$COLUMN_ID = ?", arrayOf(UserSession.user?._id))
+        db.close()
+    }
+
+    fun updateCountry(newCountry: String) {
+        val db = this.writableDatabase
+        val contentValues = ContentValues()
+        contentValues.put(COLUMN_COUNTRY, newCountry)
+        db.update(TABLE_NAME, contentValues, "$COLUMN_ID = ?", arrayOf(UserSession.user?._id))
+        db.close()
+    }
+
+
     fun clearUserData() {
         val db = this.writableDatabase
         db.execSQL("DELETE FROM $TABLE_NAME")

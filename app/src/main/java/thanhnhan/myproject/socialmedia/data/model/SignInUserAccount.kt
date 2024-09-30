@@ -25,7 +25,7 @@ data class SignInUserResponse(
             var birthday: String,
             var profileImageUrl: String,
             var friendList: List<Friend>,
-            var friendInvites: List<Friend>,
+            var friendInvites: List<FriendInvite>,
             var country: String
         )
 
@@ -33,6 +33,13 @@ data class SignInUserResponse(
             val _id: String,
             val fullname: String,
             val profileImageUrl: String,
+        )
+
+        data class FriendInvite(
+            val _id: String,
+            val sender: Friend,
+            val receiver: Friend,
+            val createdAt: String
         )
     }
 }
@@ -58,6 +65,13 @@ object UserSession {
     // Hàm kiểm tra xem người dùng đã đăng nhập chưa
     fun isLoggedIn(): Boolean {
         return user != null && signInToken != null
+    }
+
+    // Hàm cập nhật danh sách friendInvites
+    fun updateFriendInvites(newFriendInvite: SignInUserResponse.Metadata.FriendInvite) {
+        user?.friendInvites = user?.friendInvites?.toMutableList()?.apply {
+            add(newFriendInvite)
+        } ?: listOf(newFriendInvite)
     }
 }
 
