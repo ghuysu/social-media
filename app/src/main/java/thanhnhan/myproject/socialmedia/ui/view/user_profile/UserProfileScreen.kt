@@ -1,8 +1,10 @@
 package thanhnhan.myproject.socialmedia.ui.view.user_profile
 
+import android.app.Activity
 import android.graphics.Bitmap
 import android.net.Uri
 import android.util.Log
+import android.widget.Toast
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.activity.result.launch
@@ -42,6 +44,8 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -61,19 +65,23 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import coil.compose.rememberAsyncImagePainter
+import com.yalantis.ucrop.UCrop
 import okhttp3.MediaType.Companion.toMediaTypeOrNull
 import okhttp3.MultipartBody
 import okhttp3.RequestBody
 import thanhnhan.myproject.socialmedia.R
+import thanhnhan.myproject.socialmedia.data.database.UserDatabaseHelper
 import thanhnhan.myproject.socialmedia.data.model.SignInUserResponse
 import thanhnhan.myproject.socialmedia.data.model.UserSession
 import thanhnhan.myproject.socialmedia.data.network.RetrofitInstance
 import thanhnhan.myproject.socialmedia.data.repository.UserProfileRepository
 import thanhnhan.myproject.socialmedia.ui.theme.AppTheme
-import thanhnhan.myproject.socialmedia.utils.FileUtils.bitmapToFile
+import thanhnhan.myproject.socialmedia.utils.FileUtils.bitmapToUri
 import thanhnhan.myproject.socialmedia.utils.FileUtils.uriToFile
 import thanhnhan.myproject.socialmedia.viewmodel.UserProfileViewModel
 import thanhnhan.myproject.socialmedia.viewmodel.UserProfileViewModelFactory
+import java.io.File
+import thanhnhan.myproject.socialmedia.data.Result
 
 @Composable
 fun ProfileScreen(
@@ -84,7 +92,6 @@ fun ProfileScreen(
     repository: UserProfileRepository,  // Truyền repository từ đây
     authToken: String  // Nhận authToken
 ) {
-    // Lấy thông tin người dùng từ UserSession
     val user = UserSession.user
 
     if (user != null) {
@@ -100,7 +107,7 @@ fun ProfileScreen(
                 userName = user.fullname,
                 openChangeFullname = openChangeFullname,
                 repository = repository,
-                authToken = authToken
+                authToken = authToken,
             )
 
             Spacer(modifier = Modifier.height(40.dp))
@@ -366,49 +373,104 @@ fun AvatarChangeButton(authToken: String, repository: UserProfileRepository) {
         factory = UserProfileViewModelFactory(repository) // Sử dụng factory để khởi tạo viewModel
     )
 
-    // Launcher để mở thư viện ảnh
-    val galleryLauncher = rememberLauncherForActivityResult(
-        contract = ActivityResultContracts.GetContent()
-    ) { uri: Uri? ->
-        uri?.let {
-            // Chuyển đổi Uri thành File
-            val avatarFile = uriToFile(uri, context)
-            avatarFile?.let {
-                // Chuyển đổi File thành MultipartBody.Part
-                val requestFile = RequestBody.create("image/jpeg".toMediaTypeOrNull(), it) // Hoặc "image/png" nếu tệp là PNG
-                val body = MultipartBody.Part.createFormData("file", it.name, requestFile)
+    // Lắng nghe kết quả từ ViewModel
+    val changeAvatarResult by userProfileViewModel.changeAvatarResult.collectAsState()
 
-                Log.d("ChangeAvatar", "File path: ${it.absolutePath}, File name: ${it.name}, File size: ${it.length()} bytes")
-                Log.d("ChangeAvatar", "Selected image from gallery: ${it.name}")
+    // Launcher để xử lý UCrop
+    val uCropLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.StartActivityForResult()
+    ) { result ->
+        if (result.resultCode == Activity.RESULT_OK) {
+            val resultUri = UCrop.getOutput(result.data!!)
+            Log.d("UCrop", "Cropped image Uri: $resultUri")
 
-                // Gọi ViewModel để cập nhật avatar
-                userProfileViewModel.changeAvatar(authToken, body)
-                showModalSheet = false
+            resultUri?.let { uri ->
+                val avatarFile = uriToFile(uri, context)
+                avatarFile?.let {
+                    val requestFile = RequestBody.create("image/jpeg".toMediaTypeOrNull(), it)
+                    val body = MultipartBody.Part.createFormData("file", it.name, requestFile)
+
+                    Log.d("ChangeAvatar", "Cropped image path: ${it.absolutePath}")
+                    userProfileViewModel.changeAvatar(authToken, body)
+                    showModalSheet = false
+                } ?: run {
+                    Log.e("ChangeAvatar", "Failed to convert cropped Uri to File")
+                }
             } ?: run {
-                Log.e("ChangeAvatar", "Failed to convert Uri to File")
+                Log.e("ChangeAvatar", "No Uri returned from UCrop")
             }
         }
     }
 
-    // Launcher để mở Camera và chụp ảnh
+    // Xử lý kết quả trả về của việc thay đổi avatar
+    LaunchedEffect(changeAvatarResult) {
+        changeAvatarResult?.let { result ->
+            when (result) {
+                is Result.Success -> {
+                    val metadata = result.data?.metadata
+
+                    // Lấy URL avatar mới
+                    val newProfileImageUrl = metadata?.profileImageUrl ?: ""
+                    Toast.makeText(
+                        context,
+                        "Avatar changed successfully",
+                        Toast.LENGTH_LONG
+                    ).show()
+
+                    // Cập nhật vào SQLite
+                    val dbHelper = UserDatabaseHelper(context)
+                    dbHelper.updateProfileImage(newProfileImageUrl)
+
+                    // Cập nhật UserSession
+                    UserSession.user?.profileImageUrl = newProfileImageUrl
+                }
+                is Result.Error -> {
+                    Toast.makeText(
+                        context,
+                        result.message ?: "Error occurred",
+                        Toast.LENGTH_LONG
+                    ).show()
+                }
+                else -> {
+                    // Optional: handle other cases if needed
+                }
+            }
+        }
+    }
+
+// Launcher để chọn ảnh từ thư viện
+    val galleryLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.GetContent()
+    ) { uri: Uri? ->
+        uri?.let {
+            // Tạo URI đích cho ảnh đã cắt
+            val destinationUri = Uri.fromFile(File(context.cacheDir, "cropped_image.jpg"))
+            // Cấu hình UCrop để cắt ảnh vuông
+            val uCropIntent = UCrop.of(uri, destinationUri)
+                .withAspectRatio(1f, 1f)  // Kích thước vuông
+                .withMaxResultSize(1080, 1080)
+                .getIntent(context)
+
+            uCropLauncher.launch(uCropIntent)  // Khởi chạy UCrop
+        }
+    }
+
+    // Launcher để chụp ảnh từ Camera
     val cameraLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.TakePicturePreview()
     ) { bitmap: Bitmap? ->
         bitmap?.let {
-            // Chuyển đổi Bitmap thành File
-            val avatarFile = bitmapToFile(bitmap, context)
-            avatarFile?.let {
-                // Chuyển đổi File thành MultipartBody.Part
-                val requestFile = RequestBody.create("image/*".toMediaTypeOrNull(), it)
-                val body = MultipartBody.Part.createFormData("file", it.name, requestFile)
+            val uri = bitmapToUri(bitmap, context)  // Chuyển bitmap sang URI để sử dụng với UCrop
+            uri?.let { uri ->
+                val destinationUri = Uri.fromFile(File(context.cacheDir, "cropped_camera_image.jpg"))
+                val uCropIntent = UCrop.of(uri, destinationUri)
+                    .withAspectRatio(1f, 1f)  // Kích thước vuông
+                    .withMaxResultSize(1080, 1080)
+                    .getIntent(context)
 
-                Log.d("ChangeAvatar", "Captured image from camera: ${it.name}")
-
-                // Gọi ViewModel để cập nhật avatar
-                userProfileViewModel.changeAvatar(authToken, body)
-                showModalSheet = false
+                uCropLauncher.launch(uCropIntent)
             } ?: run {
-                Log.e("ChangeAvatar", "Failed to convert Bitmap to File")
+                Log.e("ChangeAvatar", "Failed to convert Bitmap to Uri")
             }
         }
     }

@@ -6,45 +6,60 @@ import android.graphics.Bitmap
 import android.net.Uri
 import android.provider.OpenableColumns
 import android.util.Base64
+import androidx.core.content.FileProvider
 import java.io.File
 
 object FileUtils {
-    fun avatarToBase64(file: File): String {
-        val bytes = file.readBytes()
-        return Base64.encodeToString(bytes, Base64.NO_WRAP)  // Chuyển đổi thành base64
-    }
-
     // Chuyển đổi Uri thành File
     fun uriToFile(uri: Uri, context: Context): File? {
-        val contentResolver = context.contentResolver
-        val file = File(context.cacheDir, contentResolver.getFileName(uri))
-        contentResolver.openInputStream(uri)?.use { inputStream ->
-            file.outputStream().use { outputStream ->
-                inputStream.copyTo(outputStream)
+        return try {
+            // Kiểm tra schema của Uri
+            if (uri.scheme == "file") {
+                // Lấy đường dẫn trực tiếp từ Uri nếu là schema file://
+                File(uri.path!!)
+            } else {
+                // Trường hợp Uri là content://, vẫn thực hiện như bình thường
+                val contentResolver = context.contentResolver
+                val file = File(context.cacheDir, contentResolver.getFileName(uri))
+                contentResolver.openInputStream(uri)?.use { inputStream ->
+                    file.outputStream().use { outputStream ->
+                        inputStream.copyTo(outputStream)
+                    }
+                }
+                file
+            }
+        } catch (e: Exception) {
+            e.printStackTrace()
+            null
+        }
+    }
+
+    // Helper function to get the file name from Uri
+    fun ContentResolver.getFileName(uri: Uri): String? {
+        val cursor = this.query(uri, null, null, null, null)
+        return cursor?.use {
+            if (it.moveToFirst()) {
+                it.getString(it.getColumnIndexOrThrow(OpenableColumns.DISPLAY_NAME))
+            } else {
+                null
             }
         }
-        return file
+    }
+    // Hàm để chuyển Bitmap thành Uri để dùng với UCrop
+    fun bitmapToUri(bitmap: Bitmap, context: Context): Uri? {
+        return try {
+            val file = File(context.cacheDir, "camera_image_${System.currentTimeMillis()}.jpg")
+            val outputStream = file.outputStream()
+            bitmap.compress(Bitmap.CompressFormat.JPEG, 100, outputStream)
+            outputStream.flush()
+            outputStream.close()
+
+            // Sử dụng FileProvider để lấy Uri cho tệp
+            FileProvider.getUriForFile(context, "${context.packageName}.provider", file)
+        } catch (e: Exception) {
+            e.printStackTrace()
+            null
+        }
     }
 
-    // Chuyển đổi Bitmap thành File
-    fun bitmapToFile(bitmap: Bitmap, context: Context): File {
-        val file = File(context.cacheDir, "${System.currentTimeMillis()}.jpg")
-        file.outputStream().use {
-            bitmap.compress(Bitmap.CompressFormat.JPEG, 100, it)
-        }
-        return file
-    }
-
-    // Lấy tên file từ Uri
-    fun ContentResolver.getFileName(uri: Uri): String {
-        var name = ""
-        val returnCursor = this.query(uri, null, null, null, null)
-        returnCursor?.let {
-            val nameIndex = it.getColumnIndex(OpenableColumns.DISPLAY_NAME)
-            it.moveToFirst()
-            name = it.getString(nameIndex)
-            it.close()
-        }
-        return name
-    }
 }

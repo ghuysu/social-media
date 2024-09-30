@@ -73,6 +73,7 @@ dependencies {
     implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.7.1")
     implementation("org.jetbrains.kotlinx:kotlinx-coroutines-android:1.7.3")
 
+    implementation ("com.github.yalantis:ucrop:2.2.9")
     // Compose ViewModel
     implementation("androidx.lifecycle:lifecycle-viewmodel-compose:2.8.4")
 

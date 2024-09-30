@@ -80,6 +80,15 @@ class UserDatabaseHelper(context: Context) : SQLiteOpenHelper(context, DATABASE_
         db.update("user", contentValues, "id = ?", arrayOf(UserSession.user?._id))
         db.close()
     }
+    fun updateProfileImage(newProfileImageUrl: String) {
+        val db = this.writableDatabase
+        val contentValues = ContentValues()
+        contentValues.put("profile_image_url", newProfileImageUrl)
+
+        db.update("user", contentValues, "id = ?", arrayOf(UserSession.user?._id))
+        db.close()
+    }
+
 
     fun clearUserData() {
         val db = this.writableDatabase
