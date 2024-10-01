@@ -83,6 +83,7 @@ class SignInUserViewModel(
                         // Lưu dữ liệu vào SQLite
                         if (user != null && token != null) {
                             val dbHelper = UserDatabaseHelper(context)
+                            UserSession.setUserData(result.data.metadata.user, token)
                             dbHelper.insertUserData(
                                 id = user._id,
                                 email = user.email,

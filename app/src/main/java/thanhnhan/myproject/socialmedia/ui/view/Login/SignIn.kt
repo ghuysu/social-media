@@ -44,16 +44,18 @@ fun SignInScreen(
     // Lấy các trạng thái từ ViewModel
     val emailValidationResult by viewModel.emailValidationResult.collectAsState()
     val passwordValidationResult by viewModel.passwordValidationResult.collectAsState()
-    val signInResult by viewModel.signInResult.collectAsState() // Kết quả đăng nhập
-//     Gọi autoSignIn khi SignInScreen được khởi tạo
-    LaunchedEffect(Unit) {
-        viewModel.autoSignIn()  // Thực hiện auto sign-in
-    }
+    val signInResult by viewModel.signInResult.collectAsState()
 
     var email by remember { mutableStateOf("") }
     var password by remember { mutableStateOf("") }
-    var errorMessage by remember { mutableStateOf<String?>(null) } // Biến trạng thái cho thông báo lỗi
+    var errorMessage by remember { mutableStateOf<String?>(null) }
+    var manualLoginAttempted by remember { mutableStateOf(false) }  // Biến trạng thái để theo dõi xem đăng nhập thủ công hay không
     val scope = rememberCoroutineScope()
+
+    // Gọi autoSignIn khi SignInScreen được khởi tạo
+    LaunchedEffect(Unit) {
+        viewModel.autoSignIn()  // Thực hiện auto sign-in
+    }
 
     SignInContent(
         email = email,
@@ -70,6 +72,9 @@ fun SignInScreen(
             Log.d("SignInScreen", "Button 'Continue' clicked")
             Log.d("SignInScreen", "Email validation result: $emailValidationResult")
             Log.d("SignInScreen", "Password validation result: $passwordValidationResult")
+
+            manualLoginAttempted = true  // Đánh dấu đã thử đăng nhập thủ công
+
             if (emailValidationResult == true && passwordValidationResult == true) {
                 scope.launch {
                     Log.d("SignInScreen", "Valid email and password. Attempting to sign in.")
@@ -77,24 +82,28 @@ fun SignInScreen(
                 }
             } else {
                 Log.d("SignInScreen", "Sign-in failed: Invalid email or password")
-                errorMessage = "Incorrect username or password"  // Cập nhật thông báo lỗi
+                errorMessage = "Incorrect username or password"
             }
         },
         emailError = emailValidationResult == false,
         passwordError = passwordValidationResult == false,
-        errorMessage = errorMessage // Truyền errorMessage vào SignInContent
+        errorMessage = if (manualLoginAttempted) errorMessage else null  // Chỉ hiển thị lỗi khi đã thử đăng nhập thủ công
     )
 
     // Xử lý kết quả đăng nhập
-    signInResult?.let { result ->
-        when (result) {
-            is Result.Success -> {
-                Log.d("SignInScreen", "Sign-in successful")
-                onLoginSuccess()
-            }
-            is Result.Error -> {
-                Log.e("SignInScreen", "Sign-in failed: ${result.message ?: "Unknown error"}")
-                errorMessage = "Incorrect username or password"  // Thông báo lỗi khi đăng nhập thất bại
+    LaunchedEffect(signInResult) {
+        signInResult?.let { result ->
+            when (result) {
+                is Result.Success -> {
+                    Log.d("SignInScreen", "Sign-in successful")
+                    onLoginSuccess()
+                }
+                is Result.Error -> {
+                    Log.e("SignInScreen", "Sign-in failed: ${result.message ?: "Unknown error"}")
+                    if (manualLoginAttempted) {
+                        errorMessage = "Incorrect username or password"  // Chỉ hiển thị lỗi nếu đăng nhập thủ công
+                    }
+                }
             }
         }
     }

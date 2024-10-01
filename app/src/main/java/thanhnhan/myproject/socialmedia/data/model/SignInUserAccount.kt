@@ -62,10 +62,6 @@ object UserSession {
         signInToken = null
     }
 
-    // Hàm kiểm tra xem người dùng đã đăng nhập chưa
-    fun isLoggedIn(): Boolean {
-        return user != null && signInToken != null
-    }
 
     // Hàm cập nhật danh sách friendInvites
     fun updateFriendInvites(newFriendInvite: SignInUserResponse.Metadata.FriendInvite) {

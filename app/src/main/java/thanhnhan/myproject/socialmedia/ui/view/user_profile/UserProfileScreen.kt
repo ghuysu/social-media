@@ -403,6 +403,7 @@ fun AvatarChangeButton(authToken: String, repository: UserProfileRepository) {
     val userProfileViewModel: UserProfileViewModel = viewModel(
         factory = UserProfileViewModelFactory(repository) // Sử dụng factory để khởi tạo viewModel
     )
+    val authToken = UserSession.signInToken ?: ""
 
     // Lắng nghe kết quả từ ViewModel
     val changeAvatarResult by userProfileViewModel.changeAvatarResult.collectAsState()
