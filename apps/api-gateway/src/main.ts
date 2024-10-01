@@ -3,12 +3,13 @@ import { ApiGatewayModule } from './api-gateway.module';
 import { ConfigService } from '@nestjs/config';
 import { ValidationPipe } from '@nestjs/common';
 import helmet from 'helmet';
-
+import * as compression from 'compression';
 async function bootstrap() {
   const app = await NestFactory.create(ApiGatewayModule);
 
   const configService = app.get(ConfigService);
 
+  app.use(compression());
   app.use(helmet());
   app.useGlobalPipes(
     new ValidationPipe({

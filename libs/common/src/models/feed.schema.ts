@@ -24,34 +24,6 @@ export class FeedDocument extends AbstractDocument {
   userId: Types.ObjectId | UserDocument;
 
   @Prop({
-    type: {
-      like: { type: Number, default: 0 },
-      love: { type: Number, default: 0 },
-      haha: { type: Number, default: 0 },
-      wow: { type: Number, default: 0 },
-      sad: { type: Number, default: 0 },
-      angry: { type: Number, default: 0 },
-    },
-    default: {
-      like: 0,
-      love: 0,
-      haha: 0,
-      wow: 0,
-      sad: 0,
-      angry: 0,
-    },
-    _id: false,
-  })
-  reactionStatistic: {
-    like: number;
-    love: number;
-    haha: number;
-    wow: number;
-    sad: number;
-    angry: number;
-  };
-
-  @Prop({
     type: [SchemaTypes.ObjectId],
     ref: REACTION_DOCUMENT,
     default: [],

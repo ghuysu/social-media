@@ -22,9 +22,11 @@ export class FeedRepository extends AbstractRepository<FeedDocument> {
       select?: string;
       populate?: any;
     }>,
+    select?: string,
   ): Promise<FeedDocument[]> {
     const feeds = await this.model
       .find(filterQuery)
+      .select(select)
       .sort({ createdAt: -1 })
       .skip(skip)
       .limit(30)

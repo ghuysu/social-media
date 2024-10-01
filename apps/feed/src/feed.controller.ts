@@ -13,6 +13,8 @@ import { CreateFeedInterface } from './interfaces/create-feed.interface';
 import { UpdateFeedInterface } from './interfaces/update-feed.interface';
 import { DeleteFeedInterface } from './interfaces/delete-feed.interface';
 import { GetEveryoneFeedsInterface } from './interfaces/get-everyone-feeds.interface';
+import { GetCertainUserFeedsInterface } from './interfaces/get-certain-user-feeds.interface';
+import { ReactFeedInterface } from './interfaces/react-feed.interface';
 
 @Controller()
 export class FeedController {
@@ -110,12 +112,13 @@ export class FeedController {
   }
 
   @MessagePattern('react_feed')
-  async reactFeed(@Payload() { userPayload, payload }: DeleteFeedInterface) {
+  async reactFeed(@Payload() { userPayload, payload }: ReactFeedInterface) {
     try {
-      await this.feedService.deleteFeed(userPayload, payload);
+      const feed = await this.feedService.reactFeed(userPayload, payload);
       return {
         status: HttpStatus.OK,
-        message: 'Deleted feed successfully.',
+        message: 'Reacted feed successfully.',
+        metadata: feed,
       };
     } catch (error) {
       return this.handleError(error);
@@ -142,5 +145,21 @@ export class FeedController {
   }
 
   @MessagePattern('get_certain_user_feeds')
-  async getCertainUserFeeds() {}
+  async getCertainUserFeeds(
+    @Payload() { userPayload, payload }: GetCertainUserFeedsInterface,
+  ) {
+    try {
+      const result = await this.feedService.getCertainUserFeeds(
+        userPayload,
+        payload,
+      );
+      return {
+        status: HttpStatus.OK,
+        message: 'Get certain user feeds successfully.',
+        metadata: result,
+      };
+    } catch (error) {
+      return this.handleError(error);
+    }
+  }
 }

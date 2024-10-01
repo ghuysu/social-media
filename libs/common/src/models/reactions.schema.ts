@@ -17,10 +17,10 @@ export class ReactionDocument extends AbstractDocument {
 
   @Prop({
     required: true,
-    type: String,
+    type: [String],
     enum: ['like', 'love', 'haha', 'wow', 'sad', 'angry'],
   })
-  icon: string;
+  icon: string[];
 
   @Prop({ type: Date, default: Date.now })
   createdAt: Date;

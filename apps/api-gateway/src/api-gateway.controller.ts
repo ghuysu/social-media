@@ -49,6 +49,7 @@ import { RoleGuard } from './guards/role.guard';
 import { Roles } from './decorators/role.decorator';
 import {
   CreateFeedDto,
+  GetCertainUserFeedsDto,
   GetEveryoneFeedsDto,
   ReactFeedDto,
   UpdateFeedDto,
@@ -393,8 +394,9 @@ export class ApiGatewayController {
   @Get('feed/certain/:userId')
   async getCertainUserFeeds(
     @User() userPayload: TokenPayloadInterface,
+    @Body() dto: GetCertainUserFeedsDto,
     @Param('userId') userId: string,
   ) {
-    return this.apiGatewayService.getCertainUserFeeds(userPayload, userId);
+    return this.apiGatewayService.getCertainUserFeeds(userPayload, dto, userId);
   }
 }
