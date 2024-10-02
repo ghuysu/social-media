@@ -7,10 +7,12 @@ import {
   ChangePasswordDto,
   CheckCodeToChangeEmailDto,
   CheckEmailDto,
+  CreateMessageDto,
   CreateNormalUserDto,
   DeleteFriendDto,
   FEED_SERVICE,
   GoogleSignInDto,
+  MESSAGE_SERVICE,
   RemoveInviteDto,
   SendInviteDto,
   SignInDto,
@@ -47,6 +49,7 @@ export class ApiGatewayService {
     @Inject(AUTH_SERVICE) private readonly authService: ClientProxy,
     @Inject(USER_SERVICE) private readonly userService: ClientProxy,
     @Inject(FEED_SERVICE) private readonly feedService: ClientProxy,
+    @Inject(MESSAGE_SERVICE) private readonly messageService: ClientProxy,
   ) {}
 
   throwErrorBasedOnStatusCode(statusCode: number, message: string) {
@@ -631,6 +634,33 @@ export class ApiGatewayService {
       this.feedService
         .send('get_certain_user_feeds', {
           payload: { ...dto, userId },
+          userPayload,
+        })
+        .pipe(
+          map((response) => {
+            if (response.error) {
+              this.throwErrorBasedOnStatusCode(
+                response.statusCode,
+                response.message,
+              );
+            }
+            return response;
+          }),
+        ),
+    );
+
+    return result;
+  }
+
+  //message
+  async createMessage(
+    userPayload: TokenPayloadInterface,
+    dto: CreateMessageDto,
+  ) {
+    const result = await lastValueFrom(
+      this.messageService
+        .send('create_message', {
+          payload: dto,
           userPayload,
         })
         .pipe(

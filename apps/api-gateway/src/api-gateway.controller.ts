@@ -18,6 +18,7 @@ import {
   TokenPayloadInterface,
   CheckCodeDto,
   AcceptInviteDto,
+  CreateMessageDto,
 } from '@app/common';
 import {
   Body,
@@ -393,6 +394,59 @@ export class ApiGatewayController {
   @Roles(NORMAL_USER_ROLE)
   @Get('feed/certain/:userId')
   async getCertainUserFeeds(
+    @User() userPayload: TokenPayloadInterface,
+    @Body() dto: GetCertainUserFeedsDto,
+    @Param('userId') userId: string,
+  ) {
+    return this.apiGatewayService.getCertainUserFeeds(userPayload, dto, userId);
+  }
+
+  //message
+  @UseGuards(RoleGuard)
+  @UseGuards(JwtGuard)
+  @UseGuards(ApiKeyGuard)
+  @Roles(NORMAL_USER_ROLE)
+  @Post('message')
+  @HttpCode(HttpStatus.CREATED)
+  async createMessage(
+    @User() userPayload: TokenPayloadInterface,
+    @Body() dto: CreateMessageDto,
+  ) {
+    return this.apiGatewayService.createMessage(userPayload, dto);
+  }
+
+  @UseGuards(RoleGuard)
+  @UseGuards(JwtGuard)
+  @UseGuards(ApiKeyGuard)
+  @Roles(NORMAL_USER_ROLE)
+  @Patch('message/read')
+  async readMessage(
+    @User() userPayload: TokenPayloadInterface,
+    @Body() dto: GetCertainUserFeedsDto,
+    @Param('userId') userId: string,
+  ) {
+    return this.apiGatewayService.getCertainUserFeeds(userPayload, dto, userId);
+  }
+
+  @UseGuards(RoleGuard)
+  @UseGuards(JwtGuard)
+  @UseGuards(ApiKeyGuard)
+  @Roles(NORMAL_USER_ROLE)
+  @Get('message/all')
+  async getAllMessages(
+    @User() userPayload: TokenPayloadInterface,
+    @Body() dto: GetCertainUserFeedsDto,
+    @Param('userId') userId: string,
+  ) {
+    return this.apiGatewayService.getCertainUserFeeds(userPayload, dto, userId);
+  }
+
+  @UseGuards(RoleGuard)
+  @UseGuards(JwtGuard)
+  @UseGuards(ApiKeyGuard)
+  @Roles(NORMAL_USER_ROLE)
+  @Post('message/certain/:friendId')
+  async getCertainFriendMessages(
     @User() userPayload: TokenPayloadInterface,
     @Body() dto: GetCertainUserFeedsDto,
     @Param('userId') userId: string,

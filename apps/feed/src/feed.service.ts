@@ -45,7 +45,7 @@ export class FeedService {
   }
 
   async createFeed(
-    { userId }: TokenPayloadInterface,
+    { userId, email, role }: TokenPayloadInterface,
     { description, visibility, originalname, image },
   ) {
     //create new image name
@@ -98,12 +98,34 @@ export class FeedService {
       ttl: createTTL(60 * 60 * 24 * 30, 60 * 6 * 24),
     });
 
+    //emit feed for friends
+    const user = await lastValueFrom(
+      this.userClient.send('get_user', { userId, email, role }).pipe(
+        map((response) => {
+          if (response.error) {
+            throw new NotFoundException('Resource not found');
+          }
+          return response.metadata;
+        }),
+      ),
+    );
+
+    const emitPayload = {
+      userId: user.friendList.map((f) => f._id.toString()),
+      payload: feed,
+    };
+
+    this.notificationClient.emit('emit_message', {
+      name: 'create_feed',
+      payload: emitPayload,
+    });
+
     //return feed
     return feed;
   }
 
   async updateFeed(
-    { userId }: TokenPayloadInterface,
+    { userId, email, role }: TokenPayloadInterface,
     { feedId, description, visibility },
   ) {
     //update feed
@@ -156,11 +178,35 @@ export class FeedService {
       ttl: createTTL(60 * 60 * 24 * 30, 60 * 6 * 24),
     });
 
+    //emit feed for friends
+    const user = await lastValueFrom(
+      this.userClient.send('get_user', { userId, email, role }).pipe(
+        map((response) => {
+          if (response.error) {
+            throw new NotFoundException('Resource not found');
+          }
+          return response.metadata;
+        }),
+      ),
+    );
+
+    const emitPayload = {
+      userId: user.friendList.map((f) => f._id.toString()),
+      payload: updatedFeed,
+    };
+
+    console.log(emitPayload);
+
+    this.notificationClient.emit('emit_message', {
+      name: 'update_feed',
+      payload: emitPayload,
+    });
+
     //return feed
     return updatedFeed;
   }
 
-  async deleteFeed({ userId }: TokenPayloadInterface, { feedId }) {
+  async deleteFeed({ userId, email, role }: TokenPayloadInterface, { feedId }) {
     //delete feed and relational reactions
     const [deletedFeed] = await Promise.all([
       this.feedRepository.findOneAndDelete({ _id: feedId }),
@@ -201,6 +247,28 @@ export class FeedService {
 
     this.cacheManager.set(`feed:${userId}`, redisFeeds, {
       ttl: createTTL(60 * 60 * 24 * 30, 60 * 6 * 24),
+    });
+
+    //emit feed for friends
+    const user = await lastValueFrom(
+      this.userClient.send('get_user', { userId, email, role }).pipe(
+        map((response) => {
+          if (response.error) {
+            throw new NotFoundException('Resource not found');
+          }
+          return response.metadata;
+        }),
+      ),
+    );
+
+    const emitPayload = {
+      userId: user.friendList.map((f) => f._id.toString()),
+      payload: { feedId: deletedFeed._id },
+    };
+
+    this.notificationClient.emit('emit_message', {
+      name: 'update_feed',
+      payload: emitPayload,
     });
   }
 
@@ -484,6 +552,17 @@ export class FeedService {
       createdAt: feed.createdAt,
       reactions: [reaction],
     };
+
+    //emit reaction for owner
+    const emitPayload = {
+      userId: feed.userId.toString(),
+      payload: feed,
+    };
+
+    this.notificationClient.emit('emit_message', {
+      name: 'react_feed',
+      payload: emitPayload,
+    });
 
     //return feed
     return filterFeed;

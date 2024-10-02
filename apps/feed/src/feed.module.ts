@@ -41,7 +41,6 @@ import { ReactionRepository } from './repositories/reaction.repository';
         REDIS_PORT: joi.number().required(),
         BUCKET_NAME: joi.string().required(),
         AWSS3_REGION: joi.string().required(),
-        ARGON2_SERCET: joi.string().required(),
       }),
     }),
     DatabaseModule.forFeature([

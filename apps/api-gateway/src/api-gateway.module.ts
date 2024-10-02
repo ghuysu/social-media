@@ -8,6 +8,7 @@ import {
   USER_SERVICE,
   LoggerModule,
   FEED_SERVICE,
+  MESSAGE_SERVICE,
 } from '@app/common';
 import { ApiGatewayService } from './api-gateway.service';
 import { GoogleStrategy } from './strategies/google.strategy';
@@ -26,6 +27,8 @@ import { JwtStrategy } from './strategies/jwt.strategy';
         USER_PORT: joi.number().required(),
         FEED_HOST: joi.string().required(),
         FEED_PORT: joi.number().required(),
+        MESSAGE_HOST: joi.string().required(),
+        MESSAGE_PORT: joi.number().required(),
         API_KEY: joi.string().required(),
         GOOGLE_CLIENT_ID: joi.string().required(),
         GOOGLE_SECRET: joi.string().required(),
@@ -63,6 +66,17 @@ import { JwtStrategy } from './strategies/jwt.strategy';
           options: {
             host: configService.get('FEED_HOST'),
             port: configService.get('FEED_PORT'),
+          },
+        }),
+        inject: [ConfigService],
+      },
+      {
+        name: MESSAGE_SERVICE,
+        useFactory: (configService: ConfigService) => ({
+          transport: Transport.TCP,
+          options: {
+            host: configService.get('MESSAGE_HOST'),
+            port: configService.get('MESSAGE_PORT'),
           },
         }),
         inject: [ConfigService],

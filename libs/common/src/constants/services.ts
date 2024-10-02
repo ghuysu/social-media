@@ -5,3 +5,4 @@ export const USER_SERVICE = 'user';
 export const FRIEND_INVITE_SERVICE = 'friendInvite';
 export const FEED_SERVICE = 'feed';
 export const REACTION_SERVICE = 'reaction';
+export const MESSAGE_SERVICE = 'message';
