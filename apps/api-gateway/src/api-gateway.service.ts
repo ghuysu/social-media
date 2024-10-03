@@ -13,6 +13,7 @@ import {
   FEED_SERVICE,
   GoogleSignInDto,
   MESSAGE_SERVICE,
+  ReadMessageDto,
   RemoveInviteDto,
   SendInviteDto,
   SignInDto,
@@ -661,6 +662,51 @@ export class ApiGatewayService {
       this.messageService
         .send('create_message', {
           payload: dto,
+          userPayload,
+        })
+        .pipe(
+          map((response) => {
+            if (response.error) {
+              this.throwErrorBasedOnStatusCode(
+                response.statusCode,
+                response.message,
+              );
+            }
+            return response;
+          }),
+        ),
+    );
+
+    return result;
+  }
+
+  async readMessages(userPayload: TokenPayloadInterface, dto: ReadMessageDto) {
+    const result = await lastValueFrom(
+      this.messageService
+        .send('read_messages', {
+          payload: dto,
+          userPayload,
+        })
+        .pipe(
+          map((response) => {
+            if (response.error) {
+              this.throwErrorBasedOnStatusCode(
+                response.statusCode,
+                response.message,
+              );
+            }
+            return response;
+          }),
+        ),
+    );
+
+    return result;
+  }
+
+  async getAllConversations(userPayload: TokenPayloadInterface) {
+    const result = await lastValueFrom(
+      this.messageService
+        .send('get_all_conversations', {
           userPayload,
         })
         .pipe(

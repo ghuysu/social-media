@@ -11,6 +11,7 @@ import {
   createTTL,
   MessageDocument,
   NOTIFICATION_SERVICE,
+  ReadMessageDto,
   TokenPayloadInterface,
   USER_SERVICE,
   UserDocument,
@@ -143,7 +144,7 @@ export class MessageService {
     //emit message for receiver
     const emitPayload = {
       userId: receiverId,
-      payload: message,
+      metadata: message,
     };
 
     this.notificationClient.emit('emit_message', {
@@ -153,5 +154,205 @@ export class MessageService {
 
     //return message
     return message;
+  }
+
+  async readMessages(
+    { userId }: TokenPayloadInterface,
+    { messageIds }: ReadMessageDto,
+  ) {
+    //update db
+    await this.messageRepository.updateMany(
+      {
+        _id: { $in: messageIds },
+        receiverId: userId.toString(),
+      },
+      { $set: { isRead: true } },
+    );
+
+    const updatedMessage: MessageDocument =
+      await this.messageRepository.findOne({ _id: messageIds[0] });
+    console.log(updatedMessage);
+
+    //update redis
+    let userIdFirst: boolean = true;
+    const senderId: string = updatedMessage.senderId.toString();
+
+    let conversation: MessageDocument[] = await this.cacheManager.get(
+      `conversation:${userId.toString()}:${senderId}`,
+    );
+
+    if (!conversation) {
+      userIdFirst = false;
+
+      conversation = await this.cacheManager.get(
+        `conversation:${senderId}:${userId.toString()}`,
+      );
+    }
+
+    if (!conversation) {
+      conversation = await this.messageRepository.getAllConversationMessages(
+        {
+          $or: [
+            {
+              senderId: userId,
+              receiverId: senderId,
+            },
+            {
+              senderId: senderId,
+              receiverId: userId,
+            },
+          ],
+        },
+        [
+          { path: 'senderId', select: '_id fullname profileImageUrl' },
+          { path: 'receiverId', select: '_id fullname profileImageUrl' },
+          { path: 'feedId', select: '_id description imageUrl' },
+        ],
+      );
+
+      this.cacheManager.set(
+        `conversation:${userId.toString()}:${senderId.toString()}`,
+        conversation,
+        {
+          ttl: createTTL(60 * 60 * 24 * 360, 60 * 60 * 24 * 30),
+        },
+      );
+    } else {
+      conversation = conversation.map((message) => {
+        if (messageIds.includes(message._id)) {
+          message.isRead = true;
+        }
+        return message;
+      });
+
+      if (userIdFirst) {
+        this.cacheManager.set(
+          `conversation:${userId.toString()}:${senderId.toString()}`,
+          conversation,
+          {
+            ttl: createTTL(60 * 60 * 24 * 360, 60 * 60 * 24 * 30),
+          },
+        );
+      } else {
+        this.cacheManager.set(
+          `conversation:${senderId.toString()}:${userId.toString()}`,
+          conversation,
+          {
+            ttl: createTTL(60 * 60 * 24 * 360, 60 * 60 * 24 * 30),
+          },
+        );
+      }
+    }
+
+    //emit read message
+    const emitPayload = {
+      userId: senderId,
+      metadata: { messageIds },
+    };
+
+    this.notificationClient.emit('emit_message', {
+      name: 'read_messages',
+      payload: emitPayload,
+    });
+  }
+
+  async getAllConversations({ userId, email, role }: TokenPayloadInterface) {
+    //get friendList
+    let user: UserDocument = await this.cacheManager.get(`user:${email}`);
+
+    if (!user) {
+      user = await lastValueFrom(
+        this.userClient.send('get_user', { userId, email, role }).pipe(
+          map((response) => {
+            if (response.error) {
+              throw new NotFoundException('Resource not found');
+            }
+            return response.metadata;
+          }),
+        ),
+      );
+    }
+
+    const friendList: Partial<UserDocument>[] =
+      user.friendList as Partial<UserDocument>[];
+
+    //get friend messages
+    //loop through friend list and get each friends messages
+    const friendConversations = [];
+
+    for (const friend of friendList) {
+      //get conversation
+      let userIdFirst: boolean = true;
+
+      let conversation: MessageDocument[] = await this.cacheManager.get(
+        `conversation:${userId.toString()}:${friend._id.toString()}`,
+      );
+
+      if (!conversation) {
+        userIdFirst = false;
+
+        conversation = await this.cacheManager.get(
+          `conversation:${friend._id.toString()}:${userId.toString()}`,
+        );
+      }
+
+      if (!conversation) {
+        conversation = await this.messageRepository.getAllConversationMessages(
+          {
+            $or: [
+              {
+                senderId: userId.toString(),
+                receiverId: friend._id.toString(),
+              },
+              {
+                senderId: friend._id.toString(),
+                receiverId: userId.toString(),
+              },
+            ],
+          },
+          [
+            { path: 'senderId', select: '_id fullname profileImageUrl' },
+            { path: 'receiverId', select: '_id fullname profileImageUrl' },
+            { path: 'feedId', select: '_id description imageUrl' },
+          ],
+        );
+
+        //update redis if conversation is not caching
+        if (userIdFirst) {
+          this.cacheManager.set(
+            `conversation:${userId.toString()}:${friend._id.toString()}`,
+            conversation,
+            {
+              ttl: createTTL(60 * 60 * 24 * 360, 60 * 60 * 24 * 30),
+            },
+          );
+        } else {
+          this.cacheManager.set(
+            `conversation:${friend._id.toString()}:${userId.toString()}`,
+            conversation,
+            {
+              ttl: createTTL(60 * 60 * 24 * 360, 60 * 60 * 24 * 30),
+            },
+          );
+        }
+      }
+
+      //get 50 messages or less and reverse it
+      if (conversation.length < 50) {
+        conversation = conversation.reverse();
+      } else if (conversation.length >= 50) {
+        conversation = conversation.slice(50).reverse();
+      }
+
+      const friendConversation = {
+        friendId: friend._id.toString(),
+        conversation: conversation,
+      };
+
+      friendConversations.push(friendConversation);
+    }
+
+    //return all messages
+    return friendConversations;
   }
 }

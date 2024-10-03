@@ -1,7 +1,9 @@
-import { IsMongoId } from 'class-validator';
+import { ArrayNotEmpty, IsArray, IsMongoId } from 'class-validator';
 import { Types } from 'mongoose';
 
 export class ReadMessageDto {
-  @IsMongoId()
-  messageId: Types.ObjectId;
+  @IsArray()
+  @IsMongoId({ each: true })
+  @ArrayNotEmpty()
+  messageIds: Types.ObjectId[];
 }

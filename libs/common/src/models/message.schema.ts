@@ -24,7 +24,7 @@ export class MessageDocument extends AbstractDocument {
   content: string;
 
   @Prop({ type: Boolean, default: false })
-  isRead: string;
+  isRead: boolean;
 
   @Prop({ type: Date, default: Date.now })
   createdAt: Date;

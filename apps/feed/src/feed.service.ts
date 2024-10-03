@@ -112,7 +112,7 @@ export class FeedService {
 
     const emitPayload = {
       userId: user.friendList.map((f) => f._id.toString()),
-      payload: feed,
+      metadata: feed,
     };
 
     this.notificationClient.emit('emit_message', {
@@ -192,7 +192,7 @@ export class FeedService {
 
     const emitPayload = {
       userId: user.friendList.map((f) => f._id.toString()),
-      payload: updatedFeed,
+      metadata: updatedFeed,
     };
 
     console.log(emitPayload);
@@ -263,7 +263,7 @@ export class FeedService {
 
     const emitPayload = {
       userId: user.friendList.map((f) => f._id.toString()),
-      payload: { feedId: deletedFeed._id },
+      metadata: { feedId: deletedFeed._id },
     };
 
     this.notificationClient.emit('emit_message', {
@@ -555,9 +555,11 @@ export class FeedService {
 
     //emit reaction for owner
     const emitPayload = {
-      userId: feed.userId.toString(),
-      payload: feed,
+      userId: feed.userId._id.toString(),
+      metadata: feed,
     };
+
+    console.log(emitPayload);
 
     this.notificationClient.emit('emit_message', {
       name: 'react_feed',

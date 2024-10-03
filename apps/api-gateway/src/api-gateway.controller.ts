@@ -19,6 +19,7 @@ import {
   CheckCodeDto,
   AcceptInviteDto,
   CreateMessageDto,
+  ReadMessageDto,
 } from '@app/common';
 import {
   Body,
@@ -420,12 +421,11 @@ export class ApiGatewayController {
   @UseGuards(ApiKeyGuard)
   @Roles(NORMAL_USER_ROLE)
   @Patch('message/read')
-  async readMessage(
+  async readMessages(
     @User() userPayload: TokenPayloadInterface,
-    @Body() dto: GetCertainUserFeedsDto,
-    @Param('userId') userId: string,
+    @Body() dto: ReadMessageDto,
   ) {
-    return this.apiGatewayService.getCertainUserFeeds(userPayload, dto, userId);
+    return this.apiGatewayService.readMessages(userPayload, dto);
   }
 
   @UseGuards(RoleGuard)
@@ -433,12 +433,8 @@ export class ApiGatewayController {
   @UseGuards(ApiKeyGuard)
   @Roles(NORMAL_USER_ROLE)
   @Get('message/all')
-  async getAllMessages(
-    @User() userPayload: TokenPayloadInterface,
-    @Body() dto: GetCertainUserFeedsDto,
-    @Param('userId') userId: string,
-  ) {
-    return this.apiGatewayService.getCertainUserFeeds(userPayload, dto, userId);
+  async getAllConversations(@User() userPayload: TokenPayloadInterface) {
+    return this.apiGatewayService.getAllConversations(userPayload);
   }
 
   @UseGuards(RoleGuard)

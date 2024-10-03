@@ -5,7 +5,7 @@ import {
 } from '@app/common';
 import { Injectable, Logger } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
-import { FilterQuery, Model } from 'mongoose';
+import { FilterQuery, Model, UpdateQuery } from 'mongoose';
 
 @Injectable()
 export class MessageRepository extends AbstractRepository<MessageDocument> {
@@ -25,11 +25,9 @@ export class MessageRepository extends AbstractRepository<MessageDocument> {
       select?: string;
       populate?: any;
     }>,
-    select?: string,
   ): Promise<MessageDocument[]> {
     const feeds = await this.model
       .find(filterQuery)
-      .select(select)
       .sort({ createdAt: -1 })
       .populate(populate)
       .lean<MessageDocument[]>();
@@ -45,17 +43,24 @@ export class MessageRepository extends AbstractRepository<MessageDocument> {
       select?: string;
       populate?: any;
     }>,
-    select?: string,
   ): Promise<MessageDocument[]> {
-    const feeds = await this.model
+    const messages = await this.model
       .find(filterQuery)
-      .select(select)
       .skip(skip)
       .limit(50)
       .sort({ createdAt: -1 })
       .populate(populate)
       .lean<MessageDocument[]>();
 
-    return feeds;
+    return messages;
+  }
+
+  async updateMany(
+    filterQuery: FilterQuery<MessageDocument>,
+    updateQuery: UpdateQuery<MessageDocument>,
+  ): Promise<any> {
+    await this.model.updateMany(filterQuery, updateQuery, {
+      upsert: false,
+    });
   }
 }

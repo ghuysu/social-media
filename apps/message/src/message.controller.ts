@@ -8,23 +8,58 @@ import {
   UnauthorizedException,
 } from '@nestjs/common';
 import { MessageService } from './message.service';
-import { MessagePattern } from '@nestjs/microservices';
+import { MessagePattern, Payload } from '@nestjs/microservices';
 import { CreateMessageInterface } from './interfaces/create-message.interface';
+import { ReadMessageInterface } from './interfaces/read-message.interface';
+import { GetAllMessagesInterface } from './interfaces/get-all-messages.interface';
 
 @Controller()
 export class MessageController {
   constructor(private readonly messageService: MessageService) {}
 
   @MessagePattern('create_message')
-  async createMessage({ userPayload, payload }: CreateMessageInterface) {
+  async createMessage(
+    @Payload() { userPayload, payload }: CreateMessageInterface,
+  ) {
     try {
       const result = await this.messageService.createMessage(
         userPayload,
         payload,
       );
       return {
-        status: HttpStatus.OK,
+        status: HttpStatus.CREATED,
         message: 'Created message successfully.',
+        metadata: result,
+      };
+    } catch (error) {
+      return this.handleError(error);
+    }
+  }
+
+  @MessagePattern('read_messages')
+  async readMessages(
+    @Payload() { userPayload, payload }: ReadMessageInterface,
+  ) {
+    try {
+      await this.messageService.readMessages(userPayload, payload);
+      return {
+        status: HttpStatus.OK,
+        message: 'Read messages successfully.',
+      };
+    } catch (error) {
+      return this.handleError(error);
+    }
+  }
+
+  @MessagePattern('get_all_conversations')
+  async getAllConversations(
+    @Payload() { userPayload }: GetAllMessagesInterface,
+  ) {
+    try {
+      const result = await this.messageService.getAllConversations(userPayload);
+      return {
+        status: HttpStatus.OK,
+        message: 'Get all friend conversations successfully.',
         metadata: result,
       };
     } catch (error) {
