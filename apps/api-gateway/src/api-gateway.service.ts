@@ -43,6 +43,8 @@ import {
   ReactFeedDto,
   UpdateFeedDto,
 } from '@app/common/dto/feed-dto';
+import { GetCertainFriendConversationDto } from '@app/common/dto/message-dto/get-certain-friend-conversation.dto';
+import { Types } from 'mongoose';
 
 @Injectable()
 export class ApiGatewayService {
@@ -708,6 +710,36 @@ export class ApiGatewayService {
       this.messageService
         .send('get_all_conversations', {
           userPayload,
+        })
+        .pipe(
+          map((response) => {
+            if (response.error) {
+              this.throwErrorBasedOnStatusCode(
+                response.statusCode,
+                response.message,
+              );
+            }
+            return response;
+          }),
+        ),
+    );
+
+    return result;
+  }
+
+  async getCertainFriendConversation(
+    userPayload: TokenPayloadInterface,
+    dto: GetCertainFriendConversationDto,
+    friendId: Types.ObjectId,
+  ) {
+    const result = await lastValueFrom(
+      this.messageService
+        .send('get_certain_friend_conversation', {
+          userPayload,
+          payload: {
+            ...dto,
+            friendId: friendId.toString(),
+          },
         })
         .pipe(
           map((response) => {

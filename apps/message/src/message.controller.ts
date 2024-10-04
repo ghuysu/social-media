@@ -12,6 +12,7 @@ import { MessagePattern, Payload } from '@nestjs/microservices';
 import { CreateMessageInterface } from './interfaces/create-message.interface';
 import { ReadMessageInterface } from './interfaces/read-message.interface';
 import { GetAllMessagesInterface } from './interfaces/get-all-messages.interface';
+import { GetCertainFriendConversationInterface } from './interfaces/get-certain-friend-conversation.interface';
 
 @Controller()
 export class MessageController {
@@ -60,6 +61,25 @@ export class MessageController {
       return {
         status: HttpStatus.OK,
         message: 'Get all friend conversations successfully.',
+        metadata: result,
+      };
+    } catch (error) {
+      return this.handleError(error);
+    }
+  }
+
+  @MessagePattern('get_certain_friend_conversation')
+  async getCertainFriendConversation(
+    @Payload() { userPayload, payload }: GetCertainFriendConversationInterface,
+  ) {
+    try {
+      const result = await this.messageService.getCertainFriendConversation(
+        userPayload,
+        payload,
+      );
+      return {
+        status: HttpStatus.OK,
+        message: 'Get friend conversation successfully.',
         metadata: result,
       };
     } catch (error) {

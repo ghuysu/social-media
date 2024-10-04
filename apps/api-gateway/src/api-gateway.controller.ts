@@ -20,6 +20,13 @@ import {
   AcceptInviteDto,
   CreateMessageDto,
   ReadMessageDto,
+  GetCertainFriendConversationDto,
+  CreateFeedDto,
+  GetCertainUserFeedsDto,
+  GetEveryoneFeedsDto,
+  ReactFeedDto,
+  UpdateFeedDto,
+  GetCertainConversationParamDto,
 } from '@app/common';
 import {
   Body,
@@ -49,13 +56,6 @@ import { User } from './decorators/user.decorator';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { RoleGuard } from './guards/role.guard';
 import { Roles } from './decorators/role.decorator';
-import {
-  CreateFeedDto,
-  GetCertainUserFeedsDto,
-  GetEveryoneFeedsDto,
-  ReactFeedDto,
-  UpdateFeedDto,
-} from '@app/common/dto/feed-dto';
 
 @Controller('api')
 export class ApiGatewayController {
@@ -441,12 +441,16 @@ export class ApiGatewayController {
   @UseGuards(JwtGuard)
   @UseGuards(ApiKeyGuard)
   @Roles(NORMAL_USER_ROLE)
-  @Post('message/certain/:friendId')
-  async getCertainFriendMessages(
+  @Get('message/certain/:friendId')
+  async getCertainFriendConversation(
     @User() userPayload: TokenPayloadInterface,
-    @Body() dto: GetCertainUserFeedsDto,
-    @Param('userId') userId: string,
+    @Body() dto: GetCertainFriendConversationDto,
+    @Param() { friendId }: GetCertainConversationParamDto,
   ) {
-    return this.apiGatewayService.getCertainUserFeeds(userPayload, dto, userId);
+    return this.apiGatewayService.getCertainFriendConversation(
+      userPayload,
+      dto,
+      friendId,
+    );
   }
 }

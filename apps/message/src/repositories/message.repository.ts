@@ -28,6 +28,7 @@ export class MessageRepository extends AbstractRepository<MessageDocument> {
   ): Promise<MessageDocument[]> {
     const feeds = await this.model
       .find(filterQuery)
+      .limit(500)
       .sort({ createdAt: -1 })
       .populate(populate)
       .lean<MessageDocument[]>();

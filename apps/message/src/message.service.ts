@@ -121,6 +121,10 @@ export class MessageService {
       );
     } else {
       conversation.push(message);
+      //redis just save 500 newest messages
+      if (conversation.length > 500) {
+        conversation = conversation.slice(0, 500);
+      }
 
       if (userIdFirst) {
         this.cacheManager.set(
@@ -354,5 +358,127 @@ export class MessageService {
 
     //return all messages
     return friendConversations;
+  }
+
+  async getCertainFriendConversation(
+    { userId, email, role }: TokenPayloadInterface,
+    { skip, friendId },
+  ) {
+    //get friendList
+    let user: UserDocument = await this.cacheManager.get(`user:${email}`);
+
+    if (!user) {
+      user = await lastValueFrom(
+        this.userClient.send('get_user', { userId, email, role }).pipe(
+          map((response) => {
+            if (response.error) {
+              throw new NotFoundException('Resource not found');
+            }
+            return response.metadata;
+          }),
+        ),
+      );
+    }
+
+    const friendList: Partial<UserDocument>[] =
+      user.friendList as Partial<UserDocument>[];
+
+    //check they are friends or not
+    const isFriends: boolean = friendList.some(
+      (friend) => friend._id.toString() === friendId.toString(),
+    );
+
+    if (!isFriends) {
+      throw new BadRequestException('No relational request');
+    }
+
+    //get conversation
+    //if skip > 450, get messages from db
+    //if skip <= 450 get message from db
+    let conversation: MessageDocument[];
+
+    if (skip > 450) {
+      conversation = await this.messageRepository.getMessages(
+        {
+          $or: [
+            {
+              senderId: userId.toString(),
+              receiverId: friendId.toString(),
+            },
+            {
+              senderId: friendId.toString(),
+              receiverId: userId.toString(),
+            },
+          ],
+        },
+        skip,
+        [
+          { path: 'senderId', select: '_id fullname profileImageUrl' },
+          { path: 'receiverId', select: '_id fullname profileImageUrl' },
+          { path: 'feedId', select: '_id description imageUrl' },
+        ],
+      );
+
+      conversation.reverse();
+    } else {
+      let userIdFirst: boolean = true;
+
+      conversation = await this.cacheManager.get(
+        `conversation:${userId.toString()}:${friendId.toString()}`,
+      );
+
+      if (!conversation) {
+        userIdFirst = false;
+
+        conversation = await this.cacheManager.get(
+          `conversation:${friendId.toString()}:${userId.toString()}`,
+        );
+      }
+
+      if (!conversation) {
+        conversation = await this.messageRepository.getAllConversationMessages(
+          {
+            $or: [
+              {
+                senderId: userId.toString(),
+                receiverId: friendId.toString(),
+              },
+              {
+                senderId: friendId.toString(),
+                receiverId: userId.toString(),
+              },
+            ],
+          },
+          [
+            { path: 'senderId', select: '_id fullname profileImageUrl' },
+            { path: 'receiverId', select: '_id fullname profileImageUrl' },
+            { path: 'feedId', select: '_id description imageUrl' },
+          ],
+        );
+
+        //update redis if conversation is not caching
+        if (userIdFirst) {
+          this.cacheManager.set(
+            `conversation:${userId.toString()}:${friendId.toString()}`,
+            conversation,
+            {
+              ttl: createTTL(60 * 60 * 24 * 360, 60 * 60 * 24 * 30),
+            },
+          );
+        } else {
+          this.cacheManager.set(
+            `conversation:${friendId.toString()}:${userId.toString()}`,
+            conversation,
+            {
+              ttl: createTTL(60 * 60 * 24 * 360, 60 * 60 * 24 * 30),
+            },
+          );
+        }
+      }
+
+      conversation = conversation.slice(skip, skip + 50).reverse();
+    }
+
+    return conversation;
   }
 }
