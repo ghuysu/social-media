@@ -158,4 +158,5 @@ class SignInUserViewModel(
         dbHelper.clearUserData()
         UserSession.clearSession()
     }
+
 }

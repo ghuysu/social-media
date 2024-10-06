@@ -1,15 +1,9 @@
 package thanhnhan.myproject.socialmedia.data.model
 
-import okhttp3.MultipartBody
-
-data class ChangeAvatarRequest(
-    val avatar: MultipartBody.Part // sử dụng File hay MultipartBody ??
-)
-
-data class ChangeAvatarResponse(
+data class DeleteFriendResponse(
     val status: Int,
     val message: String,
-    val metadata: Metadata
+    val metadata: Metadata?
 ) {
     data class Metadata(
         val _id: String,

@@ -1,15 +1,8 @@
 package thanhnhan.myproject.socialmedia.data.model
-
-import okhttp3.MultipartBody
-
-data class ChangeAvatarRequest(
-    val avatar: MultipartBody.Part // sử dụng File hay MultipartBody ??
-)
-
-data class ChangeAvatarResponse(
+data class RemoveFriendInviteResponse(
     val status: Int,
     val message: String,
-    val metadata: Metadata
+    val metadata: Metadata?
 ) {
     data class Metadata(
         val _id: String,
@@ -18,7 +11,7 @@ data class ChangeAvatarResponse(
         val birthday: String,
         val profileImageUrl: String,
         val friendList: List<Friend>,
-        val friendInvites: List<FriendInvite>,
+        val friendInvites: List<SignInUserResponse.Metadata.FriendInvite>,
         val country: String,
         val role: String
     )
@@ -27,11 +20,5 @@ data class ChangeAvatarResponse(
         val _id: String,
         val fullname: String,
         val profileImageUrl: String
-    )
-    data class FriendInvite(
-        val _id: String,
-        val sender: GetUserResponse.Friend,
-        val receiver: GetUserResponse.Friend,
-        val createdAt: String
     )
 }

@@ -1,6 +1,8 @@
 package thanhnhan.myproject.socialmedia.data.model
 
 import android.util.Log
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.StateFlow
 
 // Request model for signing in a user
 data class SignInUserRequest(
@@ -48,6 +50,7 @@ object UserSession {
     var user: SignInUserResponse.Metadata.User? = null
     var signInToken: String? = null
 
+
     // Hàm để đặt thông tin người dùng và token sau khi đăng nhập thành công
     fun setUserData(user: SignInUserResponse.Metadata.User?, token: String?) {
         this.user = user
@@ -61,9 +64,20 @@ object UserSession {
         user = null
         signInToken = null
     }
+    private val _friendListFlow = MutableStateFlow<List<SignInUserResponse.Metadata.Friend>>(emptyList())
+    val friendListFlow: StateFlow<List<SignInUserResponse.Metadata.Friend>> = _friendListFlow
 
+    private val _friendInvitesFlow = MutableStateFlow<List<SignInUserResponse.Metadata.FriendInvite>>(emptyList())
+    val friendInvitesFlow: StateFlow<List<SignInUserResponse.Metadata.FriendInvite>> = _friendInvitesFlow
 
-    // Hàm cập nhật danh sách friendInvites
+    fun updateFriends(friendList: List<SignInUserResponse.Metadata.Friend>) {
+        _friendListFlow.value = friendList
+    }
+
+    fun updateFriendInvites(friendInvites: List<SignInUserResponse.Metadata.FriendInvite>) {
+        _friendInvitesFlow.value = friendInvites
+    }
+
     fun updateFriendInvites(newFriendInvite: SignInUserResponse.Metadata.FriendInvite) {
         user?.friendInvites = user?.friendInvites?.toMutableList()?.apply {
             add(newFriendInvite)

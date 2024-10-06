@@ -3,9 +3,7 @@ package thanhnhan.myproject.socialmedia.data.repository
 import android.util.Log
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flow
-import okhttp3.MediaType.Companion.toMediaTypeOrNull
 import okhttp3.MultipartBody
-import okhttp3.RequestBody
 import okio.IOException
 import retrofit2.HttpException
 import thanhnhan.myproject.socialmedia.data.network.Api
@@ -21,7 +19,6 @@ import thanhnhan.myproject.socialmedia.data.model.ChangeFullnameRequest
 import thanhnhan.myproject.socialmedia.data.model.ChangeFullnameResponse
 import thanhnhan.myproject.socialmedia.data.model.CheckEmailCodeRequest
 import thanhnhan.myproject.socialmedia.data.model.CheckEmailCodeResponse
-import java.io.File
 
 
 class UserProfileRepository(

@@ -15,6 +15,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Button
@@ -37,17 +38,19 @@ import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.viewinterop.AndroidView
+import androidx.navigation.NavController
+import androidx.navigation.compose.rememberNavController
 import thanhnhan.myproject.socialmedia.R
 
     @Composable
-    fun LocketScreen() {
+    fun LocketScreen(navController: NavController) {
         Box(
             modifier = Modifier
                 .fillMaxSize()
                 .background(Color(0xFFFEF8E8))
         ) {
             Column {
-                TopBar()
+                TopBar(navController)
                 MainContent()
                 Spacer(modifier = Modifier.weight(1f))
                 BottomBar()
@@ -69,7 +72,7 @@ import thanhnhan.myproject.socialmedia.R
     }
 
     @Composable
-    fun TopBar() {
+    fun TopBar(navController: NavController) {
         Row(
             modifier = Modifier
                 .fillMaxWidth()
@@ -77,7 +80,7 @@ import thanhnhan.myproject.socialmedia.R
             horizontalArrangement = Arrangement.SpaceBetween
         ) {
             IconButton(
-                onClick = { /* TODO */ },
+                onClick = { navController.navigate("UserProfile") },
             ) {
                 Icon(
                     painter = painterResource(id = R.drawable.user),
@@ -86,16 +89,21 @@ import thanhnhan.myproject.socialmedia.R
             }
 
             Button(
-                onClick = { /* TODO */ },
+                onClick = { navController.navigate("friendsScreen") },
+                modifier = Modifier
+                    .height(50.dp)
+                    .width(150.dp) ,
                 colors = ButtonDefaults.buttonColors(containerColor = Color.DarkGray),
                 shape = RoundedCornerShape(20.dp)
             ) {
-                Text("Bạn bè", color = Color.White, onTextLayout = {})
+                Text("Friends", color = Color.White, onTextLayout = {})
             }
 
             IconButton(
                 onClick = { /* TODO */ },
-                modifier = Modifier.size(48.dp).clip(RectangleShape)
+                modifier = Modifier
+                    .size(48.dp)
+                    .clip(RectangleShape)
             ) {
                 Icon(
                     painter = painterResource(id = R.drawable.chat),
@@ -179,5 +187,6 @@ import thanhnhan.myproject.socialmedia.R
     @Preview(showBackground = true)
     @Composable
     fun LocketScreenPreview() {
-        LocketScreen()
+        val navController = rememberNavController()
+        LocketScreen(navController = navController )
     }

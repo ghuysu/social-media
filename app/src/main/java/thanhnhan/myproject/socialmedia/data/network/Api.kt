@@ -1,11 +1,15 @@
 package thanhnhan.myproject.socialmedia.data.network
 import okhttp3.MultipartBody
 import retrofit2.http.Body
+import retrofit2.http.DELETE
+import retrofit2.http.GET
 import retrofit2.http.Header
 import retrofit2.http.Multipart
 import retrofit2.http.PATCH
 import retrofit2.http.POST
 import retrofit2.http.Part
+import retrofit2.http.Path
+import thanhnhan.myproject.socialmedia.data.model.AcceptFriendResponse
 import thanhnhan.myproject.socialmedia.data.model.ChangeAvatarRequest
 import thanhnhan.myproject.socialmedia.data.model.ChangeAvatarResponse
 
@@ -21,9 +25,12 @@ import thanhnhan.myproject.socialmedia.data.model.ChangeFullnameRequest
 import thanhnhan.myproject.socialmedia.data.model.ChangeFullnameResponse
 import thanhnhan.myproject.socialmedia.data.model.CheckEmailCodeRequest
 import thanhnhan.myproject.socialmedia.data.model.CheckEmailCodeResponse
+import thanhnhan.myproject.socialmedia.data.model.DeleteFriendResponse
 
 import thanhnhan.myproject.socialmedia.data.model.EmailVerificationRequest
 import thanhnhan.myproject.socialmedia.data.model.EmailVerificationResponse
+import thanhnhan.myproject.socialmedia.data.model.GetUserResponse
+import thanhnhan.myproject.socialmedia.data.model.RemoveFriendInviteResponse
 import thanhnhan.myproject.socialmedia.data.model.SendInviteRequest
 import thanhnhan.myproject.socialmedia.data.model.SendInviteResponse
 import thanhnhan.myproject.socialmedia.data.model.SignUpRequest
@@ -86,5 +93,24 @@ interface Api {
         @Header("authorization") authToken: String,
         @Body request: SendInviteRequest
     ): SendInviteResponse
+    @PATCH("api/user/invite/accept/{inviteId}")
+    suspend fun acceptFriendInvite(
+        @Header("authorization") authToken: String,
+        @Path("inviteId") inviteId: String
+    ): AcceptFriendResponse
+    @DELETE("api/user/invite/remove/{inviteId}")
+    suspend fun removeFriendInvite(
+        @Header("authorization") authToken: String,
+        @Path("inviteId") inviteId: String
+    ): RemoveFriendInviteResponse
+    @PATCH("api/user/friend/{friendId}")
+    suspend fun deleteFriend(
+        @Header("authorization") authToken: String,
+        @Path("friendId") friendId: String
+    ): DeleteFriendResponse
+    @GET("api/user")
+    suspend fun getUser(
+        @Header("authorization") authToken: String
+    ): GetUserResponse
 }
 

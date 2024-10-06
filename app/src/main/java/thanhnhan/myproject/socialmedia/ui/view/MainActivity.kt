@@ -20,7 +20,10 @@ import thanhnhan.myproject.socialmedia.data.database.UserDatabaseHelper
 import thanhnhan.myproject.socialmedia.data.network.RetrofitInstance
 import thanhnhan.myproject.socialmedia.data.repository.UserProfileRepository
 import androidx.navigation.navDeepLink
+import thanhnhan.myproject.socialmedia.data.repository.FriendRepository
+import thanhnhan.myproject.socialmedia.data.repository.UserRepository
 import thanhnhan.myproject.socialmedia.ui.theme.SocialMediaTheme
+import thanhnhan.myproject.socialmedia.ui.view.FriendsScreen.FriendsScreen
 import thanhnhan.myproject.socialmedia.ui.view.HomeScreen.LocketScreen
 import thanhnhan.myproject.socialmedia.ui.view.Login.LocketIntroScreen
 import thanhnhan.myproject.socialmedia.ui.view.Login.SignInScreen
@@ -37,6 +40,8 @@ import thanhnhan.myproject.socialmedia.ui.view.user_profile.ChangeFullname
 import thanhnhan.myproject.socialmedia.ui.view.user_profile.ProfileScreen
 import thanhnhan.myproject.socialmedia.ui.view.user_profile.change_email.ChangeEmail
 import thanhnhan.myproject.socialmedia.ui.view.user_profile.change_email.VerifyEmailCodeChangeEmail
+import thanhnhan.myproject.socialmedia.viewmodel.FriendViewModel
+import thanhnhan.myproject.socialmedia.viewmodel.UserViewModel
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -61,6 +66,8 @@ fun MainApp() {
     val context = LocalContext.current
     val dbHelper = UserDatabaseHelper(context)
     val savedUser = dbHelper.getUserData()
+    val friendViewModel = FriendViewModel(repository = FriendRepository(RetrofitInstance.api))
+    val userViewModel = UserViewModel(repository = UserRepository(RetrofitInstance.api))
 
     var authToken: String = savedUser?.token ?: "defaultToken"
 
@@ -85,13 +92,13 @@ fun MainApp() {
                     SignInScreen(
                         context = context,
                         onLoginSuccess = {
-                            navController.navigate("UserProfile")  // Điều hướng đến màn hình chính sau khi đăng nhập thành công
+                            navController.navigate("homeScreen")  // Điều hướng đến màn hình chính sau khi đăng nhập thành công
                         }
                     )
                 }
                 // Thêm HomeScreen vào NavHost
                 composable(route = "homeScreen") {
-                    LocketScreen()
+                    LocketScreen(navController)
                 }
                 composable(route = "chooseEmailSignUp") {
                     ChooseEmailSignUp(openChoosePassword = { email ->
@@ -410,6 +417,10 @@ fun MainApp() {
                             }
                         )
                     }
+                }
+                // Thêm route cho FriendsScreen
+                composable(route = "friendsScreen") {
+                    FriendsScreen(friendViewModel = friendViewModel, userViewModel = userViewModel, authToken=authToken) // Gọi FriendsScreen
                 }
             }
         }

@@ -21,6 +21,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalInspectionMode
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
@@ -52,6 +53,38 @@ fun AddFriendScreen(
     val viewModelFactory = SignInUserViewModelFactory(SignInUserRepository(RetrofitInstance.api), context)
     val signInViewModel: SignInUserViewModel = viewModel(factory = viewModelFactory)
 
+    if (LocalInspectionMode.current) {
+        // Chế độ preview không chạy logic phức tạp
+        Column(
+            modifier = Modifier
+                .fillMaxSize()
+                .background(Color(0xFF22272E))
+                .padding(16.dp),
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.Center
+        ) {
+            CircularImageView(url = urlOfFriend, size = 200)
+            Spacer(modifier = Modifier.height(10.dp))
+            Text(
+                text = nameOfFriend,
+                fontWeight = FontWeight.Bold,
+                fontSize = 30.sp,
+                color = Color.White,
+            )
+            Spacer(modifier = Modifier.height(10.dp))
+            Button(
+                onClick = { /* No action in preview */ },
+                colors = ButtonDefaults.buttonColors(
+                    containerColor = AppTheme.appButtonStyle.backgroundColor,
+                    disabledContainerColor = Color.Gray,
+                    disabledContentColor = Color.White
+                ),
+            ) {
+                Text(text = "Send invite", color = Color.White, fontSize = 20.sp)
+            }
+        }
+        return
+    }
     signInViewModel.autoSignIn()
 
     val user = UserSession.user

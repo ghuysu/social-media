@@ -46,82 +46,86 @@ fun ChangeFullname(
     openUserProfile: () -> Unit,
     backAction: () -> Unit = {}
 ) {
-    val context = LocalContext.current
-    var fullname by remember { mutableStateOf(UserSession.user!!.fullname) } // Lưu tên đầy đủ hiện tại
+    AppTheme {
+        val context = LocalContext.current
+        var fullname by remember { mutableStateOf(UserSession.user!!.fullname) } // Lưu tên đầy đủ hiện tại
 
-    val api = RetrofitInstance.api
-    val userRepository = UserProfileRepository(api)
-    val userViewModel: UserProfileViewModel = viewModel(factory = UserProfileViewModelFactory(userRepository))
-    val changeFullnameResult by userViewModel.changeFullnameResult.collectAsState() // Kết quả từ việc đổi tên đầy đủ
+        val api = RetrofitInstance.api
+        val userRepository = UserProfileRepository(api)
+        val userViewModel: UserProfileViewModel =
+            viewModel(factory = UserProfileViewModelFactory(userRepository))
+        val changeFullnameResult by userViewModel.changeFullnameResult.collectAsState() // Kết quả từ việc đổi tên đầy đủ
 
-    LaunchedEffect(changeFullnameResult) {
-        changeFullnameResult?.let { result ->
-            when (result) {
-                is Result.Success -> {
-                    val metadata = result.data?.metadata
+        LaunchedEffect(changeFullnameResult) {
+            changeFullnameResult?.let { result ->
+                when (result) {
+                    is Result.Success -> {
+                        val metadata = result.data?.metadata
 
-                    // Nếu đổi tên thành công, cập nhật trong local SQLite và UserSession
-                    val newFullname = metadata?.fullname ?: ""
-                    Toast.makeText(
-                        context,
-                        "Fullname changed to: $newFullname",
-                        Toast.LENGTH_LONG
-                    ).show()
+                        // Nếu đổi tên thành công, cập nhật trong local SQLite và UserSession
+                        val newFullname = metadata?.fullname ?: ""
+                        Toast.makeText(
+                            context,
+                            "Fullname changed to: $newFullname",
+                            Toast.LENGTH_LONG
+                        ).show()
 
-                    // Cập nhật vào SQLite
-                    val dbHelper = UserDatabaseHelper(context)
-                    dbHelper.updateFullname(newFullname)
+                        // Cập nhật vào SQLite
+                        val dbHelper = UserDatabaseHelper(context)
+                        dbHelper.updateFullname(newFullname)
 
-                    // Cập nhật thông tin trong UserSession
-                    UserSession.user?.fullname = newFullname
+                        // Cập nhật thông tin trong UserSession
+                        UserSession.user?.fullname = newFullname
 
-                    // Điều hướng quay lại UserProfile
-                    openUserProfile()
-                }
-                is Result.Error -> {
-                    Toast.makeText(
-                        context,
-                        result.message ?: "Error occurred",
-                        Toast.LENGTH_LONG
-                    ).show()
+                        // Điều hướng quay lại UserProfile
+                        openUserProfile()
+                    }
+
+                    is Result.Error -> {
+                        Toast.makeText(
+                            context,
+                            result.message ?: "Error occurred",
+                            Toast.LENGTH_LONG
+                        ).show()
+                    }
                 }
             }
         }
-    }
 
-    Column(
-        modifier = Modifier
-            .fillMaxSize()
-            .background(color = Color(0xFF22272E))
-    ) {
-        BackIconButton(backAction)
-        LogoImage()
-        AppName()
-        Spacer(modifier = Modifier.height(80.dp))
-
-        // TextField để nhập tên mới
-        AppTextField(
-            value = fullname,
-            onValueChange = {
-                fullname = it
-            },
+        Column(
             modifier = Modifier
-                .width(300.dp)
-                .align(Alignment.CenterHorizontally)
-        )
+                .fillMaxSize()
+                .background(color = Color(0xFF22272E))
+        ) {
+            BackIconButton(backAction)
+            LogoImage()
+            AppName()
+            Spacer(modifier = Modifier.height(80.dp))
+
+            // TextField để nhập tên mới
+            AppTextField(
+                value = fullname,
+                onValueChange = {
+                    fullname = it
+                },
+                modifier = Modifier
+                    .width(300.dp)
+                    .align(Alignment.CenterHorizontally)
+            )
 
 
-        Spacer(modifier = Modifier.height(145.dp))
+            Spacer(modifier = Modifier.height(145.dp))
 
-        // Nút tiếp tục
-        ContinueButton(
-            text = "Save",
-            icon = Icons.Default.ArrowForward,
-            isEnable = fullname.isNotEmpty(), // Kích hoạt nút nếu tên đầy đủ không rỗng
-            onClick = {
-                userViewModel.changeFullname(UserSession.signInToken!!, fullname)
-            }
-        )
+            // Nút tiếp tục
+            ContinueButton(
+                text = "Save",
+                icon = Icons.Default.ArrowForward,
+                isEnable = fullname.isNotEmpty(), // Kích hoạt nút nếu tên đầy đủ không rỗng
+                onClick = {
+                    userViewModel.changeFullname(UserSession.signInToken!!, fullname)
+                }
+            )
+        }
     }
 }
 
