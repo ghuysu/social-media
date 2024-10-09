@@ -103,7 +103,7 @@ interface Api {
         @Header("authorization") authToken: String,
         @Path("inviteId") inviteId: String
     ): RemoveFriendInviteResponse
-    @PATCH("api/user/friend/{friendId}")
+    @DELETE("api/user/friend/delete/{friendId}")
     suspend fun deleteFriend(
         @Header("authorization") authToken: String,
         @Path("friendId") friendId: String

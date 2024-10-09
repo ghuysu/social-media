@@ -79,11 +79,22 @@ dependencies {
 
     // Image loading
     implementation("io.coil-kt:coil-compose:2.4.0")
-    implementation("androidx.camera:camera-lifecycle:1.3.4")
-    implementation("androidx.camera:camera-view:1.3.4")
+    // CameraX core library
+    implementation ("androidx.camera:camera-core:1.3.4")
+    // CameraX Camera2 extensions
+    implementation ("androidx.camera:camera-camera2:1.3.4")
+    // CameraX Lifecycle extensions
+    implementation ("androidx.camera:camera-lifecycle:1.3.4")
+    // CameraX View class
+    implementation ("androidx.camera:camera-view:1.3.4")
+
 
     //okhttp
     implementation("com.squareup.okhttp3:logging-interceptor:4.9.3")
+
+    //Socket
+    implementation ("io.socket:socket.io-client:2.0.0") // Thêm thư viện socket.io
+    implementation ("org.json:json:20210307") // Thêm để xử lý JSON
 
     testImplementation("junit:junit:4.13.2")
     androidTestImplementation("androidx.test.ext:junit:1.2.1")
