@@ -1,6 +1,5 @@
 package thanhnhan.myproject.socialmedia.ui.view.HomeScreen
 
-import android.hardware.camera2.CameraAccessException
 import android.net.Uri
 import android.os.Handler
 import android.os.Looper
@@ -62,6 +61,7 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import thanhnhan.myproject.socialmedia.R
+import thanhnhan.myproject.socialmedia.ui.theme.AppTheme
 import java.io.File
 
 @Composable
@@ -70,93 +70,99 @@ fun LocketScreen(navController: NavController) {
     var capturedImageUri by remember { mutableStateOf<Uri?>(null) }
     val imageCapture = remember { ImageCapture.Builder().build() }
     var isCameraReady by remember { mutableStateOf(true) }
+    var isFlashEnabled by remember { mutableStateOf(false) } // Trạng thái Flash
     var cameraProvider: ProcessCameraProvider? = null
 
-    Box(
-        modifier = Modifier
-            .fillMaxSize()
-            .background(Color(0xFF22272E))
-    ) {
-        Column {
-            TopBar(navController)
-            MainContent(
-                lensFacing = lensFacing,
-                capturedImageUri = capturedImageUri,
-                onCaptureImage = { uri -> capturedImageUri = uri },
-                imageCapture = imageCapture,
-                onCameraReady = { isCameraReady = true },
-                cameraProvider = cameraProvider
-            )
-            Spacer(modifier = Modifier.weight(1f))
-            BottomBar(
-                lensFacing = lensFacing,
-                onSwitchCamera = {
-                    isCameraReady = false
-                    lensFacing = if (lensFacing == CameraSelector.LENS_FACING_BACK) {
-                        CameraSelector.LENS_FACING_FRONT
-                    } else {
-                        CameraSelector.LENS_FACING_BACK
-                    }
+    AppTheme {
+        Box(
+            modifier = Modifier
+                .fillMaxSize()
+                .background(Color(0xFF22272E))
+        ) {
+            Column {
+                TopBar(navController)
+                Spacer(modifier = Modifier.height(20.dp))
+                MainContent(
+                    lensFacing = lensFacing,
+                    capturedImageUri = capturedImageUri,
+                    onCaptureImage = { uri -> capturedImageUri = uri },
+                    imageCapture = imageCapture,
+                    onCameraReady = { isCameraReady = true },
+                    cameraProvider = cameraProvider
+                )
+                Spacer(modifier = Modifier.weight(1f))
+                BottomBar(
+                    lensFacing = lensFacing,
+                    onSwitchCamera = {
+                        isCameraReady = false
+                        lensFacing = if (lensFacing == CameraSelector.LENS_FACING_BACK) {
+                            CameraSelector.LENS_FACING_FRONT
+                        } else {
+                            CameraSelector.LENS_FACING_BACK
+                        }
 
-                    // Đảm bảo camera được chuẩn bị kỹ càng
-                    Handler(Looper.getMainLooper()).postDelayed({
-                        isCameraReady = true
-                    }, 500)
-                },
-                imageCapture = imageCapture,
-                onCaptureImage = { uri -> capturedImageUri = uri },
-                isCameraReady = isCameraReady,
-                cameraProvider = cameraProvider
-            )
+                        // Đảm bảo camera được chuẩn bị kỹ càng
+                        Handler(Looper.getMainLooper()).postDelayed({
+                            isCameraReady = true
+                        }, 500)
+                    },
+                    imageCapture = imageCapture,
+                    onCaptureImage = { uri -> capturedImageUri = uri },
+                    isCameraReady = isCameraReady,
+                    isFlashEnabled = isFlashEnabled, // Truyền trạng thái Flash
+                    onFlashToggle = { isFlashEnabled = !isFlashEnabled }, // Thay đổi trạng thái Flash
+                    cameraProvider = cameraProvider
+                )
+            }
         }
     }
 }
 
-    @Composable
-    fun TopBar(navController: NavController) {
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(16.dp),
-            horizontalArrangement = Arrangement.SpaceBetween
+@Composable
+fun TopBar(navController: NavController) {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(16.dp),
+        horizontalArrangement = Arrangement.SpaceBetween
+    ) {
+        IconButton(
+            onClick = { navController.navigate("UserProfile") },
+            modifier = Modifier.size(60.dp)
         ) {
-            IconButton(
-                onClick = { navController.navigate("UserProfile") },
-                modifier = Modifier.size(60.dp)
-            ) {
-                Icon(
-                    painter = painterResource(id = R.drawable.user),
-                    contentDescription = "Profile",
-                    modifier = Modifier.size(50.dp),
-                    tint = Color(0xFFCFCFCF) // Thay đổi màu sắc tại đây
-                )
-            }
+            Icon(
+                painter = painterResource(id = R.drawable.user),
+                contentDescription = "Profile",
+                modifier = Modifier.size(50.dp),
+                tint = Color(0xFFCFCFCF) // Thay đổi màu sắc tại đây
+            )
+        }
 
-            Button(
-                onClick = { navController.navigate("friendsScreen") },
-                modifier = Modifier
-                    .height(50.dp)
-                    .width(150.dp) ,
-                colors = ButtonDefaults.buttonColors(containerColor = Color.DarkGray),
-                shape = RoundedCornerShape(20.dp)
-            ) {
-                Text("Friends", color = Color.White, onTextLayout = {})
-            }
+        Button(
+            onClick = { navController.navigate("friendsScreen") },
+            modifier = Modifier
+                .height(50.dp)
+                .width(150.dp) ,
+            colors = ButtonDefaults.buttonColors(containerColor = Color.DarkGray),
+            shape = RoundedCornerShape(20.dp)
+        ) {
+            Text("Friends", color = Color.White, onTextLayout = {})
+        }
 
-            IconButton(
-                onClick = { /* TODO */ },
-                modifier = Modifier.size(60.dp)
-            ) {
-                Icon(
-                    painter = painterResource(id = R.drawable.chat),
-                    contentDescription = "Chat",
-                    tint = Color(0xFFCFCFCF),
-                    modifier = Modifier.size(50.dp)
+        IconButton(
+            onClick = { /* TODO */ },
+            modifier = Modifier.size(60.dp)
+        ) {
+            Icon(
+                painter = painterResource(id = R.drawable.chat),
+                contentDescription = "Chat",
+                tint = Color(0xFFCFCFCF),
+                modifier = Modifier.size(50.dp)
 
-                )
-            }
+            )
         }
     }
+}
 
 @Composable
 fun MainContent(
@@ -171,10 +177,11 @@ fun MainContent(
         modifier = Modifier
             .fillMaxWidth()
             .aspectRatio(1f)
-            .padding(16.dp)
+            .padding(0.dp)
             .clip(RoundedCornerShape(20.dp))
     ) {
         if (capturedImageUri != null) {
+            // Hiển thị ảnh đã chụp
             Image(
                 painter = rememberAsyncImagePainter(capturedImageUri),
                 contentDescription = "Captured Image",
@@ -182,12 +189,13 @@ fun MainContent(
                 contentScale = ContentScale.Crop
             )
         } else {
+            // Hiển thị camera
             CameraPreview(
                 modifier = Modifier.fillMaxSize(),
                 lensFacing = lensFacing,
                 imageCapture = imageCapture,
                 onCameraReady = onCameraReady,
-                cameraProvider = cameraProvider // Truyền camera provider để quản lý lifecycle
+                cameraProvider = cameraProvider
             )
         }
     }
@@ -200,15 +208,18 @@ fun BottomBar(
     lensFacing: Int,
     onSwitchCamera: () -> Unit,
     imageCapture: ImageCapture,
-    onCaptureImage: (Uri) -> Unit,
+    onCaptureImage: (Uri?) -> Unit,
     isCameraReady: Boolean,
-    cameraProvider: ProcessCameraProvider? // Truyền camera provider để quản lý session
+    isFlashEnabled: Boolean, // Nhận trạng thái Flash
+    onFlashToggle: () -> Unit, // Hàm để thay đổi trạng thái Flash
+    cameraProvider: ProcessCameraProvider?
 ) {
     val context = LocalContext.current
     val mainExecutor = ContextCompat.getMainExecutor(context)
-
-    // Sử dụng coroutine để xử lý ảnh trong background thread
     val scope = rememberCoroutineScope()
+
+    var isShotTaken by remember { mutableStateOf(false) }
+    var tempPhotoFile: File? by remember { mutableStateOf(null) }
 
     Column(
         modifier = Modifier
@@ -221,32 +232,59 @@ fun BottomBar(
             horizontalArrangement = Arrangement.SpaceEvenly,
             verticalAlignment = Alignment.CenterVertically
         ) {
-            IconButton(onClick = { /* TODO */ }, modifier = Modifier.size(60.dp)) {
-                Icon(
-                    painter = painterResource(id = R.drawable.flash),
-                    contentDescription = "Flash",
-                    modifier = Modifier.size(50.dp),
-                    tint = Color(0xFFCFCFCF)
-                )
+            if (isShotTaken) {
+                IconButton(onClick = {
+                    tempPhotoFile?.let { file ->
+                        onCaptureImage(Uri.fromFile(file))
+                    }
+                    isShotTaken = false
+                }, modifier = Modifier.size(60.dp)) {
+                    Icon(
+                        painter = painterResource(id = R.drawable.check),
+                        contentDescription = "Accept",
+                        modifier = Modifier.size(50.dp),
+                        tint = Color(0xFFCFCFCF)
+                    )
+                }
+            } else {
+                // Nút Flash
+                IconButton(
+                    onClick = {
+                        onFlashToggle() // Thay đổi trạng thái flash
+                        if (isFlashEnabled) {
+                            imageCapture.flashMode = ImageCapture.FLASH_MODE_ON
+                        } else {
+                            imageCapture.flashMode = ImageCapture.FLASH_MODE_OFF
+                        }
+                    },
+                    modifier = Modifier.size(60.dp)
+                ) {
+                    Icon(
+                        painter = painterResource(id = if (isFlashEnabled) R.drawable.flash else R.drawable.no_flash),
+                        contentDescription = "Flash",
+                        modifier = Modifier.size(50.dp),
+                        tint = Color(0xFFCFCFCF)
+                    )
+                }
             }
 
             IconButton(
                 onClick = {
-                    Log.d("Shot","Shot Button clicked")
                     if (isCameraReady) {
                         scope.launch {
-                            val photoFile = withContext(Dispatchers.IO) {
+                            tempPhotoFile = withContext(Dispatchers.IO) {
                                 File.createTempFile("IMG_", ".jpg", context.cacheDir)
                             }
-                            val outputOptions = ImageCapture.OutputFileOptions.Builder(photoFile).build()
+                            val outputOptions = ImageCapture.OutputFileOptions.Builder(tempPhotoFile!!).build()
 
                             imageCapture.takePicture(
                                 outputOptions,
                                 mainExecutor,
                                 object : ImageCapture.OnImageSavedCallback {
                                     override fun onImageSaved(outputFileResults: ImageCapture.OutputFileResults) {
-                                        Log.d("CameraShot", "Image saved at: ${photoFile.absolutePath}")
-                                        onCaptureImage(Uri.fromFile(photoFile))
+                                        Log.d("CameraShot", "Image captured at: ${tempPhotoFile!!.absolutePath}")
+                                        onCaptureImage(Uri.fromFile(tempPhotoFile!!))
+                                        isShotTaken = true
                                     }
 
                                     override fun onError(exception: ImageCaptureException) {
@@ -261,36 +299,48 @@ fun BottomBar(
                 },
                 modifier = Modifier
                     .clip(CircleShape)
-                    .size(70.dp)
+                    .size(100.dp)
             ) {
                 Icon(
                     painter = painterResource(id = R.drawable.rec),
                     contentDescription = "Shot",
-                    tint = Color.Yellow,
-                    modifier = Modifier.size(70.dp)
+                    tint = Color(0xFF4383DC),
+                    modifier = Modifier.size(100.dp)
                 )
             }
 
-            IconButton(
-                onClick = { onSwitchCamera() },
-                modifier = Modifier.size(60.dp)
-            ) {
-                Icon(
-                    painter = painterResource(id = R.drawable.switch_camera),
-                    contentDescription = "Camera",
-                    modifier = Modifier
-                        .size(50.dp)
-                        .clip(RectangleShape),
-                    tint = Color(0xFFCFCFCF)
-                )
+            if (isShotTaken) {
+                IconButton(onClick = {
+                    tempPhotoFile = null
+                    onCaptureImage(null)
+                    isShotTaken = false
+                }, modifier = Modifier.size(60.dp)) {
+                    Icon(
+                        painter = painterResource(id = R.drawable.remove),
+                        contentDescription = "Remove",
+                        modifier = Modifier.size(50.dp),
+                        tint = Color(0xFFCFCFCF)
+                    )
+                }
+            } else {
+                // Nút Switch Camera
+                IconButton(
+                    onClick = { onSwitchCamera() },
+                    modifier = Modifier.size(60.dp)
+                ) {
+                    Icon(
+                        painter = painterResource(id = R.drawable.switch_camera),
+                        contentDescription = "Camera",
+                        modifier = Modifier
+                            .size(50.dp)
+                            .clip(RectangleShape),
+                        tint = Color(0xFFCFCFCF)
+                    )
+                }
             }
         }
-
-        Spacer(modifier = Modifier.height(16.dp))
-        Text("Lịch sử", color = Color.White)
     }
 }
-
 @Composable
 fun CameraPreview(
     modifier: Modifier = Modifier,
@@ -385,9 +435,9 @@ fun bindPreview(
         Log.e("CameraBindError", "Lỗi khi bind camera", exc)
     }
 }
-    @Preview(showBackground = true)
-    @Composable
-    fun LocketScreenPreview() {
-        val navController = rememberNavController()
-        LocketScreen(navController = navController )
-    }
+@Preview(showBackground = true)
+@Composable
+fun LocketScreenPreview() {
+    val navController = rememberNavController()
+    LocketScreen(navController = navController )
+}
