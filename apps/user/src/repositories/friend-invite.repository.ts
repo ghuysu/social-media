@@ -1,9 +1,8 @@
-import { AbstractRepository } from '@app/common';
-import { Injectable, Logger } from '@nestjs/common';
+import { AbstractRepository, FriendInviteDocument } from '@app/common';
+import { Injectable, Logger, NotFoundException } from '@nestjs/common';
 import { FRIEND_INVITE_DOCUMENT } from '@app/common';
-import { Model } from 'mongoose';
+import { FilterQuery, Model } from 'mongoose';
 import { InjectModel } from '@nestjs/mongoose';
-import { FriendInviteDocument } from '@app/common';
 
 @Injectable()
 export class FriendInviteRepository extends AbstractRepository<FriendInviteDocument> {
@@ -14,5 +13,29 @@ export class FriendInviteRepository extends AbstractRepository<FriendInviteDocum
     private readonly userModel: Model<FriendInviteDocument>,
   ) {
     super(userModel);
+  }
+
+  async deleteMany(
+    filterQuery: FilterQuery<FriendInviteDocument>,
+    populate?: Array<{
+      path: string;
+      select?: string;
+      populate?: any;
+    }>,
+  ): Promise<FriendInviteDocument[]> {
+    let query = this.model.deleteMany(filterQuery);
+
+    if (!query) {
+      this.logger.warn('Document was not found with filterQuery', filterQuery);
+      throw new NotFoundException('Document was not found');
+    }
+
+    if (populate) {
+      query = query.populate(populate);
+    }
+
+    const document = await query.lean<FriendInviteDocument[]>(true);
+
+    return document;
   }
 }

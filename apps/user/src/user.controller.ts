@@ -20,6 +20,9 @@ import { ChangeProfileImageInterface } from './interfaces/change-profile-image.i
 import { SendInviteInterface } from './interfaces/send-invite.interface';
 import { RemoveInviteInterface } from './interfaces/remove-invite.interface';
 import { DeleteFriendInterface } from './interfaces/delete-friend.interface';
+import { DeleteAccountInterface } from './interfaces/delete-account.interface';
+import { GetUserInforByAdminWithIdInterface } from './interfaces/get-user-infor-by-admin-with-id.interface';
+import { GetUserInforByAdminWithEmailInterface } from './interfaces/get-user-infor-by-admin-with-email.interface';
 
 @Controller()
 export class UserController {
@@ -227,6 +230,63 @@ export class UserController {
         message: 'Delete friend successfully.',
         metadata: result,
       };
+    } catch (error) {
+      return this.handleError(error);
+    }
+  }
+
+  @MessagePattern('check_delete_account')
+  async checkDeleteFriend(
+    @Payload('userPayload') userPayload: TokenPayloadInterface,
+  ) {
+    try {
+      const result =
+        await this.userService.checkEmailToDeleteAccount(userPayload);
+      return {
+        status: HttpStatus.OK,
+        message: 'Sent code to delete account successfully.',
+        metadata: result,
+      };
+    } catch (error) {
+      return this.handleError(error);
+    }
+  }
+
+  @MessagePattern('delete_account')
+  async deleteAccount(
+    @Payload() { userPayload, payload }: DeleteAccountInterface,
+  ) {
+    try {
+      await this.userService.deleteAccount(userPayload, payload);
+      return {
+        status: HttpStatus.OK,
+        message: 'Delete account successfully.',
+      };
+    } catch (error) {
+      return this.handleError(error);
+    }
+  }
+
+  //admin
+  @MessagePattern('get_user_infor_by_admin_with_id')
+  async getUserInforByAdminWithId(
+    @Payload() { searchValue: userId }: GetUserInforByAdminWithIdInterface,
+  ) {
+    try {
+      const result = await this.userService.getUserInforByAdminWithId(userId);
+      return result;
+    } catch (error) {
+      return this.handleError(error);
+    }
+  }
+
+  @MessagePattern('get_user_infor_by_admin_with_email')
+  async getUserInforByAdminWithEmail(
+    @Payload() { searchValue: email }: GetUserInforByAdminWithEmailInterface,
+  ) {
+    try {
+      const result = await this.userService.getUserInforByAdminWithEmail(email);
+      return result;
     } catch (error) {
       return this.handleError(error);
     }

@@ -8,11 +8,12 @@ import {
   UnauthorizedException,
 } from '@nestjs/common';
 import { MessageService } from './message.service';
-import { MessagePattern, Payload } from '@nestjs/microservices';
+import { EventPattern, MessagePattern, Payload } from '@nestjs/microservices';
 import { CreateMessageInterface } from './interfaces/create-message.interface';
 import { ReadMessageInterface } from './interfaces/read-message.interface';
 import { GetAllMessagesInterface } from './interfaces/get-all-messages.interface';
 import { GetCertainFriendConversationInterface } from './interfaces/get-certain-friend-conversation.interface';
+import { DeleteMessagesForDeleteAccountDto } from './dto/delete-messages-for-delete-account.dto';
 
 @Controller()
 export class MessageController {
@@ -84,6 +85,17 @@ export class MessageController {
       };
     } catch (error) {
       return this.handleError(error);
+    }
+  }
+
+  @EventPattern('delete_messages_for_delete_account')
+  async deleteAllMessagesForDeleteAccount(
+    @Payload() dto: DeleteMessagesForDeleteAccountDto,
+  ) {
+    try {
+      await this.messageService.deleteAllMessagesForDeleteAccount(dto);
+    } catch (error) {
+      console.log(error);
     }
   }
 

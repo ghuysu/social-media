@@ -5,9 +5,12 @@ import { UserRepository } from './repositories/user.repository';
 import {
   AWS_S3_SERVICE,
   DatabaseModule,
+  FEED_SERVICE,
   FRIEND_INVITE_DOCUMENT,
   LoggerModule,
+  MESSAGE_SERVICE,
   NOTIFICATION_SERVICE,
+  STATISTIC_SERVICE,
   USER_DOCUMENT,
 } from '@app/common';
 import { UserSchema } from '@app/common';
@@ -33,6 +36,12 @@ import { FriendInviteRepository } from './repositories/friend-invite.repository'
         NOTIFICATION_PORT: joi.number().required(),
         AWS_S3_HOST: joi.string().required(),
         AWS_S3_PORT: joi.number().required(),
+        FEED_HOST: joi.string().required(),
+        FEED_PORT: joi.number().required(),
+        MESSAGE_HOST: joi.string().required(),
+        MESSAGE_PORT: joi.number().required(),
+        STATISTIC_HOST: joi.string().required(),
+        STATISTIC_PORT: joi.number().required(),
         REDIS_HOST: joi.string().required(),
         REDIS_PORT: joi.number().required(),
         BUCKET_NAME: joi.string().required(),
@@ -68,6 +77,39 @@ import { FriendInviteRepository } from './repositories/friend-invite.repository'
           options: {
             host: configService.get('AWS_S3_HOST'),
             port: configService.get('AWS_S3_PORT'),
+          },
+        }),
+        inject: [ConfigService],
+      },
+      {
+        name: FEED_SERVICE,
+        useFactory: (configService: ConfigService) => ({
+          transport: Transport.TCP,
+          options: {
+            host: configService.get('FEED_HOST'),
+            port: configService.get('FEED_PORT'),
+          },
+        }),
+        inject: [ConfigService],
+      },
+      {
+        name: MESSAGE_SERVICE,
+        useFactory: (configService: ConfigService) => ({
+          transport: Transport.TCP,
+          options: {
+            host: configService.get('MESSAGE_HOST'),
+            port: configService.get('MESSAGE_PORT'),
+          },
+        }),
+        inject: [ConfigService],
+      },
+      {
+        name: STATISTIC_SERVICE,
+        useFactory: (configService: ConfigService) => ({
+          transport: Transport.TCP,
+          options: {
+            host: configService.get('STATISTIC_HOST'),
+            port: configService.get('STATISTIC_PORT'),
           },
         }),
         inject: [ConfigService],

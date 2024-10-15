@@ -8,7 +8,11 @@ import {
   UnauthorizedException,
 } from '@nestjs/common';
 import { AuthRepository } from './auth.repository';
-import { AWS_S3_SERVICE, NOTIFICATION_SERVICE } from '@app/common';
+import {
+  AWS_S3_SERVICE,
+  NOTIFICATION_SERVICE,
+  STATISTIC_SERVICE,
+} from '@app/common';
 import { ClientProxy } from '@nestjs/microservices';
 import {
   ChangePasswordDto,
@@ -37,6 +41,8 @@ export class AuthService {
     private readonly notificationService: ClientProxy,
     @Inject(AWS_S3_SERVICE)
     private readonly awss3Service: ClientProxy,
+    @Inject(STATISTIC_SERVICE)
+    private readonly statisticService: ClientProxy,
     private readonly configService: ConfigService,
     private readonly jwtService: JwtService,
     @Inject(CACHE_MANAGER) private cacheManager: Cache,
@@ -201,6 +207,12 @@ export class AuthService {
     await this.cacheManager.set(`user:${user.email}`, user, {
       ttl: createTTL(60 * 60 * 24 * 7, 60 * 60 * 24),
     });
+
+    //update user statistic
+    this.statisticService.emit('created_user', {});
+
+    //update country statistic
+    this.statisticService.emit('country', { country: country });
   }
 
   //change password
@@ -410,7 +422,7 @@ export class AuthService {
     const bearerToken = `Bearer ${signInToken}`;
 
     await this.cacheManager.set(`user:${user.email}`, user, {
-      ttl: createTTL(60 * 60 * 24 * 7, 60 * 60 * 24),
+      ttl: createTTL(60 * 60 * 24 * 30, 60 * 60 * 24),
     });
 
     return {

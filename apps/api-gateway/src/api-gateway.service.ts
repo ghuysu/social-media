@@ -9,6 +9,7 @@ import {
   CheckEmailDto,
   CreateMessageDto,
   CreateNormalUserDto,
+  DeleteAccountDto,
   DeleteFriendDto,
   FEED_SERVICE,
   GoogleSignInDto,
@@ -17,8 +18,10 @@ import {
   RemoveInviteDto,
   SendInviteDto,
   SignInDto,
+  STATISTIC_SERVICE,
   TokenPayloadInterface,
   USER_SERVICE,
+  UserDocument,
 } from '@app/common';
 import { CheckCodeDto } from '@app/common/dto/auth-dto/check-code.dto';
 import {
@@ -26,6 +29,7 @@ import {
   ConflictException,
   ForbiddenException,
   HttpException,
+  HttpStatus,
   Inject,
   Injectable,
   InternalServerErrorException,
@@ -40,11 +44,13 @@ import {
   CreateFeedDto,
   GetCertainUserFeedsDto,
   GetEveryoneFeedsDto,
+  GetFeedByAdminDto,
   ReactFeedDto,
   UpdateFeedDto,
 } from '@app/common/dto/feed-dto';
 import { GetCertainFriendConversationDto } from '@app/common/dto/message-dto/get-certain-friend-conversation.dto';
 import { Types } from 'mongoose';
+import { GetUserInforByAdminInterface } from './interfaces/get_user_infor_by_admin.interface';
 
 @Injectable()
 export class ApiGatewayService {
@@ -53,6 +59,7 @@ export class ApiGatewayService {
     @Inject(USER_SERVICE) private readonly userService: ClientProxy,
     @Inject(FEED_SERVICE) private readonly feedService: ClientProxy,
     @Inject(MESSAGE_SERVICE) private readonly messageService: ClientProxy,
+    @Inject(STATISTIC_SERVICE) private readonly statisticService: ClientProxy,
   ) {}
 
   throwErrorBasedOnStatusCode(statusCode: number, message: string) {
@@ -606,6 +613,7 @@ export class ApiGatewayService {
     userPayload: TokenPayloadInterface,
     payload: GetEveryoneFeedsDto,
   ) {
+    console.log(payload);
     const result = await lastValueFrom(
       this.feedService
         .send('get_everyone_feeds', {
@@ -755,5 +763,164 @@ export class ApiGatewayService {
     );
 
     return result;
+  }
+
+  async checkDeleteAccount(userPayload: TokenPayloadInterface) {
+    const result = await lastValueFrom(
+      this.userService
+        .send('check_delete_account', {
+          userPayload,
+        })
+        .pipe(
+          map((response) => {
+            if (response.error) {
+              this.throwErrorBasedOnStatusCode(
+                response.statusCode,
+                response.message,
+              );
+            }
+            return response;
+          }),
+        ),
+    );
+
+    return result;
+  }
+
+  async deleteAccount(
+    userPayload: TokenPayloadInterface,
+    dto: DeleteAccountDto,
+  ) {
+    const result = await lastValueFrom(
+      this.userService
+        .send('delete_account', {
+          userPayload,
+          payload: dto,
+        })
+        .pipe(
+          map((response) => {
+            if (response.error) {
+              this.throwErrorBasedOnStatusCode(
+                response.statusCode,
+                response.message,
+              );
+            }
+            return response;
+          }),
+        ),
+    );
+
+    return result;
+  }
+
+  //statistic
+  async getStatisticInfor() {
+    const result = await lastValueFrom(
+      this.statisticService.send('get_statistic_infor', {}).pipe(
+        map((response) => {
+          if (response.error) {
+            this.throwErrorBasedOnStatusCode(
+              response.statusCode,
+              response.message,
+            );
+          }
+          return response;
+        }),
+      ),
+    );
+
+    return result;
+  }
+
+  //admin
+  async getUserInforByAdmin(
+    { searchValue }: GetUserInforByAdminInterface,
+    type: string,
+  ) {
+    //check type
+    let getUserInforMessage: string = 'get_user_infor_by_admin_with_email';
+
+    if (type === 'id') {
+      if (!this.isValidMongoId(searchValue)) {
+        throw new BadRequestException('Invalid Id');
+      }
+      getUserInforMessage = 'get_user_infor_by_admin_with_id';
+    }
+
+    //check type
+    const userInfor: UserDocument = await lastValueFrom(
+      this.userService
+        .send(getUserInforMessage, {
+          searchValue,
+        })
+        .pipe(
+          map((response) => {
+            if (response.error) {
+              this.throwErrorBasedOnStatusCode(
+                response.statusCode,
+                response.message,
+              );
+            }
+            return response;
+          }),
+        ),
+    );
+
+    const feedList: Types.ObjectId[] = await lastValueFrom(
+      this.feedService
+        .send('get_feed_list_by_admin', {
+          userId: userInfor._id,
+        })
+        .pipe(
+          map((response) => {
+            if (response.error) {
+              this.throwErrorBasedOnStatusCode(
+                response.statusCode,
+                response.message,
+              );
+            }
+            return response;
+          }),
+        ),
+    );
+
+    return {
+      status: HttpStatus.OK,
+      message: 'Get user information successfully.',
+      metadata: {
+        ...userInfor,
+        feedList,
+      },
+    };
+  }
+
+  async getFeedByAdmin({ feedId }: GetFeedByAdminDto) {
+    const result = await lastValueFrom(
+      this.feedService
+        .send('get_feed_by_admin', {
+          feedId,
+        })
+        .pipe(
+          map((response) => {
+            if (response.error) {
+              this.throwErrorBasedOnStatusCode(
+                response.statusCode,
+                response.message,
+              );
+            }
+            return response;
+          }),
+        ),
+    );
+
+    return {
+      status: HttpStatus.OK,
+      message: 'Get feed successfully.',
+      metadata: result,
+    };
+  }
+
+  isValidMongoId(id: string): boolean {
+    return Types.ObjectId.isValid(id);
   }
 }

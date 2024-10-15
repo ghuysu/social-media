@@ -3,7 +3,7 @@ import {
   MESSAGE_DOCUMENT,
   MessageDocument,
 } from '@app/common';
-import { Injectable, Logger } from '@nestjs/common';
+import { Injectable, Logger, NotFoundException } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { FilterQuery, Model, UpdateQuery } from 'mongoose';
 
@@ -59,9 +59,51 @@ export class MessageRepository extends AbstractRepository<MessageDocument> {
   async updateMany(
     filterQuery: FilterQuery<MessageDocument>,
     updateQuery: UpdateQuery<MessageDocument>,
-  ): Promise<any> {
-    await this.model.updateMany(filterQuery, updateQuery, {
-      upsert: false,
+    populate?: Array<{
+      path: string;
+      select?: string;
+      populate?: any;
+    }>,
+  ): Promise<MessageDocument[]> {
+    let query = this.model.updateMany(filterQuery, updateQuery, {
+      new: true,
     });
+
+    if (!query) {
+      this.logger.warn('Document was not found with filterQuery', filterQuery);
+      throw new NotFoundException('Document was not found');
+    }
+
+    if (populate) {
+      query = query.populate(populate);
+    }
+
+    const document = await query.lean<MessageDocument[]>(true);
+
+    return document;
+  }
+
+  async deleteMany(
+    filterQuery: FilterQuery<MessageDocument>,
+    populate?: Array<{
+      path: string;
+      select?: string;
+      populate?: any;
+    }>,
+  ): Promise<MessageDocument[]> {
+    let query = this.model.deleteMany(filterQuery);
+
+    if (!query) {
+      this.logger.warn('Document was not found with filterQuery', filterQuery);
+      throw new NotFoundException('Document was not found');
+    }
+
+    if (populate) {
+      query = query.populate(populate);
+    }
+
+    const document = await query.lean<MessageDocument[]>(true);
+
+    return document;
   }
 }

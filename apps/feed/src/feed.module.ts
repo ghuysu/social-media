@@ -11,6 +11,7 @@ import {
   NOTIFICATION_SERVICE,
   REACTION_DOCUMENT,
   ReactionSchema,
+  STATISTIC_SERVICE,
   USER_DOCUMENT,
   USER_SERVICE,
   UserSchema,
@@ -37,6 +38,8 @@ import { ReactionRepository } from './repositories/reaction.repository';
         AWS_S3_PORT: joi.number().required(),
         USER_HOST: joi.string().required(),
         USER_PORT: joi.number().required(),
+        STATISTIC_HOST: joi.string().required(),
+        STATISTIC_PORT: joi.number().required(),
         REDIS_HOST: joi.string().required(),
         REDIS_PORT: joi.number().required(),
         BUCKET_NAME: joi.string().required(),
@@ -78,6 +81,17 @@ import { ReactionRepository } from './repositories/reaction.repository';
           options: {
             host: configService.get('USER_HOST'),
             port: configService.get('USER_PORT'),
+          },
+        }),
+        inject: [ConfigService],
+      },
+      {
+        name: STATISTIC_SERVICE,
+        useFactory: (configService: ConfigService) => ({
+          transport: Transport.TCP,
+          options: {
+            host: configService.get('STATISTIC_HOST'),
+            port: configService.get('STATISTIC_PORT'),
           },
         }),
         inject: [ConfigService],

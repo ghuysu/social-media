@@ -14,6 +14,7 @@ import {
   GetEveryoneFeedsDto,
   NOTIFICATION_SERVICE,
   ReactionDocument,
+  STATISTIC_SERVICE,
   TokenPayloadInterface,
   USER_SERVICE,
   UserDocument,
@@ -23,6 +24,8 @@ import { ClientProxy } from '@nestjs/microservices';
 import { ConfigService } from '@nestjs/config';
 import { Cache } from 'cache-manager';
 import { lastValueFrom, map } from 'rxjs';
+import { DeleteReactionsAndFeedsDto } from './dto/deleteReactionsAndFeeds.dto';
+import { Types } from 'mongoose';
 
 @Injectable()
 export class FeedService {
@@ -36,6 +39,8 @@ export class FeedService {
     private readonly awss3Client: ClientProxy,
     @Inject(USER_SERVICE)
     private readonly userClient: ClientProxy,
+    @Inject(STATISTIC_SERVICE)
+    private readonly statisticClient: ClientProxy,
     private readonly configService: ConfigService,
   ) {}
 
@@ -48,6 +53,17 @@ export class FeedService {
     { userId, email, role }: TokenPayloadInterface,
     { description, visibility, originalname, image },
   ) {
+    const user = await lastValueFrom(
+      this.userClient.send('get_user', { userId, email, role }).pipe(
+        map((response) => {
+          if (response.error) {
+            throw new NotFoundException('Resource not found');
+          }
+          return response.metadata;
+        }),
+      ),
+    );
+
     //create new image name
     const newImageName = this.createImageNameFromOriginalname(originalname);
 
@@ -94,22 +110,13 @@ export class FeedService {
       }
     }
 
+    redisFeeds.push(feed);
+
     this.cacheManager.set(`feed:${userId}`, redisFeeds, {
       ttl: createTTL(60 * 60 * 24 * 30, 60 * 6 * 24),
     });
 
     //emit feed for friends
-    const user = await lastValueFrom(
-      this.userClient.send('get_user', { userId, email, role }).pipe(
-        map((response) => {
-          if (response.error) {
-            throw new NotFoundException('Resource not found');
-          }
-          return response.metadata;
-        }),
-      ),
-    );
-
     const emitPayload = {
       userId: user.friendList.map((f) => f._id.toString()),
       metadata: feed,
@@ -119,6 +126,9 @@ export class FeedService {
       name: 'create_feed',
       payload: emitPayload,
     });
+
+    //update feed statistic
+    this.statisticClient.emit('created_feed', {});
 
     //return feed
     return feed;
@@ -270,12 +280,16 @@ export class FeedService {
       name: 'update_feed',
       payload: emitPayload,
     });
+
+    //update feed statistic
+    this.statisticClient.emit('deleted_feed', {});
   }
 
   async getEveryoneFeeds(
     { userId, email, role }: TokenPayloadInterface,
     { skip }: GetEveryoneFeedsDto,
   ) {
+    console.log(skip);
     //get friend list
     let user: UserDocument = await this.cacheManager.get(`user:${email}`);
 
@@ -568,5 +582,86 @@ export class FeedService {
 
     //return feed
     return filterFeed;
+  }
+
+  async deleteRelationalFeedsAndReactions({
+    userId,
+    friendList,
+  }: DeleteReactionsAndFeedsDto) {
+    //delete feeds in db
+    const deletedFeeds: FeedDocument[] = await this.feedRepository.deleteMany({
+      userId: userId.toString(),
+    });
+
+    this.statisticClient.emit('deleted_feed', { number: deletedFeeds.length });
+
+    //delete friend's reactions in db
+    for (const feed of deletedFeeds) {
+      //delete image in s3
+      const imageName = feed.imageUrl.split('/').pop();
+
+      this.awss3Client.emit('delete_image', {
+        imageName: imageName,
+      });
+
+      //delete reactions of feed
+      await this.reactionRepository.deleteMany({
+        _id: { $in: feed.reactions },
+      });
+    }
+
+    //delete user's reactions in db
+    const deletedReactions: ReactionDocument[] =
+      await this.reactionRepository.deleteMany({
+        userId: userId,
+      });
+
+    const deletedReactionIds: string[] = deletedReactions.map((r) =>
+      r._id.toString(),
+    );
+
+    //update friend's feeds in db
+    await this.feedRepository.updateMany(
+      {
+        reactions: { $in: deletedReactionIds },
+      },
+      {
+        $pull: { reactions: { $in: deletedReactionIds } },
+      },
+    );
+
+    //delete friend's feeds in redis
+    for (const friend of friendList) {
+      this.cacheManager.del(`feed:${friend.toString()}`);
+    }
+
+    //delete feeds in redis
+    this.cacheManager.del(`feed:${userId.toString()}`);
+  }
+
+  async getFeedListByAdmin(userId: Types.ObjectId) {
+    const feedList: FeedDocument[] = await this.feedRepository.find({
+      userId,
+    });
+
+    const feedIdList: Types.ObjectId[] = feedList.map((feed) => feed._id);
+
+    return feedIdList;
+  }
+
+  async getFeedByAdmin(feedId: Types.ObjectId) {
+    const feed = await this.feedRepository.findOne({ _id: feedId }, [
+      { path: 'userId', select: '_id profileImageUrl fullname' },
+      {
+        path: 'reactions',
+        populate: [{ path: 'userId', select: '_id profileImageUrl fullname' }],
+      },
+    ]);
+
+    if (!feed) {
+      throw new NotFoundException('Feed not found');
+    }
+
+    return feed;
   }
 }

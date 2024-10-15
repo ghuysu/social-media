@@ -8,13 +8,16 @@ import {
   UnauthorizedException,
 } from '@nestjs/common';
 import { FeedService } from './feed.service';
-import { MessagePattern, Payload } from '@nestjs/microservices';
+import { EventPattern, MessagePattern, Payload } from '@nestjs/microservices';
 import { CreateFeedInterface } from './interfaces/create-feed.interface';
 import { UpdateFeedInterface } from './interfaces/update-feed.interface';
 import { DeleteFeedInterface } from './interfaces/delete-feed.interface';
 import { GetEveryoneFeedsInterface } from './interfaces/get-everyone-feeds.interface';
 import { GetCertainUserFeedsInterface } from './interfaces/get-certain-user-feeds.interface';
 import { ReactFeedInterface } from './interfaces/react-feed.interface';
+import { DeleteReactionsAndFeedsDto } from './dto/deleteReactionsAndFeeds.dto';
+import { GetFeedListByAdminDto } from './dto/get-feed-list-by-admin.dto';
+import { GetFeedByAdminDto } from '@app/common';
 
 @Controller()
 export class FeedController {
@@ -87,6 +90,7 @@ export class FeedController {
   @MessagePattern('update_feed')
   async updateFeed(@Payload() { userPayload, payload }: UpdateFeedInterface) {
     try {
+      console.log({ here: payload });
       const result = await this.feedService.updateFeed(userPayload, payload);
       return {
         status: HttpStatus.OK,
@@ -130,6 +134,7 @@ export class FeedController {
     @Payload() { userPayload, payload }: GetEveryoneFeedsInterface,
   ) {
     try {
+      console.log(payload);
       const result = await this.feedService.getEveryoneFeeds(
         userPayload,
         payload,
@@ -158,6 +163,37 @@ export class FeedController {
         message: 'Get certain user feeds successfully.',
         metadata: result,
       };
+    } catch (error) {
+      return this.handleError(error);
+    }
+  }
+
+  @EventPattern('delete_feeds_and_reactions_for_delete_account')
+  async deleteRelationalFeedsAndReactions(
+    @Payload() dto: DeleteReactionsAndFeedsDto,
+  ) {
+    try {
+      await this.feedService.deleteRelationalFeedsAndReactions(dto);
+    } catch (error) {
+      console.error(error);
+    }
+  }
+
+  @MessagePattern('get_feed_list_by_admin')
+  async getFeedListByAdmin(@Payload() { userId }: GetFeedListByAdminDto) {
+    try {
+      const result = await this.feedService.getFeedListByAdmin(userId);
+      return result;
+    } catch (error) {
+      return this.handleError(error);
+    }
+  }
+
+  @MessagePattern('get_feed_by_admin')
+  async getFeedByAdmin(@Payload() { feedId }: GetFeedByAdminDto) {
+    try {
+      const result = await this.feedService.getFeedByAdmin(feedId);
+      return result;
     } catch (error) {
       return this.handleError(error);
     }

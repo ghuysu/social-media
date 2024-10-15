@@ -101,6 +101,18 @@ export abstract class AbstractRepository<TDocument extends AbstractDocument> {
     return document;
   }
 
+  async updateOne(
+    filterQuery: FilterQuery<TDocument>,
+    updateQuery: UpdateQuery<TDocument>,
+  ): Promise<void> {
+    const result = await this.model.updateOne(filterQuery, updateQuery);
+
+    if (result.matchedCount === 0) {
+      this.logger.warn('No document found with filterQuery', filterQuery);
+      throw new NotFoundException('Document was not found');
+    }
+  }
+
   async findOneAndDelete(
     filterQuery: FilterQuery<TDocument>,
     populate?: Array<{

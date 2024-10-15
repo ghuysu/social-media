@@ -7,6 +7,7 @@ import {
   FRIEND_INVITE_DOCUMENT,
   FriendInviteSchema,
   LoggerModule,
+  STATISTIC_SERVICE,
   USER_DOCUMENT,
 } from '@app/common';
 import { UserSchema } from '@app/common';
@@ -31,6 +32,8 @@ import * as redisStore from 'cache-manager-redis-store';
         NOTIFICATION_PORT: joi.number().required(),
         AWS_S3_HOST: joi.string().required(),
         AWS_S3_PORT: joi.number().required(),
+        STATISTIC_HOST: joi.string().required(),
+        STATISTIC_PORT: joi.number().required(),
         REDIS_HOST: joi.string().required(),
         REDIS_PORT: joi.number().required(),
         BUCKET_NAME: joi.string().required(),
@@ -67,6 +70,17 @@ import * as redisStore from 'cache-manager-redis-store';
           options: {
             host: configService.get('AWS_S3_HOST'),
             port: configService.get('AWS_S3_PORT'),
+          },
+        }),
+        inject: [ConfigService],
+      },
+      {
+        name: STATISTIC_SERVICE,
+        useFactory: (configService: ConfigService) => ({
+          transport: Transport.TCP,
+          options: {
+            host: configService.get('STATISTIC_HOST'),
+            port: configService.get('STATISTIC_PORT'),
           },
         }),
         inject: [ConfigService],

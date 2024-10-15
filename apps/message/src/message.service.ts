@@ -19,6 +19,7 @@ import {
 import { ClientProxy } from '@nestjs/microservices';
 import { MessageRepository } from './repositories/message.repository';
 import { lastValueFrom, map } from 'rxjs';
+import { DeleteMessagesForDeleteAccountDto } from './dto/delete-messages-for-delete-account.dto';
 
 @Injectable()
 export class MessageService {
@@ -480,5 +481,32 @@ export class MessageService {
     }
 
     return conversation;
+  }
+
+  async deleteAllMessagesForDeleteAccount({
+    userId,
+    friendList,
+  }: DeleteMessagesForDeleteAccountDto) {
+    //delete user's messages
+    await this.messageRepository.deleteMany({
+      $or: [
+        {
+          receiverId: userId.toString(),
+        },
+        {
+          senderId: userId.toString(),
+        },
+      ],
+    });
+
+    //delete friend's conversations in redis
+    for (const friend of friendList) {
+      this.cacheManager.del(
+        `conversation:${userId.toString()}:${friend.toString()}`,
+      );
+      this.cacheManager.del(
+        `conversation:${friend.toString()}:${userId.toString()}`,
+      );
+    }
   }
 }

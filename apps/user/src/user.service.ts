@@ -6,12 +6,16 @@ import {
   ChangeFullnameDto,
   CheckCodeToChangeEmailDto,
   createTTL,
+  DeleteAccountDto,
   DeleteFriendDto,
+  FEED_SERVICE,
   FriendInviteDocument,
   FriendInviteStatus,
+  MESSAGE_SERVICE,
   NOTIFICATION_SERVICE,
   RemoveInviteDto,
   SendInviteDto,
+  STATISTIC_SERVICE,
   TokenPayloadInterface,
   UserDocument,
 } from '@app/common';
@@ -33,6 +37,7 @@ import { JwtService } from '@nestjs/jwt';
 import * as Jimp from 'jimp';
 import { ChangeEmailPayloadInterface } from './interfaces/change-email-payload.interface';
 import { FriendInviteRepository } from './repositories/friend-invite.repository';
+import { Types } from 'mongoose';
 
 @Injectable()
 export class UserService {
@@ -44,6 +49,12 @@ export class UserService {
     private readonly notificationClient: ClientProxy,
     @Inject(AWS_S3_SERVICE)
     private readonly awss3Client: ClientProxy,
+    @Inject(FEED_SERVICE)
+    private readonly feedClient: ClientProxy,
+    @Inject(MESSAGE_SERVICE)
+    private readonly messageClient: ClientProxy,
+    @Inject(STATISTIC_SERVICE)
+    private readonly statisticClient: ClientProxy,
     private readonly configService: ConfigService,
     private readonly jwtService: JwtService,
   ) {}
@@ -307,9 +318,14 @@ export class UserService {
     { country }: ChangeCountryDto,
   ) {
     //update infor in db
-    let updatedUser;
+    let updatedUser: UserDocument;
+
+    let user: UserDocument;
 
     try {
+      user = await this.userRepository.findOne({
+        _id: userId,
+      });
       updatedUser = await this.userRepository.findOneAndUpdate(
         { _id: userId },
         { country: country },
@@ -346,6 +362,12 @@ export class UserService {
     //update cache
     await this.cacheManager.set(cacheKey, updatedUser, {
       ttl: createTTL(60 * 60 * 24 * 7, 60 * 60 * 24),
+    });
+
+    //update country statistic
+    this.statisticClient.emit('change_country', {
+      newCountry: country,
+      oldCountry: user.country,
     });
 
     //return
@@ -689,7 +711,11 @@ export class UserService {
       (f) => f.receiver._id.toString() === friendId.toString(),
     );
 
-    if (sentInvites) {
+    const receiveInvites = user.friendInvites.some(
+      (f) => f.sender._id.toString() === friendId.toString(),
+    );
+
+    if (sentInvites || receiveInvites) {
       throw new ConflictException('Duplicate Resources');
     }
 
@@ -1050,6 +1076,9 @@ export class UserService {
       },
     });
 
+    //update friend statistic
+    this.statisticClient.emit('be_friend', {});
+
     //return user infor
     return updatedUser;
   }
@@ -1172,7 +1201,283 @@ export class UserService {
       },
     });
 
+    //update friend statistic
+    this.statisticClient.emit('removed_friend', {});
+
     //return user infor
     return updatedUser;
+  }
+
+  async checkEmailToDeleteAccount({ email, userId }: TokenPayloadInterface) {
+    const user = await this.userRepository.findOne({ _id: userId });
+    if (!user) {
+      throw new NotFoundException('User not found');
+    }
+    //create code
+    //create a 6-digit validation code
+    const code = Math.floor(100000 + Math.random() * 900000);
+
+    //hash code
+    const hashedCode = await argon2.hash(code.toString(), {
+      type: argon2.argon2id,
+      memoryCost: 2 ** 16,
+      timeCost: 4,
+      parallelism: 2,
+      secret: Buffer.from(this.configService.get('ARGON2_SERCET')),
+    });
+
+    //send event to notification service to send code
+    //to this email
+    this.notificationClient.emit('send_code_to_delete_account', {
+      email: email,
+      code,
+    });
+
+    //save code in redis and ttl is 5p
+    this.cacheManager.set(
+      `delete_account_code:${email}`,
+      { code: hashedCode },
+      {
+        ttl: createTTL(60 * 5, 0),
+      },
+    );
+  }
+
+  async deleteAccount(
+    { userId, email }: TokenPayloadInterface,
+    { code }: DeleteAccountDto,
+  ) {
+    //check code in redis
+    const infor: ChangeEmailPayloadInterface = await this.cacheManager.get(
+      `delete_account_code:${email}`,
+    );
+
+    //if can't get code throw expired code exception
+    if (!infor) {
+      throw new BadRequestException('Expired Resource');
+    }
+
+    //if incorrect throw incorrect exception
+    const { code: correctCode } = infor;
+
+    const isCorrectCode = await argon2.verify(
+      correctCode.toString(),
+      code.toString(),
+      {
+        secret: Buffer.from(this.configService.get('ARGON2_SERCET')),
+      },
+    );
+
+    if (!isCorrectCode) {
+      throw new BadRequestException('Incorrect Resource');
+    }
+
+    //delete code cache
+    this.cacheManager.del(`delete_account_code:${email}`);
+
+    //delete user record
+    let deletedUser: UserDocument;
+
+    try {
+      deletedUser = await this.userRepository.findOneAndDelete(
+        { _id: userId },
+        [{ path: 'friendList', select: '_id email' }],
+      );
+    } catch (error) {
+      if (error instanceof NotFoundException) {
+        throw new NotFoundException('Not Found Resource');
+      }
+
+      throw new InternalServerErrorException('Something is wrong');
+    }
+
+    //delete image in s3
+    const prevImageName: string = deletedUser.profileImageUrl.split('/').pop();
+
+    this.awss3Client.emit('delete_image', {
+      imageName: prevImageName,
+    });
+
+    //delete user record redis
+    this.cacheManager.del(`user:${email}`);
+
+    //delete friendInvites in db
+    await this.friendInviteRepository.deleteMany({
+      _id: { $in: deletedUser.friendInvites },
+    });
+
+    //delete friendInvites in redis
+    for (const invite of deletedUser.friendInvites) {
+      this.cacheManager.del(`friend_invite:${invite.toString()}`);
+    }
+
+    //update friendList, friendInvites of friends
+    const updatedFriends: UserDocument[] = await this.userRepository.updateMany(
+      { _id: { $in: deletedUser.friendList } },
+      {
+        $pull: {
+          friendList: deletedUser._id,
+        },
+      },
+      [
+        { path: 'friendList', select: '_id fullname profileImageUrl' },
+        {
+          path: 'friendInvites',
+          select: '_id sender receiver createdAt',
+          populate: [
+            {
+              path: 'sender',
+              select: '_id fullname profileImageUrl',
+            },
+            {
+              path: 'receiver',
+              select: '_id fullname profileImageUrl',
+            },
+          ],
+        },
+      ],
+    );
+
+    //update redis friend records
+    console.log(updatedFriends);
+    for (const friend of updatedFriends) {
+      this.cacheManager.set(`user:${friend.email}`, friend, {
+        ttl: createTTL(60 * 60 * 24 * 7, 60 * 60 * 24),
+      });
+    }
+
+    //delete users received invite
+    const users = await this.userRepository.updateMany(
+      {
+        friendInvites: { $in: deletedUser.friendInvites },
+      },
+      {
+        $pull: { friendInvites: { $in: deletedUser.friendInvites } },
+      },
+      [
+        { path: 'friendList', select: '_id fullname profileImageUrl' },
+        {
+          path: 'friendInvites',
+          select: '_id sender receiver createdAt',
+          populate: [
+            {
+              path: 'sender',
+              select: '_id fullname profileImageUrl',
+            },
+            {
+              path: 'receiver',
+              select: '_id fullname profileImageUrl',
+            },
+          ],
+        },
+      ],
+    );
+
+    //update redis
+    for (const user of users) {
+      this.cacheManager.set(`user:${user.email}`, user, {
+        ttl: createTTL(60 * 60 * 24 * 7, 60 * 60 * 24),
+      });
+    }
+
+    //delete feeds and reactions
+    this.feedClient.emit('delete_feeds_and_reactions_for_delete_account', {
+      userId,
+      friendList: deletedUser.friendList.map((f) => f._id),
+    });
+
+    //delete messages
+    this.messageClient.emit('delete_messages_for_delete_account', {
+      userId,
+      friendList: deletedUser.friendList.map((f) => f._id),
+    });
+
+    //send email
+    this.notificationClient.emit('send_email_for_delete_account', {
+      email: email,
+    });
+
+    //updated user statistic
+    this.statisticClient.emit('deleted_user', {});
+
+    //emit friends
+    this.notificationClient.emit('emit_message', {
+      name: 'delete_user',
+      payload: {
+        friendList: deletedUser.friendList.map((friend) => friend._id),
+      },
+    });
+  }
+
+  async getUserInforByAdminWithId(userId: Types.ObjectId) {
+    console.log(userId);
+    //get user infor
+    const user = await this.userRepository.findOne(
+      {
+        _id: userId,
+        role: 'normal_user',
+      },
+      [
+        { path: 'friendList', select: '_id fullname profileImageUrl' },
+        {
+          path: 'friendInvites',
+          select: '_id sender receiver createdAt',
+          populate: [
+            {
+              path: 'sender',
+              select: '_id fullname profileImageUrl',
+            },
+            {
+              path: 'receiver',
+              select: '_id fullname profileImageUrl',
+            },
+          ],
+        },
+      ],
+    );
+
+    if (!user) {
+      throw new NotFoundException('User not found');
+    }
+
+    delete user.password;
+
+    return user;
+  }
+
+  async getUserInforByAdminWithEmail(email: string) {
+    console.log(email);
+    //get user infor
+    const user = await this.userRepository.findOne(
+      {
+        email,
+        role: 'normal_user',
+      },
+      [
+        { path: 'friendList', select: '_id fullname profileImageUrl' },
+        {
+          path: 'friendInvites',
+          select: '_id sender receiver createdAt',
+          populate: [
+            {
+              path: 'sender',
+              select: '_id fullname profileImageUrl',
+            },
+            {
+              path: 'receiver',
+              select: '_id fullname profileImageUrl',
+            },
+          ],
+        },
+      ],
+    );
+
+    if (!user) {
+      throw new NotFoundException('User not found');
+    }
+
+    delete user.password;
+
+    return user;
   }
 }

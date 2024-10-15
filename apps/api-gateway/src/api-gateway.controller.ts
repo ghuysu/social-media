@@ -27,6 +27,9 @@ import {
   ReactFeedDto,
   UpdateFeedDto,
   GetCertainConversationParamDto,
+  DeleteAccountDto,
+  ADMIN_ROLE,
+  GetFeedByAdminDto,
 } from '@app/common';
 import {
   Body,
@@ -39,6 +42,7 @@ import {
   ParseFilePipeBuilder,
   Patch,
   Post,
+  Query,
   Req,
   Res,
   UploadedFile,
@@ -56,6 +60,8 @@ import { User } from './decorators/user.decorator';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { RoleGuard } from './guards/role.guard';
 import { Roles } from './decorators/role.decorator';
+import { GetUserInforByAdminInterface } from './interfaces/get_user_infor_by_admin.interface';
+import { TypeInterface } from './interfaces/type.interface';
 
 @Controller('api')
 export class ApiGatewayController {
@@ -257,7 +263,7 @@ export class ApiGatewayController {
   }
 
   @UseGuards(ApiKeyGuard)
-  @Get(':userId')
+  @Get('user/:userId')
   async getStrangerInfor(@Param() { userId }: GetStrangerInforDto) {
     return this.apiGatewayService.getStrangerInfor(userId);
   }
@@ -309,6 +315,27 @@ export class ApiGatewayController {
     @Param() dto: DeleteFriendDto,
   ) {
     return this.apiGatewayService.deleteFriend(userPayload, dto);
+  }
+
+  @UseGuards(RoleGuard)
+  @UseGuards(JwtGuard)
+  @UseGuards(ApiKeyGuard)
+  @Roles(NORMAL_USER_ROLE)
+  @Post('user/delete/check')
+  async checkDeleteAccount(@User() userPayload: TokenPayloadInterface) {
+    return this.apiGatewayService.checkDeleteAccount(userPayload);
+  }
+
+  @UseGuards(RoleGuard)
+  @UseGuards(JwtGuard)
+  @UseGuards(ApiKeyGuard)
+  @Roles(NORMAL_USER_ROLE)
+  @Delete('user')
+  async deleteAccount(
+    @User() userPayload: TokenPayloadInterface,
+    @Body() dto: DeleteAccountDto,
+  ) {
+    return this.apiGatewayService.deleteAccount(userPayload, dto);
   }
 
   //feed
@@ -369,6 +396,7 @@ export class ApiGatewayController {
   @UseGuards(ApiKeyGuard)
   @Roles(NORMAL_USER_ROLE)
   @Post('feed/reaction/:feedId')
+  @HttpCode(HttpStatus.OK)
   async reactFeed(
     @User() userPayload: TokenPayloadInterface,
     @Param('feedId') feedId: string,
@@ -384,8 +412,9 @@ export class ApiGatewayController {
   @Get('feed/everyone')
   async getEveryoneFeeds(
     @User() userPayload: TokenPayloadInterface,
-    @Body() dto: GetEveryoneFeedsDto,
+    @Query() dto: GetEveryoneFeedsDto,
   ) {
+    console.log(dto);
     return this.apiGatewayService.getEveryoneFeeds(userPayload, dto);
   }
 
@@ -396,7 +425,7 @@ export class ApiGatewayController {
   @Get('feed/certain/:userId')
   async getCertainUserFeeds(
     @User() userPayload: TokenPayloadInterface,
-    @Body() dto: GetCertainUserFeedsDto,
+    @Query() dto: GetCertainUserFeedsDto,
     @Param('userId') userId: string,
   ) {
     return this.apiGatewayService.getCertainUserFeeds(userPayload, dto, userId);
@@ -444,7 +473,7 @@ export class ApiGatewayController {
   @Get('message/certain/:friendId')
   async getCertainFriendConversation(
     @User() userPayload: TokenPayloadInterface,
-    @Body() dto: GetCertainFriendConversationDto,
+    @Query() dto: GetCertainFriendConversationDto,
     @Param() { friendId }: GetCertainConversationParamDto,
   ) {
     return this.apiGatewayService.getCertainFriendConversation(
@@ -452,5 +481,37 @@ export class ApiGatewayController {
       dto,
       friendId,
     );
+  }
+
+  //admin
+  @UseGuards(RoleGuard)
+  @UseGuards(JwtGuard)
+  @UseGuards(ApiKeyGuard)
+  @Roles(...ADMIN_ROLE)
+  @Get('statistic')
+  async getStatisticInfor() {
+    console.log('here');
+    return this.apiGatewayService.getStatisticInfor();
+  }
+
+  @UseGuards(RoleGuard)
+  @UseGuards(JwtGuard)
+  @UseGuards(ApiKeyGuard)
+  @Roles(...ADMIN_ROLE)
+  @Get('admin/user/infor/:searchValue')
+  async getUserInforByAdmin(
+    @Param() dto: GetUserInforByAdminInterface,
+    @Query() { type }: TypeInterface,
+  ) {
+    return this.apiGatewayService.getUserInforByAdmin(dto, type);
+  }
+
+  @UseGuards(RoleGuard)
+  @UseGuards(JwtGuard)
+  @UseGuards(ApiKeyGuard)
+  @Roles(...ADMIN_ROLE)
+  @Get('admin/feed/:feedId')
+  async getFeedByAdmin(@Param() dto: GetFeedByAdminDto) {
+    return this.apiGatewayService.getFeedByAdmin(dto);
   }
 }
