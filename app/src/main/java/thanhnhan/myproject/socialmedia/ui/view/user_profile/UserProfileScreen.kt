@@ -151,7 +151,7 @@ fun ProfileScreen(
     } else {
         Text(
             text = "No user data available",
-            style = TextStyle(color = Color.White),
+            style = TextStyle(color = Color.Black),
             modifier = Modifier.fillMaxSize(),
             textAlign = TextAlign.Center
         )
@@ -540,7 +540,8 @@ fun AvatarChangeButton(authToken: String, repository: UserProfileRepository) {
                         galleryLauncher.launch("image/*")  // Mở Gallery để chọn ảnh
                         showModalSheet = false  // Ẩn modal sau khi chọn
                     },
-                    modifier = Modifier.fillMaxWidth()
+                    modifier = Modifier
+                        .fillMaxWidth()
                         .height(70.dp)
                         .padding(horizontal = 8.dp, vertical = 8.dp),
                     colors =ButtonDefaults.buttonColors(Color(0xFF3C434A))
@@ -556,7 +557,8 @@ fun AvatarChangeButton(authToken: String, repository: UserProfileRepository) {
                         // TODO: Implement camera capture
                         showModalSheet = false  // Ẩn modal sau khi chọn
                     },
-                    modifier = Modifier.fillMaxWidth()
+                    modifier = Modifier
+                        .fillMaxWidth()
                         .height(70.dp)
                         .padding(horizontal = 8.dp, vertical = 8.dp),
                     colors =ButtonDefaults.buttonColors(Color(0xFF3C434A))
@@ -569,7 +571,8 @@ fun AvatarChangeButton(authToken: String, repository: UserProfileRepository) {
                     onClick = {
                         showModalSheet = false  // Đóng modal
                     },
-                    modifier = Modifier.fillMaxWidth()
+                    modifier = Modifier
+                        .fillMaxWidth()
                         .height(70.dp)
                         .padding(horizontal = 8.dp, vertical = 8.dp),
                     colors = ButtonDefaults.buttonColors(containerColor = Color.Red)

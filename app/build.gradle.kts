@@ -89,6 +89,10 @@ dependencies {
     implementation ("androidx.camera:camera-view:1.3.4")
 
 
+    // Hieu ung luot khi show feed
+    implementation("com.google.accompanist:accompanist-pager:0.25.1")
+    implementation("com.google.accompanist:accompanist-pager-indicators:0.25.1")
+
     //okhttp
     implementation("com.squareup.okhttp3:logging-interceptor:4.9.3")
 
