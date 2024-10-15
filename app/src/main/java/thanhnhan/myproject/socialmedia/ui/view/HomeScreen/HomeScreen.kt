@@ -27,6 +27,8 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.KeyboardArrowDown
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Icon
@@ -65,7 +67,11 @@ import thanhnhan.myproject.socialmedia.ui.theme.AppTheme
 import java.io.File
 
 @Composable
-fun LocketScreen(navController: NavController) {
+fun LocketScreen(
+    navController: NavController,
+    openCreateFeed: (String) -> Unit,
+    openViewFeed: () -> Unit
+) {
     var lensFacing by remember { mutableStateOf(CameraSelector.LENS_FACING_BACK) }
     var capturedImageUri by remember { mutableStateOf<Uri?>(null) }
     val imageCapture = remember { ImageCapture.Builder().build() }
@@ -92,6 +98,7 @@ fun LocketScreen(navController: NavController) {
                 )
                 Spacer(modifier = Modifier.weight(1f))
                 BottomBar(
+                    openCreateFeed = openCreateFeed,
                     lensFacing = lensFacing,
                     onSwitchCamera = {
                         isCameraReady = false
@@ -107,11 +114,16 @@ fun LocketScreen(navController: NavController) {
                         }, 500)
                     },
                     imageCapture = imageCapture,
-                    onCaptureImage = { uri -> capturedImageUri = uri },
+                    onCaptureImage = { uri ->
+                        capturedImageUri = uri
+                    },
                     isCameraReady = isCameraReady,
                     isFlashEnabled = isFlashEnabled, // Truyền trạng thái Flash
-                    onFlashToggle = { isFlashEnabled = !isFlashEnabled }, // Thay đổi trạng thái Flash
-                    cameraProvider = cameraProvider
+                    onFlashToggle = {
+                        isFlashEnabled = !isFlashEnabled
+                    }, // Thay đổi trạng thái Flash
+                    cameraProvider = cameraProvider,
+                    openViewFeed = openViewFeed
                 )
             }
         }
@@ -142,7 +154,7 @@ fun TopBar(navController: NavController) {
             onClick = { navController.navigate("friendsScreen") },
             modifier = Modifier
                 .height(50.dp)
-                .width(150.dp) ,
+                .width(150.dp),
             colors = ButtonDefaults.buttonColors(containerColor = Color.DarkGray),
             shape = RoundedCornerShape(20.dp)
         ) {
@@ -171,7 +183,7 @@ fun MainContent(
     onCaptureImage: (Uri) -> Unit,
     imageCapture: ImageCapture,
     onCameraReady: () -> Unit,
-    cameraProvider: ProcessCameraProvider?
+    cameraProvider: ProcessCameraProvider?,
 ) {
     Box(
         modifier = Modifier
@@ -202,7 +214,6 @@ fun MainContent(
 }
 
 
-
 @Composable
 fun BottomBar(
     lensFacing: Int,
@@ -212,7 +223,9 @@ fun BottomBar(
     isCameraReady: Boolean,
     isFlashEnabled: Boolean, // Nhận trạng thái Flash
     onFlashToggle: () -> Unit, // Hàm để thay đổi trạng thái Flash
-    cameraProvider: ProcessCameraProvider?
+    cameraProvider: ProcessCameraProvider?,
+    openCreateFeed: (String) -> Unit,
+    openViewFeed: () -> Unit,
 ) {
     val context = LocalContext.current
     val mainExecutor = ContextCompat.getMainExecutor(context)
@@ -236,6 +249,8 @@ fun BottomBar(
                 IconButton(onClick = {
                     tempPhotoFile?.let { file ->
                         onCaptureImage(Uri.fromFile(file))
+                        val uri = Uri.fromFile(file).toString().replace("/", "+")
+                        openCreateFeed(uri)
                     }
                     isShotTaken = false
                 }, modifier = Modifier.size(60.dp)) {
@@ -275,20 +290,28 @@ fun BottomBar(
                             tempPhotoFile = withContext(Dispatchers.IO) {
                                 File.createTempFile("IMG_", ".jpg", context.cacheDir)
                             }
-                            val outputOptions = ImageCapture.OutputFileOptions.Builder(tempPhotoFile!!).build()
+                            val outputOptions =
+                                ImageCapture.OutputFileOptions.Builder(tempPhotoFile!!).build()
 
                             imageCapture.takePicture(
                                 outputOptions,
                                 mainExecutor,
                                 object : ImageCapture.OnImageSavedCallback {
                                     override fun onImageSaved(outputFileResults: ImageCapture.OutputFileResults) {
-                                        Log.d("CameraShot", "Image captured at: ${tempPhotoFile!!.absolutePath}")
+                                        Log.d(
+                                            "CameraShot",
+                                            "Image captured at: ${tempPhotoFile!!.absolutePath}"
+                                        )
                                         onCaptureImage(Uri.fromFile(tempPhotoFile!!))
                                         isShotTaken = true
                                     }
 
                                     override fun onError(exception: ImageCaptureException) {
-                                        Log.e("CameraShot", "Image capture failed: ${exception.message}", exception)
+                                        Log.e(
+                                            "CameraShot",
+                                            "Image capture failed: ${exception.message}",
+                                            exception
+                                        )
                                     }
                                 }
                             )
@@ -339,15 +362,25 @@ fun BottomBar(
                 }
             }
         }
+
+        IconButton(onClick = { openViewFeed() }) {
+            Icon(
+                imageVector = Icons.Default.KeyboardArrowDown,
+                contentDescription = null,
+                modifier = Modifier.size(50.dp),
+                tint = Color.White
+            )
+        }
     }
 }
+
 @Composable
 fun CameraPreview(
     modifier: Modifier = Modifier,
     lensFacing: Int,
     imageCapture: ImageCapture,
     onCameraReady: () -> Unit,
-    cameraProvider: ProcessCameraProvider? // Truyền camera provider để quản lý session
+    cameraProvider: ProcessCameraProvider?, // Truyền camera provider để quản lý session
 ) {
     val context = LocalContext.current
     val lifecycleOwner = LocalLifecycleOwner.current
@@ -380,7 +413,7 @@ fun bindPreview(
     previewView: PreviewView,
     lifecycleOwner: LifecycleOwner,
     lensFacing: Int,
-    imageCapture: ImageCapture
+    imageCapture: ImageCapture,
 ) {
     val preview = Preview1.Builder().build().also {
         it.setSurfaceProvider(previewView.surfaceProvider)
@@ -435,9 +468,14 @@ fun bindPreview(
         Log.e("CameraBindError", "Lỗi khi bind camera", exc)
     }
 }
+
 @Preview(showBackground = true)
 @Composable
 fun LocketScreenPreview() {
     val navController = rememberNavController()
-    LocketScreen(navController = navController )
+    LocketScreen(
+        navController = navController,
+        openCreateFeed = {},
+        openViewFeed = {}
+    )
 }
