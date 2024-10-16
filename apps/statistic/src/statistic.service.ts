@@ -236,6 +236,22 @@ export class StatisticService {
     await this.cacheManager.set('country_statistic', countryRecord, { ttl: 0 });
   }
 
+  async newReport(type: string) {
+    //get country redis
+    const reportRecord = await this.cacheManager.get('report_statistic');
+
+    //check country is exiting or not
+    if (type === 'user') {
+      reportRecord['user'] += 1;
+    } else {
+      reportRecord['feed'] += 1;
+    }
+
+    this.cacheManager.set('report_statistic', reportRecord, {
+      ttl: 0,
+    });
+  }
+
   async getStatisticInfor() {
     const day = new Date().getDate();
     const month = new Date().getMonth();
@@ -246,6 +262,9 @@ export class StatisticService {
     const userFeedStatistic = await this.cacheManager.get(
       'user_feed_statistic',
     );
+
+    //get number of user, feed reports
+    const reportStatistic = await this.cacheManager.get('report_statistic');
 
     //get number of user of each country
     const countryStatistic = await this.cacheManager.get('country_statistic');
@@ -261,6 +280,8 @@ export class StatisticService {
     const statistic = {
       numberOfTotalUsers: userFeedStatistic['user'],
       numberOfTotalFeeds: userFeedStatistic['feed'],
+      numberOfUserReports: reportStatistic['user'],
+      numberOfFeedReports: reportStatistic['feed'],
       sevenLastDaysRecords: sevenLastDaysRecord,
       countryStatistic: countryStatistic,
     };

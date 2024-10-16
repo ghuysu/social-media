@@ -2,6 +2,7 @@ import { Controller, HttpStatus } from '@nestjs/common';
 import { StatisticService } from './statistic.service';
 import { EventPattern, MessagePattern, Payload } from '@nestjs/microservices';
 import { ChangeCountryDto } from './dto/changeCountry.dto';
+import { NewReportDto } from './dto/new-report.dto';
 
 @Controller()
 export class StatisticController {
@@ -9,6 +10,7 @@ export class StatisticController {
 
   @EventPattern('created_user')
   async createdUser() {
+    //user
     this.statisticService.createdUser();
     console.log('user');
   }
@@ -18,12 +20,19 @@ export class StatisticController {
     this.statisticService.deletedUser();
   }
 
+  //country
   @EventPattern('country')
   async country(@Payload('country') country: string) {
     this.statisticService.country(country);
     console.log('country');
   }
 
+  @EventPattern('change_country')
+  async changeCountry(@Payload() { oldCountry, newCountry }: ChangeCountryDto) {
+    this.statisticService.changeCountry(oldCountry, newCountry);
+  }
+
+  //feed
   @EventPattern('created_feed')
   async createdFeed() {
     this.statisticService.createdFeed();
@@ -34,6 +43,7 @@ export class StatisticController {
     this.statisticService.deletedFeed(num);
   }
 
+  //friend
   @EventPattern('be_friend')
   async beFriend() {
     this.statisticService.beFriend();
@@ -44,9 +54,10 @@ export class StatisticController {
     this.statisticService.removedFriend();
   }
 
-  @EventPattern('change_country')
-  async changeCountry(@Payload() { oldCountry, newCountry }: ChangeCountryDto) {
-    this.statisticService.changeCountry(oldCountry, newCountry);
+  //report
+  @EventPattern('new_report')
+  async newReport(@Payload() { type }: NewReportDto) {
+    this.statisticService.newReport(type);
   }
 
   @MessagePattern('get_statistic_infor')
