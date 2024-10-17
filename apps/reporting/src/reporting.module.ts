@@ -4,12 +4,12 @@ import { ReportingService } from './reporting.service';
 import {
   USER_REPORT_DOCUMENT,
   FEED_REPORT_DOCUMENT,
-  UserReportDocument,
-  FeedReportDocument,
   LoggerModule,
   DatabaseModule,
   USER_SERVICE,
   FEED_SERVICE,
+  UserReportSchema,
+  FeedReportSchema,
 } from '@app/common';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import * as joi from 'joi';
@@ -38,8 +38,8 @@ import { ClientsModule, Transport } from '@nestjs/microservices';
       }),
     }),
     DatabaseModule.forFeature([
-      { name: USER_REPORT_DOCUMENT, schema: UserReportDocument },
-      { name: FEED_REPORT_DOCUMENT, schema: FeedReportDocument },
+      { name: USER_REPORT_DOCUMENT, schema: UserReportSchema },
+      { name: FEED_REPORT_DOCUMENT, schema: FeedReportSchema },
     ]),
     CacheModule.registerAsync({
       isGlobal: true,

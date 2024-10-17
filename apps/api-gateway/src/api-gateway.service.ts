@@ -16,6 +16,7 @@ import {
   MESSAGE_SERVICE,
   ReadMessageDto,
   RemoveInviteDto,
+  REPORTING_SERVICE,
   SendInviteDto,
   SignInDto,
   STATISTIC_SERVICE,
@@ -60,6 +61,7 @@ export class ApiGatewayService {
     @Inject(FEED_SERVICE) private readonly feedService: ClientProxy,
     @Inject(MESSAGE_SERVICE) private readonly messageService: ClientProxy,
     @Inject(STATISTIC_SERVICE) private readonly statisticService: ClientProxy,
+    @Inject(REPORTING_SERVICE) private readonly reportingService: ClientProxy,
   ) {}
 
   throwErrorBasedOnStatusCode(statusCode: number, message: string) {
@@ -922,5 +924,29 @@ export class ApiGatewayService {
 
   isValidMongoId(id: string): boolean {
     return Types.ObjectId.isValid(id);
+  }
+
+  //report
+  async reportUser(userPayload, userId: Types.ObjectId, reason: number) {
+    const result = await lastValueFrom(
+      this.reportingService
+        .send('report_user', {
+          userPayload,
+          payload: { reportedUserId: userId, reason },
+        })
+        .pipe(
+          map((response) => {
+            if (response.error) {
+              this.throwErrorBasedOnStatusCode(
+                response.statusCode,
+                response.message,
+              );
+            }
+            return response;
+          }),
+        ),
+    );
+
+    return result;
   }
 }

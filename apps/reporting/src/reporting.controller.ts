@@ -8,7 +8,8 @@ import {
   UnauthorizedException,
 } from '@nestjs/common';
 import { ReportingService } from './reporting.service';
-import { MessagePattern } from '@nestjs/microservices';
+import { MessagePattern, Payload } from '@nestjs/microservices';
+import { ReportUserDto } from './dto/reportUser.dto';
 
 @Controller()
 export class ReportingController {
@@ -68,7 +69,17 @@ export class ReportingController {
   async reportFeed() {}
 
   @MessagePattern('report_user')
-  async reportUser() {}
+  async reportUser(@Payload() { userPayload, payload }: ReportUserDto) {
+    try {
+      await this.reportingService.reportUser(userPayload, payload);
+      return {
+        status: HttpStatus.OK,
+        message: 'Report user successfully.',
+      };
+    } catch (error) {
+      return this.handleError(error);
+    }
+  }
 
   @MessagePattern('get_reports')
   async getFeports() {}

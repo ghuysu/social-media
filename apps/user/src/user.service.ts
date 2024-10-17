@@ -658,6 +658,7 @@ export class UserService {
       _id: infor._id,
       profileImageUrl: infor.profileImageUrl,
       fullname: infor.fullname,
+      role: infor.role,
     };
   }
 

@@ -62,6 +62,9 @@ import { RoleGuard } from './guards/role.guard';
 import { Roles } from './decorators/role.decorator';
 import { GetUserInforByAdminInterface } from './interfaces/get_user_infor_by_admin.interface';
 import { TypeInterface } from './interfaces/type.interface';
+import { UserIdDto } from './dto/userId.dto';
+import { UserReportDto } from './dto/user-report.dto';
+import { Payload } from '@nestjs/microservices';
 
 @Controller('api')
 export class ApiGatewayController {
@@ -513,5 +516,19 @@ export class ApiGatewayController {
   @Get('admin/feed/:feedId')
   async getFeedByAdmin(@Param() dto: GetFeedByAdminDto) {
     return this.apiGatewayService.getFeedByAdmin(dto);
+  }
+
+  //reporting
+  @UseGuards(RoleGuard)
+  @UseGuards(JwtGuard)
+  @UseGuards(ApiKeyGuard)
+  @Roles(NORMAL_USER_ROLE)
+  @Post('report/user/:userId')
+  async reportUser(
+    @User() userPayload: TokenPayloadInterface,
+    @Param() { userId }: UserIdDto,
+    @Payload() { reason }: UserReportDto,
+  ) {
+    return this.apiGatewayService.reportUser(userPayload, userId, reason);
   }
 }

@@ -5,6 +5,7 @@ import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
 
 export enum FeedReportStatus {
   Pending = 'pending',
+  ReadyToProcessing = 'ready_for_processing',
   Processed = 'processed',
 }
 

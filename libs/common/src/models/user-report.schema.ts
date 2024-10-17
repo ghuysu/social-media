@@ -5,6 +5,7 @@ import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
 
 export enum UserReportStatus {
   Pending = 'pending',
+  ReadyToProcessing = 'ready_for_processing',
   Processed = 'processed',
 }
 
@@ -25,8 +26,10 @@ export class UserReportDocument extends AbstractDocument {
   @Prop({ type: SchemaTypes.ObjectId, required: true })
   reportedUserId: Types.ObjectId;
 
-  @Prop({ type: [String], enum: UserReportReason, required: true })
-  reason: string[];
+  @Prop({ type: Object, required: true })
+  reason: {
+    [key in UserReportReason]: number;
+  };
 
   @Prop({
     type: String,

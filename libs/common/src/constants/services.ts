@@ -5,3 +5,4 @@ export const USER_SERVICE = 'user';
 export const FEED_SERVICE = 'feed';
 export const MESSAGE_SERVICE = 'message';
 export const STATISTIC_SERVICE = 'statistic';
+export const REPORTING_SERVICE = 'reporting';
