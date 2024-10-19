@@ -65,6 +65,8 @@ import { TypeInterface } from './interfaces/type.interface';
 import { UserIdDto } from './dto/userId.dto';
 import { UserReportDto } from './dto/user-report.dto';
 import { Payload } from '@nestjs/microservices';
+import { FeedReportDto } from './dto/feed-report.dto';
+import { FeedIdDto } from './dto/feedId.dto';
 
 @Controller('api')
 export class ApiGatewayController {
@@ -530,5 +532,18 @@ export class ApiGatewayController {
     @Payload() { reason }: UserReportDto,
   ) {
     return this.apiGatewayService.reportUser(userPayload, userId, reason);
+  }
+
+  @UseGuards(RoleGuard)
+  @UseGuards(JwtGuard)
+  @UseGuards(ApiKeyGuard)
+  @Roles(NORMAL_USER_ROLE)
+  @Post('report/feed/:feedId')
+  async reportFeed(
+    @User() userPayload: TokenPayloadInterface,
+    @Param() { feedId }: FeedIdDto,
+    @Payload() { reason }: FeedReportDto,
+  ) {
+    return this.apiGatewayService.reportFeed(userPayload, feedId, reason);
   }
 }

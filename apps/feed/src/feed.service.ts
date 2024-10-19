@@ -664,4 +664,13 @@ export class FeedService {
 
     return feed;
   }
+
+  async getSimpleFeed(feedId: Types.ObjectId) {
+    const feed = await this.feedRepository.findOne({ _id: feedId });
+    if (!feed) {
+      throw new NotFoundException('Feed not found');
+    }
+
+    return feed;
+  }
 }

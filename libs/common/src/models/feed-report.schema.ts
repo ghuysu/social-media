@@ -26,8 +26,10 @@ export class FeedReportDocument extends AbstractDocument {
   @Prop({ type: SchemaTypes.ObjectId, required: true })
   reportedFeedId: Types.ObjectId;
 
-  @Prop({ type: [String], enum: FeedReportReason, required: true })
-  reason: string[];
+  @Prop({ type: Object, required: true })
+  reason: {
+    [key in FeedReportReason]: number;
+  };
 
   @Prop({
     type: String,

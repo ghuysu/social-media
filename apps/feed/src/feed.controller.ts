@@ -198,4 +198,14 @@ export class FeedController {
       return this.handleError(error);
     }
   }
+
+  @MessagePattern('get_simple_feed')
+  async getSimpleFeed(@Payload() { feedId }: GetFeedByAdminDto) {
+    try {
+      const result = await this.feedService.getSimpleFeed(feedId);
+      return result;
+    } catch (error) {
+      return this.handleError(error);
+    }
+  }
 }

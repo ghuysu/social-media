@@ -10,6 +10,7 @@ import {
 import { ReportingService } from './reporting.service';
 import { MessagePattern, Payload } from '@nestjs/microservices';
 import { ReportUserDto } from './dto/reportUser.dto';
+import { ReportFeedDto } from './dto/reportFeed.dto';
 
 @Controller()
 export class ReportingController {
@@ -66,7 +67,17 @@ export class ReportingController {
   }
 
   @MessagePattern('report_feed')
-  async reportFeed() {}
+  async reportFeed(@Payload() { userPayload, payload }: ReportFeedDto) {
+    try {
+      await this.reportingService.reportFeed(userPayload, payload);
+      return {
+        status: HttpStatus.OK,
+        message: 'Report feed successfully.',
+      };
+    } catch (error) {
+      return this.handleError(error);
+    }
+  }
 
   @MessagePattern('report_user')
   async reportUser(@Payload() { userPayload, payload }: ReportUserDto) {

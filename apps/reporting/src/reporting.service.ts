@@ -9,6 +9,8 @@ import { FeedReportRepository } from './repositories/feed-report.repository';
 
 import {
   FEED_SERVICE,
+  FeedDocument,
+  FeedReportReason,
   FeedReportStatus,
   USER_SERVICE,
   UserDocument,
@@ -46,7 +48,7 @@ export class ReportingService {
         .pipe(
           map((response) => {
             if (response.error) {
-              throw new NotFoundException('User not found');
+              throw new NotFoundException('Resource not found');
             }
             return response.metadata;
           }),
@@ -60,7 +62,7 @@ export class ReportingService {
     //check user is reported before or not
     const report = await this.userReportRepository.findOne({
       reportedUserId,
-      status: FeedReportStatus.Pending,
+      status: UserReportStatus.Pending,
     });
 
     //if not, create a new one
@@ -90,7 +92,7 @@ export class ReportingService {
       await this.userReportRepository.findOneAndUpdate(
         {
           reportedUserId,
-          status: FeedReportStatus.Pending,
+          status: UserReportStatus.Pending,
         },
         {
           $push: { reporterId: userId },
@@ -105,6 +107,85 @@ export class ReportingService {
     await this.userReportRepository.findOneAndUpdate(
       {
         reportedUserId,
+        status: UserReportStatus.Pending,
+      },
+      {
+        $push: { reporterId: userId },
+        $inc: { [`reason.${reasonConverter[userReason]}`]: 1 },
+      },
+    );
+  }
+
+  async reportFeed({ userId }, { reportedFeedId, reason: userReason }) {
+    const reasonConverter = [
+      FeedReportReason.SensitiveImage,
+      FeedReportReason.InappropriateWords,
+    ];
+
+    //check feed is existing or not
+    const reportedFeed: FeedDocument = await lastValueFrom(
+      this.feedClient.send('get_simple_feed', { feedId: reportedFeedId }).pipe(
+        map((response) => {
+          if (response.error) {
+            throw new NotFoundException('Resource not found');
+          }
+          return response;
+        }),
+      ),
+    );
+
+    if (reportedFeed.userId.toString() === userId.toString()) {
+      throw new BadRequestException('Conflict request');
+    }
+
+    //check feed is reported before or not
+    const report = await this.feedReportRepository.findOne({
+      reportedFeedId,
+      status: FeedReportStatus.Pending,
+    });
+
+    //if not, create a new one
+    if (!report) {
+      const realReason = {
+        [FeedReportReason.SensitiveImage]: 0,
+        [FeedReportReason.InappropriateWords]: 0,
+      };
+      realReason[reasonConverter[userReason]] = 1;
+
+      await this.feedReportRepository.create({
+        reportedFeedId,
+        reporterId: [userId],
+        reason: realReason,
+      });
+      return;
+    }
+
+    //just report 1 time
+    if (report.reporterId.some((id) => id.toString() === userId.toString())) {
+      return;
+    }
+
+    //if be reported, update record
+    //check if user have 10 users report, update report statistic
+    if (report.reporterId.length === 9) {
+      await this.feedReportRepository.findOneAndUpdate(
+        {
+          reportedFeedId,
+          status: FeedReportStatus.Pending,
+        },
+        {
+          $push: { reporterId: userId },
+          status: FeedReportStatus.ReadyToProcessing,
+          $inc: { [`reason.${reasonConverter[userReason]}`]: 1 },
+        },
+      );
+
+      return;
+    }
+
+    await this.feedReportRepository.findOneAndUpdate(
+      {
+        reportedFeedId,
         status: FeedReportStatus.Pending,
       },
       {

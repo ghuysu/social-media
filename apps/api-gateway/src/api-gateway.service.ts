@@ -949,4 +949,27 @@ export class ApiGatewayService {
 
     return result;
   }
+
+  async reportFeed(userPayload, feedId: Types.ObjectId, reason: number) {
+    const result = await lastValueFrom(
+      this.reportingService
+        .send('report_feed', {
+          userPayload,
+          payload: { reportedFeedId: feedId, reason },
+        })
+        .pipe(
+          map((response) => {
+            if (response.error) {
+              this.throwErrorBasedOnStatusCode(
+                response.statusCode,
+                response.message,
+              );
+            }
+            return response;
+          }),
+        ),
+    );
+
+    return result;
+  }
 }
