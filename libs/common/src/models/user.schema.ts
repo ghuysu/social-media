@@ -46,6 +46,12 @@ export class UserDocument extends AbstractDocument {
     index: true,
   })
   role: string;
+
+  @Prop({
+    type: Number,
+    default: 0,
+  })
+  numberOfViolating: number;
 }
 
 export const UserSchema = SchemaFactory.createForClass(UserDocument);

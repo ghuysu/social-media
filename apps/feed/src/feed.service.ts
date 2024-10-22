@@ -12,8 +12,10 @@ import {
   createTTL,
   FeedDocument,
   GetEveryoneFeedsDto,
+  MESSAGE_SERVICE,
   NOTIFICATION_SERVICE,
   ReactionDocument,
+  REPORTING_SERVICE,
   STATISTIC_SERVICE,
   TokenPayloadInterface,
   USER_SERVICE,
@@ -39,8 +41,12 @@ export class FeedService {
     private readonly awss3Client: ClientProxy,
     @Inject(USER_SERVICE)
     private readonly userClient: ClientProxy,
+    @Inject(MESSAGE_SERVICE)
+    private readonly messageClient: ClientProxy,
     @Inject(STATISTIC_SERVICE)
     private readonly statisticClient: ClientProxy,
+    @Inject(REPORTING_SERVICE)
+    private readonly reportingClient: ClientProxy,
     private readonly configService: ConfigService,
   ) {}
 
@@ -277,12 +283,15 @@ export class FeedService {
     };
 
     this.notificationClient.emit('emit_message', {
-      name: 'update_feed',
+      name: 'delete_feed',
       payload: emitPayload,
     });
 
     //update feed statistic
     this.statisticClient.emit('deleted_feed', {});
+
+    //delete feed reports
+    this.reportingClient.emit('delete_feed_reports', { feedId });
   }
 
   async getEveryoneFeeds(
@@ -608,6 +617,9 @@ export class FeedService {
       await this.reactionRepository.deleteMany({
         _id: { $in: feed.reactions },
       });
+
+      //delete feed reports
+      this.reportingClient.emit('delete_feed_reports', { feedId: feed._id });
     }
 
     //delete user's reactions in db
@@ -662,7 +674,21 @@ export class FeedService {
       throw new NotFoundException('Feed not found');
     }
 
-    return feed;
+    const comments = await lastValueFrom(
+      this.messageClient.send('get_comments_of_feed', { feedId }).pipe(
+        map((response) => {
+          if (response.error) {
+            throw new NotFoundException('Resource not found');
+          }
+          return response;
+        }),
+      ),
+    );
+
+    return {
+      ...feed,
+      comments,
+    };
   }
 
   async getSimpleFeed(feedId: Types.ObjectId) {

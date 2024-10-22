@@ -20,6 +20,7 @@ import { ClientProxy } from '@nestjs/microservices';
 import { MessageRepository } from './repositories/message.repository';
 import { lastValueFrom, map } from 'rxjs';
 import { DeleteMessagesForDeleteAccountDto } from './dto/delete-messages-for-delete-account.dto';
+import { GetCommentsOfFeedDto } from './dto/get-comments-of-feed.dto';
 
 @Injectable()
 export class MessageService {
@@ -508,5 +509,46 @@ export class MessageService {
         `conversation:${friend.toString()}:${userId.toString()}`,
       );
     }
+  }
+
+  async getCommentsOfFeed({ feedId }: GetCommentsOfFeedDto) {
+    const comments = await this.messageRepository.find({ feedId }, [
+      { path: 'senderId', select: '_id email fullname profileImageUrl' },
+    ]);
+
+    return comments.map((comment) => {
+      return {
+        _id: comment._id,
+        sender: comment.senderId,
+        content: comment.content,
+        createdAt: comment.createdAt,
+      };
+    });
+  }
+
+  async getCommentsOfUser({ userId }) {
+    let comments = await this.messageRepository.find(
+      {
+        senderId: userId,
+        feedId: { $exists: true, $ne: null },
+      },
+      [
+        {
+          path: 'feedId',
+          select: '_id description imageUrl createdAt',
+        },
+        {
+          path: 'receiverId',
+          select: '_id email fullname profileImageUrl',
+        },
+      ],
+    );
+
+    comments = comments.map((comment) => {
+      delete comment.isRead;
+      return comment;
+    });
+
+    return comments;
   }
 }

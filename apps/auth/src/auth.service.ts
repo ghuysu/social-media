@@ -120,9 +120,9 @@ export class AuthService {
     //hash code
     const hashedCode = await argon2.hash(code.toString(), {
       type: argon2.argon2id,
-      memoryCost: 2 ** 16,
-      timeCost: 4,
-      parallelism: 2,
+      memoryCost: 2 ** 10,
+      timeCost: 2,
+      parallelism: 1,
       secret: Buffer.from(this.configService.get('ARGON2_SERCET')),
     });
 
@@ -172,9 +172,9 @@ export class AuthService {
     //hash password
     const hashedPassword = await argon2.hash(password, {
       type: argon2.argon2id,
-      memoryCost: 2 ** 16, // Tăng số lượng bộ nhớ được sử dụng (64MB)
-      timeCost: 4, // Tăng số lần lặp lại
-      parallelism: 2, // Số luồng đồng thời,
+      memoryCost: 2 ** 10,
+      timeCost: 2,
+      parallelism: 1,
       secret: Buffer.from(this.configService.get('ARGON2_SERCET')),
     });
 
@@ -269,9 +269,9 @@ export class AuthService {
     //hash code
     const hashedCode = await argon2.hash(code.toString(), {
       type: argon2.argon2id,
-      memoryCost: 2 ** 16,
-      timeCost: 4,
-      parallelism: 2,
+      memoryCost: 2 ** 10,
+      timeCost: 2,
+      parallelism: 1,
       secret: Buffer.from(this.configService.get('ARGON2_SERCET')),
     });
 
@@ -343,9 +343,9 @@ export class AuthService {
 
     const hashedPassword = await argon2.hash(password, {
       type: argon2.argon2id,
-      memoryCost: 2 ** 16, // Tăng số lượng bộ nhớ được sử dụng (64MB)
-      timeCost: 4, // Tăng số lần lặp lại
-      parallelism: 2, // Số luồng đồng thời,
+      memoryCost: 2 ** 10,
+      timeCost: 2,
+      parallelism: 1,
       secret: Buffer.from(this.configService.get('ARGON2_SERCET')),
     });
 
@@ -480,9 +480,9 @@ export class AuthService {
     //hash code
     const hashedCode = await argon2.hash(code.toString(), {
       type: argon2.argon2id,
-      memoryCost: 2 ** 16,
-      timeCost: 4,
-      parallelism: 2,
+      memoryCost: 2 ** 10,
+      timeCost: 2,
+      parallelism: 1,
       secret: Buffer.from(this.configService.get('ARGON2_SERCET')),
     });
 

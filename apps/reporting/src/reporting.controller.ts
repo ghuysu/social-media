@@ -8,9 +8,13 @@ import {
   UnauthorizedException,
 } from '@nestjs/common';
 import { ReportingService } from './reporting.service';
-import { MessagePattern, Payload } from '@nestjs/microservices';
+import { EventPattern, MessagePattern, Payload } from '@nestjs/microservices';
 import { ReportUserDto } from './dto/reportUser.dto';
 import { ReportFeedDto } from './dto/reportFeed.dto';
+import { UserIdDto } from './dto/userId.dto';
+import { FeedIdDto } from './dto/feedId.dto';
+import { GetMoreUserReportsDto } from './dto/get-more-user-reports.dto';
+import { GetMoreFeedReportsDto } from './dto/get-more-feed-reports.dto';
 
 @Controller()
 export class ReportingController {
@@ -93,5 +97,46 @@ export class ReportingController {
   }
 
   @MessagePattern('get_reports')
-  async getFeports() {}
+  async getFeports() {
+    try {
+      const result = await this.reportingService.getReports();
+      return {
+        status: HttpStatus.OK,
+        message: 'Get reports successfully.',
+        metadata: result,
+      };
+    } catch (error) {
+      return this.handleError(error);
+    }
+  }
+
+  @EventPattern('delete_user_reports')
+  async deleteUserReport(@Payload() { userId }: UserIdDto) {
+    this.reportingService.deleteUserReport(userId);
+  }
+
+  @EventPattern('delete_feed_reports')
+  async deleteFeedReport(@Payload() { feedId }: FeedIdDto) {
+    this.reportingService.deleteFeedReport(feedId);
+  }
+
+  @MessagePattern('get_more_user_reports')
+  async getMoreUserReports(@Payload() dto: GetMoreUserReportsDto) {
+    const result = await this.reportingService.getMoreUserReports(dto);
+    return {
+      status: HttpStatus.OK,
+      message: 'Get more user reports successfully.',
+      metadata: result,
+    };
+  }
+
+  @MessagePattern('get_more_feed_reports')
+  async getMoreFeedReports(@Payload() dto: GetMoreFeedReportsDto) {
+    const result = await this.reportingService.getMoreFeedReports(dto);
+    return {
+      status: HttpStatus.OK,
+      message: 'Get more feed reports successfully.',
+      metadata: result,
+    };
+  }
 }

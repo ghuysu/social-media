@@ -8,9 +8,11 @@ import {
   FEED_DOCUMENT,
   FeedSchema,
   LoggerModule,
+  MESSAGE_SERVICE,
   NOTIFICATION_SERVICE,
   REACTION_DOCUMENT,
   ReactionSchema,
+  REPORTING_SERVICE,
   STATISTIC_SERVICE,
   USER_DOCUMENT,
   USER_SERVICE,
@@ -40,6 +42,10 @@ import { ReactionRepository } from './repositories/reaction.repository';
         USER_PORT: joi.number().required(),
         STATISTIC_HOST: joi.string().required(),
         STATISTIC_PORT: joi.number().required(),
+        MESSAGE_HOST: joi.string().required(),
+        MESSAGE_PORT: joi.number().required(),
+        REPORTING_HOST: joi.string().required(),
+        REPORTING_PORT: joi.number().required(),
         REDIS_HOST: joi.string().required(),
         REDIS_PORT: joi.number().required(),
         BUCKET_NAME: joi.string().required(),
@@ -86,12 +92,34 @@ import { ReactionRepository } from './repositories/reaction.repository';
         inject: [ConfigService],
       },
       {
+        name: MESSAGE_SERVICE,
+        useFactory: (configService: ConfigService) => ({
+          transport: Transport.TCP,
+          options: {
+            host: configService.get('MESSAGE_HOST'),
+            port: configService.get('MESSAGE_PORT'),
+          },
+        }),
+        inject: [ConfigService],
+      },
+      {
         name: STATISTIC_SERVICE,
         useFactory: (configService: ConfigService) => ({
           transport: Transport.TCP,
           options: {
             host: configService.get('STATISTIC_HOST'),
             port: configService.get('STATISTIC_PORT'),
+          },
+        }),
+        inject: [ConfigService],
+      },
+      {
+        name: REPORTING_SERVICE,
+        useFactory: (configService: ConfigService) => ({
+          transport: Transport.TCP,
+          options: {
+            host: configService.get('REPORTING_HOST'),
+            port: configService.get('REPORTING_PORT'),
           },
         }),
         inject: [ConfigService],

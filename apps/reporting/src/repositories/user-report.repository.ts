@@ -5,7 +5,7 @@ import {
 } from '@app/common';
 import { Injectable, Logger } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
-import { Model } from 'mongoose';
+import { FilterQuery, Model } from 'mongoose';
 
 @Injectable()
 export class UserReportRepository extends AbstractRepository<UserReportDocument> {
@@ -16,5 +16,22 @@ export class UserReportRepository extends AbstractRepository<UserReportDocument>
     private readonly userReportModel: Model<UserReportDocument>,
   ) {
     super(userReportModel);
+  }
+
+  async findAll(
+    filterQuery: FilterQuery<UserReportDocument>,
+    skip: number,
+    select: number,
+  ): Promise<UserReportDocument[]> {
+    return await this.userReportModel
+      .find(filterQuery)
+      .sort({ createdAt: 1 })
+      .skip(skip)
+      .limit(select)
+      .lean<UserReportDocument[]>(true);
+  }
+
+  async deleteMany(filterQuery: FilterQuery<UserReportDocument>) {
+    await this.userReportModel.deleteMany(filterQuery);
   }
 }

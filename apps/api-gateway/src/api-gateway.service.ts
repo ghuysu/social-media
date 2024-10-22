@@ -972,4 +972,58 @@ export class ApiGatewayService {
 
     return result;
   }
+
+  async getReports() {
+    const result = await lastValueFrom(
+      this.reportingService.send('get_reports', {}).pipe(
+        map((response) => {
+          if (response.error) {
+            this.throwErrorBasedOnStatusCode(
+              response.statusCode,
+              response.message,
+            );
+          }
+          return response;
+        }),
+      ),
+    );
+
+    return result;
+  }
+
+  async getMoreUserReports(dto) {
+    const result = await lastValueFrom(
+      this.reportingService.send('get_more_user_reports', dto).pipe(
+        map((response) => {
+          if (response.error) {
+            this.throwErrorBasedOnStatusCode(
+              response.statusCode,
+              response.message,
+            );
+          }
+          return response;
+        }),
+      ),
+    );
+
+    return result;
+  }
+
+  async getMoreFeedReports(dto) {
+    const result = await lastValueFrom(
+      this.reportingService.send('get_more_feed_reports', dto).pipe(
+        map((response) => {
+          if (response.error) {
+            this.throwErrorBasedOnStatusCode(
+              response.statusCode,
+              response.message,
+            );
+          }
+          return response;
+        }),
+      ),
+    );
+
+    return result;
+  }
 }

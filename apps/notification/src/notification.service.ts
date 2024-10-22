@@ -11,6 +11,8 @@ import { OAuth2Client } from 'google-auth-library';
 export class NotificationService {
   private accessToken: string;
   private transporter: nodemailer.Transporter;
+  private retryAttempts = 3;
+  private retryDelay = 1000;
 
   constructor(
     private readonly configService: ConfigService,
@@ -20,20 +22,27 @@ export class NotificationService {
   }
 
   private async initializeOAuth2Client() {
-    const myOAuth2Client = new OAuth2Client(
-      this.configService.get('GOOGLE_OAUTH_CLIENT_ID'),
-      this.configService.get('GOOGLE_OAUTH_CLIENT_SECRET'),
-    );
+    try {
+      const myOAuth2Client = new OAuth2Client(
+        this.configService.get('GOOGLE_OAUTH_CLIENT_ID'),
+        this.configService.get('GOOGLE_OAUTH_CLIENT_SECRET'),
+      );
 
-    myOAuth2Client.setCredentials({
-      refresh_token: this.configService.get('GOOGLE_OAUTH_REFRESH_TOKEN'),
-    });
+      myOAuth2Client.setCredentials({
+        refresh_token: this.configService.get('GOOGLE_OAUTH_REFRESH_TOKEN'),
+      });
 
-    // Lấy accessToken và khởi tạo transporter sau khi accessToken đã được lấy
-    const accessTokenResponse = await myOAuth2Client.getAccessToken();
-    this.accessToken = accessTokenResponse.token;
+      const accessTokenResponse = await myOAuth2Client.getAccessToken();
+      this.accessToken = accessTokenResponse.token;
 
-    // Khởi tạo transporter
+      this.initializeTransporter();
+    } catch (error) {
+      console.error('OAuth2 initialization failed:', error);
+      throw new Error('Failed to initialize OAuth2 client');
+    }
+  }
+
+  private initializeTransporter() {
     this.transporter = nodemailer.createTransport({
       service: 'gmail',
       auth: {
@@ -42,9 +51,30 @@ export class NotificationService {
         clientId: this.configService.get('GOOGLE_OAUTH_CLIENT_ID'),
         clientSecret: this.configService.get('GOOGLE_OAUTH_CLIENT_SECRET'),
         refreshToken: this.configService.get('GOOGLE_OAUTH_REFRESH_TOKEN'),
-        accessToken: this.accessToken, // Truyền accessToken đã lấy được
+        accessToken: this.accessToken,
       },
     });
+  }
+
+  async sendEmail(subject: string, html: string, email) {
+    for (let attempt = 1; attempt <= this.retryAttempts; attempt++) {
+      try {
+        await this.transporter.sendMail({
+          from: this.configService.get('SMTP_USER'),
+          to: email,
+          subject: subject,
+          html: html,
+        });
+        return;
+      } catch (error) {
+        if (attempt < this.retryAttempts) {
+          await this.initializeOAuth2Client();
+          await new Promise((resolve) => setTimeout(resolve, this.retryDelay));
+          continue;
+        }
+        throw error;
+      }
+    }
   }
 
   async sendCodeToCheckEmail({ email, code }: SendCodeDto) {
@@ -64,12 +94,7 @@ export class NotificationService {
       </div>
     `;
 
-    await this.transporter.sendMail({
-      from: this.configService.get('SMTP_USER'),
-      to: email,
-      subject,
-      html,
-    });
+    await this.sendEmail(subject, html, email);
   }
 
   async sendCodeToChangePassword({ email, code }: SendCodeDto) {
@@ -89,15 +114,12 @@ export class NotificationService {
       </div>
     `;
 
-    await this.transporter.sendMail({
-      from: this.configService.get('SMTP_USER'),
-      to: email,
-      subject,
-      html,
-    });
+    await this.sendEmail(subject, html, email);
   }
 
   async sendCodeToSignInAsAdmin({ email, code }: SendCodeDto) {
+    console.log('send email successfully');
+
     const subject = 'Sign In As Admin';
     const html = `
       <div style="font-family: Arial, sans-serif; max-width: 600px; margin: auto; padding: 20px; border: 1px solid #ddd; border-radius: 10px;">
@@ -114,12 +136,7 @@ export class NotificationService {
       </div>
     `;
 
-    await this.transporter.sendMail({
-      from: this.configService.get('SMTP_USER'),
-      to: email,
-      subject,
-      html,
-    });
+    await this.sendEmail(subject, html, email);
   }
 
   async sendCodeToChangeEmail({ email, code }: SendCodeDto) {
@@ -139,12 +156,7 @@ export class NotificationService {
       </div>
     `;
 
-    await this.transporter.sendMail({
-      from: this.configService.get('SMTP_USER'),
-      to: email,
-      subject,
-      html,
-    });
+    await this.sendEmail(subject, html, email);
   }
 
   async sendCodeToDeleteAccount({ email, code }: SendCodeDto) {
@@ -163,12 +175,7 @@ export class NotificationService {
       </div>
     `;
 
-    await this.transporter.sendMail({
-      from: this.configService.get('SMTP_USER'),
-      to: email,
-      subject,
-      html,
-    });
+    await this.sendEmail(subject, html, email);
   }
 
   async sendEmailForDeleteAccount({ email }: DeleteAccountDto) {
@@ -185,12 +192,7 @@ export class NotificationService {
       </div>
     `;
 
-    await this.transporter.sendMail({
-      from: this.configService.get('SMTP_USER'),
-      to: email,
-      subject,
-      html,
-    });
+    await this.sendEmail(subject, html, email);
   }
 
   async sendMessageToAllClientBySocketIo({ name, payload }: EmitMessageDto) {

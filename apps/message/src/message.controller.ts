@@ -14,6 +14,8 @@ import { ReadMessageInterface } from './interfaces/read-message.interface';
 import { GetAllMessagesInterface } from './interfaces/get-all-messages.interface';
 import { GetCertainFriendConversationInterface } from './interfaces/get-certain-friend-conversation.interface';
 import { DeleteMessagesForDeleteAccountDto } from './dto/delete-messages-for-delete-account.dto';
+import { GetCommentsOfFeedDto } from './dto/get-comments-of-feed.dto';
+import { GetCommentsOfUserDto } from './dto/get-comments-of-user.dto';
 
 @Controller()
 export class MessageController {
@@ -96,6 +98,24 @@ export class MessageController {
       await this.messageService.deleteAllMessagesForDeleteAccount(dto);
     } catch (error) {
       console.log(error);
+    }
+  }
+
+  @MessagePattern('get_comments_of_feed')
+  async getCommentsOfFeed(@Payload() dto: GetCommentsOfFeedDto) {
+    try {
+      return await this.messageService.getCommentsOfFeed(dto);
+    } catch (error) {
+      return this.handleError(error);
+    }
+  }
+
+  @MessagePattern('get_comments_of_user')
+  async getCommentsOfUser(@Payload() dto: GetCommentsOfUserDto) {
+    try {
+      return await this.messageService.getCommentsOfUser(dto);
+    } catch (error) {
+      return this.handleError(error);
     }
   }
 

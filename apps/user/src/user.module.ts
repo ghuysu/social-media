@@ -10,6 +10,7 @@ import {
   LoggerModule,
   MESSAGE_SERVICE,
   NOTIFICATION_SERVICE,
+  REPORTING_SERVICE,
   STATISTIC_SERVICE,
   USER_DOCUMENT,
 } from '@app/common';
@@ -42,6 +43,8 @@ import { FriendInviteRepository } from './repositories/friend-invite.repository'
         MESSAGE_PORT: joi.number().required(),
         STATISTIC_HOST: joi.string().required(),
         STATISTIC_PORT: joi.number().required(),
+        REPORTING_HOST: joi.string().required(),
+        REPORTING_PORT: joi.number().required(),
         REDIS_HOST: joi.string().required(),
         REDIS_PORT: joi.number().required(),
         BUCKET_NAME: joi.string().required(),
@@ -110,6 +113,17 @@ import { FriendInviteRepository } from './repositories/friend-invite.repository'
           options: {
             host: configService.get('STATISTIC_HOST'),
             port: configService.get('STATISTIC_PORT'),
+          },
+        }),
+        inject: [ConfigService],
+      },
+      {
+        name: REPORTING_SERVICE,
+        useFactory: (configService: ConfigService) => ({
+          transport: Transport.TCP,
+          options: {
+            host: configService.get('REPORTING_HOST'),
+            port: configService.get('REPORTING_PORT'),
           },
         }),
         inject: [ConfigService],

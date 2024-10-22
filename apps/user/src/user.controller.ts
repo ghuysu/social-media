@@ -23,6 +23,7 @@ import { DeleteFriendInterface } from './interfaces/delete-friend.interface';
 import { DeleteAccountInterface } from './interfaces/delete-account.interface';
 import { GetUserInforByAdminWithIdInterface } from './interfaces/get-user-infor-by-admin-with-id.interface';
 import { GetUserInforByAdminWithEmailInterface } from './interfaces/get-user-infor-by-admin-with-email.interface';
+import { GetListOfUserInforDto } from './dto/get-list-of-user-infor.dto';
 
 @Controller()
 export class UserController {
@@ -290,6 +291,16 @@ export class UserController {
     } catch (error) {
       return this.handleError(error);
     }
+  }
+
+  @MessagePattern('get_list_of_user_infor')
+  async getListOfUserInfor(@Payload() dto: GetListOfUserInforDto) {
+    // const { userIdList } = dto;
+    // console.log({
+    //   userIdList,
+    //   type: typeof userIdList[0],
+    // });
+    return await this.userService.getListOfUserInfor(dto);
   }
 
   private handleError(error: any) {

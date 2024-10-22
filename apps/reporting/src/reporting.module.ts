@@ -10,6 +10,7 @@ import {
   FEED_SERVICE,
   UserReportSchema,
   FeedReportSchema,
+  NOTIFICATION_SERVICE,
 } from '@app/common';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import * as joi from 'joi';
@@ -32,6 +33,8 @@ import { ClientsModule, Transport } from '@nestjs/microservices';
         USER_PORT: joi.number().required(),
         FEED_HOST: joi.string().required(),
         FEED_PORT: joi.number().required(),
+        NOTIFICATION_HOST: joi.string().required(),
+        NOTIFICATION_PORT: joi.number().required(),
         REDIS_PASSWORD: joi.string().required(),
         REDIS_HOST: joi.string().required(),
         REDIS_PORT: joi.number().required(),
@@ -52,6 +55,17 @@ import { ClientsModule, Transport } from '@nestjs/microservices';
       }),
     }),
     ClientsModule.registerAsync([
+      {
+        name: NOTIFICATION_SERVICE,
+        useFactory: (configService: ConfigService) => ({
+          transport: Transport.TCP,
+          options: {
+            host: configService.get('NOTIFICATION_HOST'),
+            port: configService.get('NOTIFICATION_PORT'),
+          },
+        }),
+        inject: [ConfigService],
+      },
       {
         name: USER_SERVICE,
         useFactory: (configService: ConfigService) => ({

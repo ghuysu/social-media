@@ -12,6 +12,7 @@ import {
   FeedDocument,
   FeedReportReason,
   FeedReportStatus,
+  NOTIFICATION_SERVICE,
   USER_SERVICE,
   UserDocument,
   UserReportReason,
@@ -19,6 +20,9 @@ import {
 } from '@app/common';
 import { ClientProxy } from '@nestjs/microservices';
 import { lastValueFrom, map } from 'rxjs';
+import { Types } from 'mongoose';
+import { GetMoreUserReportsDto } from './dto/get-more-user-reports.dto';
+import { GetMoreFeedReportsDto } from './dto/get-more-feed-reports.dto';
 
 @Injectable()
 export class ReportingService {
@@ -27,6 +31,8 @@ export class ReportingService {
     private readonly feedReportRepository: FeedReportRepository,
     @Inject(FEED_SERVICE)
     private readonly feedClient: ClientProxy,
+    @Inject(NOTIFICATION_SERVICE)
+    private readonly notificationClient: ClientProxy,
     @Inject(USER_SERVICE)
     private readonly userClient: ClientProxy,
   ) {}
@@ -193,5 +199,188 @@ export class ReportingService {
         $inc: { [`reason.${reasonConverter[userReason]}`]: 1 },
       },
     );
+  }
+
+  async getReports() {
+    const [userReports, feedReports] = await Promise.all([
+      //get 20 user reports
+      this.userReportRepository.findAll(
+        {
+          status: UserReportStatus.ReadyToProcessing,
+        },
+        0,
+        20,
+      ),
+      //get 20 feed reports
+      this.feedReportRepository.findAll(
+        {
+          status: FeedReportStatus.ReadyToProcessing,
+        },
+        0,
+        20,
+      ),
+    ]);
+
+    //get infor's users
+    const returnedUserReports = await Promise.all(
+      userReports.map(async (report) => {
+        const [inforList, reportedUser] = await Promise.all([
+          this.getListOfUserInfor([...report.reporterId]),
+          this.getUserInforByAdminId(report.reportedUserId),
+        ]);
+
+        report.reporterId = inforList;
+        report.reportedUserId = reportedUser;
+
+        return report;
+      }),
+    );
+
+    const returnedFeedReports = await Promise.all(
+      feedReports.map(async (report) => {
+        const [inforList, reportedFeed] = await Promise.all([
+          this.getListOfUserInfor([...report.reporterId]),
+          this.getFeedByAdmin(report.reportedFeedId),
+        ]);
+
+        report.reporterId = inforList;
+        report.reportedFeedId = reportedFeed;
+
+        return report;
+      }),
+    );
+
+    return {
+      userReports: returnedUserReports,
+      feedReports: returnedFeedReports,
+    };
+  }
+
+  async getListOfUserInfor(userIdList: Types.ObjectId[] | string[]) {
+    return await lastValueFrom(
+      this.userClient
+        .send('get_list_of_user_infor', {
+          userIdList,
+        })
+        .pipe(
+          map((response) => {
+            return response;
+          }),
+        ),
+    );
+  }
+
+  async getUserInforByAdminId(searchValue: Types.ObjectId | string) {
+    return await lastValueFrom(
+      this.userClient
+        .send('get_user_infor_by_admin_with_id', {
+          searchValue,
+        })
+        .pipe(
+          map((response) => {
+            if (response.error) {
+              return null;
+            }
+            return response;
+          }),
+        ),
+    );
+  }
+
+  async getFeedByAdmin(searchValue: Types.ObjectId | string) {
+    return await lastValueFrom(
+      this.feedClient
+        .send('get_feed_by_admin', {
+          feedId: searchValue,
+        })
+        .pipe(
+          map((response) => {
+            if (response.error) {
+              return null;
+            }
+            return response;
+          }),
+        ),
+    );
+  }
+
+  async getMoreUserReports({ skip }: GetMoreUserReportsDto) {
+    const userReports = await this.userReportRepository.findAll(
+      {
+        status: UserReportStatus.ReadyToProcessing,
+      },
+      skip,
+      20,
+    );
+
+    const returnedUserReports = await Promise.all(
+      userReports.map(async (report) => {
+        const [inforList, reportedUser] = await Promise.all([
+          this.getListOfUserInfor([...report.reporterId]),
+          this.getUserInforByAdminId(report.reportedUserId),
+        ]);
+
+        console.log({ inforList, reportedUser });
+
+        report.reporterId = inforList;
+        report.reportedUserId = reportedUser;
+
+        return report;
+      }),
+    );
+
+    return returnedUserReports;
+  }
+
+  async getMoreFeedReports({ skip }: GetMoreFeedReportsDto) {
+    const feedReports = await this.feedReportRepository.findAll(
+      {
+        status: FeedReportStatus.ReadyToProcessing,
+      },
+      skip,
+      20,
+    );
+
+    const returnedFeedReports = await Promise.all(
+      feedReports.map(async (report) => {
+        const [inforList, reportedFeed] = await Promise.all([
+          this.getListOfUserInfor([...report.reporterId]),
+          this.getFeedByAdmin(report.reportedFeedId),
+        ]);
+
+        report.reporterId = inforList;
+        report.reportedFeedId = reportedFeed;
+
+        return report;
+      }),
+    );
+
+    return returnedFeedReports;
+  }
+
+  async deleteUserReport(userId: Types.ObjectId | string) {
+    this.notificationClient.emit('emit_message', {
+      name: 'delete_user_report',
+      payload: {
+        userReportId: userId,
+      },
+    });
+
+    await this.userReportRepository.deleteMany({
+      reportedUserId: userId,
+    });
+  }
+
+  async deleteFeedReport(feedId: Types.ObjectId | string) {
+    this.notificationClient.emit('emit_message', {
+      name: 'delete_feed_report',
+      payload: {
+        feedReportId: feedId,
+      },
+    });
+
+    await this.feedReportRepository.deleteMany({
+      reportedFeedId: feedId,
+    });
   }
 }

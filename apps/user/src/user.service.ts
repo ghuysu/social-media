@@ -14,6 +14,7 @@ import {
   MESSAGE_SERVICE,
   NOTIFICATION_SERVICE,
   RemoveInviteDto,
+  REPORTING_SERVICE,
   SendInviteDto,
   STATISTIC_SERVICE,
   TokenPayloadInterface,
@@ -38,6 +39,8 @@ import * as Jimp from 'jimp';
 import { ChangeEmailPayloadInterface } from './interfaces/change-email-payload.interface';
 import { FriendInviteRepository } from './repositories/friend-invite.repository';
 import { Types } from 'mongoose';
+import { GetListOfUserInforDto } from './dto/get-list-of-user-infor.dto';
+import { lastValueFrom, map } from 'rxjs';
 
 @Injectable()
 export class UserService {
@@ -55,6 +58,8 @@ export class UserService {
     private readonly messageClient: ClientProxy,
     @Inject(STATISTIC_SERVICE)
     private readonly statisticClient: ClientProxy,
+    @Inject(REPORTING_SERVICE)
+    private readonly reportingClient: ClientProxy,
     private readonly configService: ConfigService,
     private readonly jwtService: JwtService,
   ) {}
@@ -1408,10 +1413,14 @@ export class UserService {
         friendList: deletedUser.friendList.map((friend) => friend._id),
       },
     });
+
+    //delete user report
+    this.reportingClient.emit('delete_user_reports', {
+      userId,
+    });
   }
 
   async getUserInforByAdminWithId(userId: Types.ObjectId) {
-    console.log(userId);
     //get user infor
     const user = await this.userRepository.findOne(
       {
@@ -1441,9 +1450,21 @@ export class UserService {
       throw new NotFoundException('User not found');
     }
 
+    const comments = await lastValueFrom(
+      this.messageClient
+        .send('get_comments_of_user', {
+          userId,
+        })
+        .pipe(
+          map((response) => {
+            return response;
+          }),
+        ),
+    );
+
     delete user.password;
 
-    return user;
+    return { ...user, comments };
   }
 
   async getUserInforByAdminWithEmail(email: string) {
@@ -1480,5 +1501,20 @@ export class UserService {
     delete user.password;
 
     return user;
+  }
+
+  async getListOfUserInfor({ userIdList }: GetListOfUserInforDto) {
+    const listOfUserInfor: UserDocument[] = await this.userRepository.find({
+      _id: { $in: userIdList },
+    });
+
+    return listOfUserInfor.map((user) => {
+      return {
+        _id: user._id,
+        email: user.email,
+        fullname: user.fullname,
+        profileImageUrl: user.profileImageUrl,
+      };
+    });
   }
 }

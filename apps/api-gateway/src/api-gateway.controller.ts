@@ -67,6 +67,7 @@ import { UserReportDto } from './dto/user-report.dto';
 import { Payload } from '@nestjs/microservices';
 import { FeedReportDto } from './dto/feed-report.dto';
 import { FeedIdDto } from './dto/feedId.dto';
+import { GetMoreReportsDto } from './dto/get-more-reports.dto';
 
 @Controller('api')
 export class ApiGatewayController {
@@ -545,5 +546,32 @@ export class ApiGatewayController {
     @Payload() { reason }: FeedReportDto,
   ) {
     return this.apiGatewayService.reportFeed(userPayload, feedId, reason);
+  }
+
+  @UseGuards(RoleGuard)
+  @UseGuards(JwtGuard)
+  @UseGuards(ApiKeyGuard)
+  @Roles(...ADMIN_ROLE)
+  @Get('report/all')
+  async getReports() {
+    return this.apiGatewayService.getReports();
+  }
+
+  @UseGuards(RoleGuard)
+  @UseGuards(JwtGuard)
+  @UseGuards(ApiKeyGuard)
+  @Roles(...ADMIN_ROLE)
+  @Get('report/user')
+  async getMoreUserReports(@Query() dto: GetMoreReportsDto) {
+    return this.apiGatewayService.getMoreUserReports(dto);
+  }
+
+  @UseGuards(RoleGuard)
+  @UseGuards(JwtGuard)
+  @UseGuards(ApiKeyGuard)
+  @Roles(...ADMIN_ROLE)
+  @Get('report/feed')
+  async getMoreFeedReports(@Query() dto: GetMoreReportsDto) {
+    return this.apiGatewayService.getMoreFeedReports(dto);
   }
 }
