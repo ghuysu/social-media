@@ -196,6 +196,7 @@ export class NotificationService {
   }
 
   async sendMessageToAllClientBySocketIo({ name, payload }: EmitMessageDto) {
+    console.log({ name, payload });
     this.socketGateway.sendMessageToAllClient(name, payload);
   }
 }

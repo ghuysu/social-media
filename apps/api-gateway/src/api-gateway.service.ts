@@ -52,6 +52,7 @@ import {
 import { GetCertainFriendConversationDto } from '@app/common/dto/message-dto/get-certain-friend-conversation.dto';
 import { Types } from 'mongoose';
 import { GetUserInforByAdminInterface } from './interfaces/get_user_infor_by_admin.interface';
+import { GetMoreReportsDto } from './dto/get-more-reports.dto';
 
 @Injectable()
 export class ApiGatewayService {
@@ -991,7 +992,7 @@ export class ApiGatewayService {
     return result;
   }
 
-  async getMoreUserReports(dto) {
+  async getMoreUserReports(dto: GetMoreReportsDto) {
     const result = await lastValueFrom(
       this.reportingService.send('get_more_user_reports', dto).pipe(
         map((response) => {
@@ -1009,9 +1010,63 @@ export class ApiGatewayService {
     return result;
   }
 
-  async getMoreFeedReports(dto) {
+  async getMoreFeedReports(dto: GetMoreReportsDto) {
     const result = await lastValueFrom(
       this.reportingService.send('get_more_feed_reports', dto).pipe(
+        map((response) => {
+          if (response.error) {
+            this.throwErrorBasedOnStatusCode(
+              response.statusCode,
+              response.message,
+            );
+          }
+          return response;
+        }),
+      ),
+    );
+
+    return result;
+  }
+
+  async getProcessedReports() {
+    const result = await lastValueFrom(
+      this.reportingService.send('get_processed_reports', {}).pipe(
+        map((response) => {
+          if (response.error) {
+            this.throwErrorBasedOnStatusCode(
+              response.statusCode,
+              response.message,
+            );
+          }
+          return response;
+        }),
+      ),
+    );
+
+    return result;
+  }
+
+  async getMoreProcessedUserReports(dto: GetMoreReportsDto) {
+    const result = await lastValueFrom(
+      this.reportingService.send('get_more_processed_user_reports', dto).pipe(
+        map((response) => {
+          if (response.error) {
+            this.throwErrorBasedOnStatusCode(
+              response.statusCode,
+              response.message,
+            );
+          }
+          return response;
+        }),
+      ),
+    );
+
+    return result;
+  }
+
+  async getMoreProcessedFeedReports(dto: GetMoreReportsDto) {
+    const result = await lastValueFrom(
+      this.reportingService.send('get_more_processed_feed_reports', dto).pipe(
         map((response) => {
           if (response.error) {
             this.throwErrorBasedOnStatusCode(

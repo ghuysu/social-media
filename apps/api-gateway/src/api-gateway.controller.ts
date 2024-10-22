@@ -574,4 +574,31 @@ export class ApiGatewayController {
   async getMoreFeedReports(@Query() dto: GetMoreReportsDto) {
     return this.apiGatewayService.getMoreFeedReports(dto);
   }
+
+  @UseGuards(RoleGuard)
+  @UseGuards(JwtGuard)
+  @UseGuards(ApiKeyGuard)
+  @Roles(...ADMIN_ROLE)
+  @Get('report/processed/all')
+  async getProcessedReports() {
+    return this.apiGatewayService.getProcessedReports();
+  }
+
+  @UseGuards(RoleGuard)
+  @UseGuards(JwtGuard)
+  @UseGuards(ApiKeyGuard)
+  @Roles(...ADMIN_ROLE)
+  @Get('report/processed/user')
+  async getMoreProcessedUserReports(@Query() dto: GetMoreReportsDto) {
+    return this.apiGatewayService.getMoreProcessedUserReports(dto);
+  }
+
+  @UseGuards(RoleGuard)
+  @UseGuards(JwtGuard)
+  @UseGuards(ApiKeyGuard)
+  @Roles(...ADMIN_ROLE)
+  @Get('report/processed/feed')
+  async getMoreProcessedFeedReports(@Query() dto: GetMoreReportsDto) {
+    return this.apiGatewayService.getMoreProcessedFeedReports(dto);
+  }
 }

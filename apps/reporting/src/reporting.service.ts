@@ -358,6 +358,115 @@ export class ReportingService {
     return returnedFeedReports;
   }
 
+  async getProcessedReports() {
+    const [userReports, feedReports] = await Promise.all([
+      //get 20 user reports
+      this.userReportRepository.findAll(
+        {
+          status: UserReportStatus.Processed,
+        },
+        0,
+        20,
+      ),
+      //get 20 feed reports
+      this.feedReportRepository.findAll(
+        {
+          status: FeedReportStatus.Processed,
+        },
+        0,
+        20,
+      ),
+    ]);
+
+    //get infor's users
+    const returnedUserReports = await Promise.all(
+      userReports.map(async (report) => {
+        const [inforList, reportedUser] = await Promise.all([
+          this.getListOfUserInfor([...report.reporterId]),
+          this.getUserInforByAdminId(report.reportedUserId),
+        ]);
+
+        report.reporterId = inforList;
+        report.reportedUserId = reportedUser;
+
+        return report;
+      }),
+    );
+
+    const returnedFeedReports = await Promise.all(
+      feedReports.map(async (report) => {
+        const [inforList, reportedFeed] = await Promise.all([
+          this.getListOfUserInfor([...report.reporterId]),
+          this.getFeedByAdmin(report.reportedFeedId),
+        ]);
+
+        report.reporterId = inforList;
+        report.reportedFeedId = reportedFeed;
+
+        return report;
+      }),
+    );
+
+    return {
+      userReports: returnedUserReports,
+      feedReports: returnedFeedReports,
+    };
+  }
+
+  async getMoreUserProcessedReports({ skip }: GetMoreUserReportsDto) {
+    const userReports = await this.userReportRepository.findAll(
+      {
+        status: UserReportStatus.Processed,
+      },
+      skip,
+      20,
+    );
+
+    const returnedUserReports = await Promise.all(
+      userReports.map(async (report) => {
+        const [inforList, reportedUser] = await Promise.all([
+          this.getListOfUserInfor([...report.reporterId]),
+          this.getUserInforByAdminId(report.reportedUserId),
+        ]);
+
+        console.log({ inforList, reportedUser });
+
+        report.reporterId = inforList;
+        report.reportedUserId = reportedUser;
+
+        return report;
+      }),
+    );
+
+    return returnedUserReports;
+  }
+
+  async getMoreFeedProcessedReports({ skip }: GetMoreFeedReportsDto) {
+    const feedReports = await this.feedReportRepository.findAll(
+      {
+        status: FeedReportStatus.Processed,
+      },
+      skip,
+      20,
+    );
+
+    const returnedFeedReports = await Promise.all(
+      feedReports.map(async (report) => {
+        const [inforList, reportedFeed] = await Promise.all([
+          this.getListOfUserInfor([...report.reporterId]),
+          this.getFeedByAdmin(report.reportedFeedId),
+        ]);
+
+        report.reporterId = inforList;
+        report.reportedFeedId = reportedFeed;
+
+        return report;
+      }),
+    );
+
+    return returnedFeedReports;
+  }
+
   async deleteUserReport(userId: Types.ObjectId | string) {
     this.notificationClient.emit('emit_message', {
       name: 'delete_user_report',

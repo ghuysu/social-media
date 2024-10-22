@@ -36,6 +36,7 @@ export class NotificationController {
 
   @EventPattern('emit_message')
   async sendMessageToAllClientBySocketIo(@Payload() dto: EmitMessageDto) {
+    console.log(dto);
     this.notificationService.sendMessageToAllClientBySocketIo(dto);
   }
 

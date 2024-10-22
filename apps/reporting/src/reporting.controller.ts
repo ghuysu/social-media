@@ -139,4 +139,44 @@ export class ReportingController {
       metadata: result,
     };
   }
+
+  @MessagePattern('get_processed_reports')
+  async getProcessedReports() {
+    const result = await this.reportingService.getProcessedReports();
+    return {
+      status: HttpStatus.OK,
+      message: 'Get more processed feed reports successfully.',
+      metadata: result,
+    };
+  }
+
+  @MessagePattern('get_more_processed_user_reports')
+  async getMoreProcessedUserReports(@Payload() dto: GetMoreUserReportsDto) {
+    const result = await this.reportingService.getMoreUserProcessedReports(dto);
+    return {
+      status: HttpStatus.OK,
+      message: 'Get more processed user reports successfully.',
+      metadata: result,
+    };
+  }
+
+  @MessagePattern('get_more_processed_feed_reports')
+  async getMoreProcessedFeedReports(@Payload() dto: GetMoreFeedReportsDto) {
+    const result = await this.reportingService.getMoreFeedProcessedReports(dto);
+    return {
+      status: HttpStatus.OK,
+      message: 'Get more processed feed reports successfully.',
+      metadata: result,
+    };
+  }
+
+  // @MessagePattern('process_feed_report')
+  // async processFeedReport(@Payload() dto) {
+  // const result = await this.reportingService.getMoreFeedReports(dto);
+  // return {
+  //   status: HttpStatus.OK,
+  //   message: 'Get more feed reports successfully.',
+  //   metadata: result,
+  // };
+  // }
 }
