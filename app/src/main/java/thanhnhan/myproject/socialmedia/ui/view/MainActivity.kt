@@ -15,7 +15,6 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.tooling.preview.Preview
-import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
 import androidx.navigation.NavType
 import androidx.navigation.compose.NavHost
@@ -28,8 +27,6 @@ import thanhnhan.myproject.socialmedia.data.repository.UserProfileRepository
 import androidx.navigation.navDeepLink
 import thanhnhan.myproject.socialmedia.data.repository.FriendRepository
 import thanhnhan.myproject.socialmedia.data.repository.UserRepository
-import thanhnhan.myproject.socialmedia.data.model.SignInUserResponse
-import thanhnhan.myproject.socialmedia.data.model.UserSession
 import thanhnhan.myproject.socialmedia.ui.theme.SocialMediaTheme
 import thanhnhan.myproject.socialmedia.ui.view.FriendsScreen.FriendsScreen
 import thanhnhan.myproject.socialmedia.ui.view.HomeScreen.LocketScreen
@@ -103,28 +100,7 @@ class MainActivity : ComponentActivity() {
                     modifier = Modifier.fillMaxSize(),
                     color = MaterialTheme.colorScheme.background
                 ) {
-//                    UserSession.setUserData(
-//                        SignInUserResponse.Metadata.User(
-//                            _id = "66e14253840f0686f5624e81",
-//                            email = "ndhuynh13@gmail.com",
-//                            fullname = "Nguyen Huynh",
-//                            birthday = "13/07/2003",
-//                            profileImageUrl = "https://via.placeholder.com/150",  // URL ảnh đại diện giả lập
-//                            friendList = listOf(SignInUserResponse.Metadata.Friend(_id = "1", fullname = "John Doe", profileImageUrl = "https://example.com/john_doe.png"),
-//                                SignInUserResponse.Metadata.Friend(_id = "2", fullname = "Jane Smith", profileImageUrl = "https://example.com/jane_smith.png"),
-//                                SignInUserResponse.Metadata.Friend(_id = "66e981d0463acb70864b6d45", fullname = "Mike Johnson", profileImageUrl = "https://example.com/mike_johnson.png"),
-//                                SignInUserResponse.Metadata.Friend(_id = "4", fullname = "Emily Davis", profileImageUrl = "https://example.com/emily_davis.png"),
-//                                SignInUserResponse.Metadata.Friend(_id = "5", fullname = "David Brown", profileImageUrl = "https://example.com/david_brown.png"),
-//                                SignInUserResponse.Metadata.Friend(_id = "6", fullname = "Emma Wilson", profileImageUrl = "https://example.com/emma_wilson.png")),
-//                            friendInvites = listOf(),
-//                            country = "VN"
-//                        ),
-//                        token = "mockToken"
-//                    )
                     MainApp()
-//                    ViewFeed(
-//                        openEditFeed = {}
-//                    )
                 }
             }
         }
@@ -164,6 +140,9 @@ fun MainApp() {
                     context = context,
                     onLoginSuccess = {
                         navController.navigate("homeScreen")  // Điều hướng đến màn hình chính sau khi đăng nhập thành công
+                    },
+                    openIntro = {
+                        navController.navigate("intro")
                     }
                 )
             }

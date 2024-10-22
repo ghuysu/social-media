@@ -26,6 +26,8 @@ import thanhnhan.myproject.socialmedia.data.model.ChangeFullnameRequest
 import thanhnhan.myproject.socialmedia.data.model.ChangeFullnameResponse
 import thanhnhan.myproject.socialmedia.data.model.CheckEmailCodeRequest
 import thanhnhan.myproject.socialmedia.data.model.CheckEmailCodeResponse
+import thanhnhan.myproject.socialmedia.data.model.CommentRequest
+import thanhnhan.myproject.socialmedia.data.model.CommentResponse
 import thanhnhan.myproject.socialmedia.data.model.DeleteFriendResponse
 import thanhnhan.myproject.socialmedia.data.model.EmailVerificationRequest
 import thanhnhan.myproject.socialmedia.data.model.EmailVerificationResponse
@@ -154,5 +156,11 @@ interface Api {
         @Path("feedId") feedId: String,
         @Body iconRequest: IconRequest
     ): ReactFeedResponse
+
+    @POST("api/message")
+    suspend fun sendMessage(
+        @Header("authorization") authToken: String,
+        @Body messageRequest: CommentRequest
+    ): CommentResponse
 }
 
