@@ -15,7 +15,6 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
@@ -24,7 +23,7 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.BasicTextField
-import androidx.compose.material.Divider
+import androidx.compose.material.AlertDialog
 import androidx.compose.material.DropdownMenu
 import androidx.compose.material.DropdownMenuItem
 import androidx.compose.material.MaterialTheme
@@ -35,7 +34,6 @@ import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.KeyboardArrowDown
 import androidx.compose.material.icons.filled.MailOutline
 import androidx.compose.material.icons.filled.MoreVert
-import androidx.compose.material.icons.sharp.List
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -43,6 +41,7 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.material3.TextField
 import androidx.compose.material3.TextFieldDefaults
 import androidx.compose.runtime.Composable
@@ -62,10 +61,10 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import androidx.compose.ui.window.Dialog
 import androidx.lifecycle.viewmodel.compose.viewModel
 import coil.compose.rememberAsyncImagePainter
 import com.google.accompanist.pager.ExperimentalPagerApi
@@ -98,8 +97,15 @@ fun ViewFeed(
     val viewModel: FeedViewModel = viewModel(factory = FeedViewModelFactory(repository))
     val getEveryoneFeedResult by viewModel.getEveryoneFeedsResult.collectAsState()
     val reactFeedResult by viewModel.reactFeedResult.collectAsState()
+    val commentResult by viewModel.commentResult.collectAsState()
+    val getUserInfoResult by viewModel.getUserResult.collectAsState()
+
+    var friendList by remember { mutableStateOf<List<SignInUserResponse.Metadata.Friend>>(emptyList()) }
 
     val context = LocalContext.current
+    LaunchedEffect(key1 = true) {
+        viewModel.getUser(UserSession.signInToken!!)
+    }
 
     var everyoneFeed by remember { mutableStateOf<List<GetEveryoneFeedsResponse.Feed>>(listOf()) }
     LaunchedEffect(key1 = true) {
@@ -130,7 +136,44 @@ fun ViewFeed(
                         Toast.LENGTH_LONG
                     ).show()
                 }
+
                 is Result.Error -> {
+                    Log.d("DEBUG", result.message ?: "Error occurred")
+                }
+            }
+        }
+    }
+
+    LaunchedEffect(commentResult) {
+        commentResult?.let { result ->
+            when (result) {
+                is Result.Success -> {
+                    Toast.makeText(
+                        context,
+                        result.data?.message,
+                        Toast.LENGTH_LONG
+                    ).show()
+                }
+
+                is Result.Error -> {
+                    Log.d("DEBUG", result.message ?: "Error occurred")
+                }
+            }
+        }
+    }
+
+    LaunchedEffect(getUserInfoResult) {
+        getUserInfoResult?.let { result ->
+            when (result) {
+                is Result.Success -> {
+                    friendList = result.data?.metadata?.friendList ?: emptyList()
+                }
+                is Result.Error -> {
+                    Toast.makeText(
+                        context,
+                        result.message ?: "Error occurred",
+                        Toast.LENGTH_LONG
+                    ).show()
                     Log.d("DEBUG", result.message ?: "Error occurred")
                 }
             }
@@ -231,7 +274,7 @@ fun ViewFeed(
                     .padding(16.dp)
             ) {
                 if (feed.userId._id == UserSession.user!!._id) {
-                    UserFeedItem(feed, openEditFeed, openHome)
+                    UserFeedItem(feed, openEditFeed, openHome, friendList, viewModel)
                 } else {
                     FriendFeedItem(feed, openHome, viewModel)
                 }
@@ -247,6 +290,8 @@ fun UserFeedItem(
     feed: GetEveryoneFeedsResponse.Feed,
     openEditFeed: (String, String, String, String) -> Unit,
     openHome: () -> Unit,
+    friendList: List<SignInUserResponse.Metadata.Friend>,
+    viewModel: FeedViewModel,
 ) {
 
     Column(
@@ -287,6 +332,10 @@ fun UserFeedItem(
                     cursorColor = Color.White,
                     focusedIndicatorColor = Color.Transparent,
                     unfocusedIndicatorColor = Color.Transparent
+                ),
+                textStyle = TextStyle(
+                    color = Color.White,
+                    textAlign = TextAlign.Center
                 )
             )
         }
@@ -317,9 +366,11 @@ fun UserFeedItem(
 
         Spacer(modifier = Modifier.height(30.dp))
 
+        var showDialog by remember { mutableStateOf(false) }
+
         Button(
             onClick = {
-
+                showDialog = !showDialog
             },
             modifier = Modifier
                 .width(170.dp)
@@ -331,6 +382,16 @@ fun UserFeedItem(
             Text(
                 text = "Activity",
                 fontSize = 17.sp
+            )
+        }
+
+        if (showDialog) {
+            ActivityPopup(
+                showDialog,
+                onDismiss = { showDialog = false },
+                reaction = feed.reactions,
+                friendList = friendList,
+                viewModel = viewModel
             )
         }
 
@@ -347,12 +408,12 @@ fun UserFeedItem(
                 },
                 modifier = Modifier.size(40.dp)
             ) {
-                Icon(
-                    imageVector = Icons.Sharp.List,
-                    contentDescription = null,
-                    tint = Color.White,
-                    modifier = Modifier.size(40.dp)
-                )
+//                Icon(
+//                    imageVector = Icons.Sharp.List,
+//                    contentDescription = null,
+//                    tint = Color.White,
+//                    modifier = Modifier.size(40.dp)
+//                )
             }
 
             IconButton(
@@ -493,7 +554,7 @@ fun UserFeedItem(
 fun FriendFeedItem(
     feed: GetEveryoneFeedsResponse.Feed,
     openHome: () -> Unit,
-    viewModel: FeedViewModel
+    viewModel: FeedViewModel,
 ) {
 
     Column(
@@ -534,6 +595,10 @@ fun FriendFeedItem(
                     cursorColor = Color.White,
                     focusedIndicatorColor = Color.Transparent,
                     unfocusedIndicatorColor = Color.Transparent
+                ),
+                textStyle = TextStyle(
+                    color = Color.White,
+                    textAlign = TextAlign.Center
                 )
             )
         }
@@ -618,28 +683,32 @@ fun FriendFeedItem(
             )
         }
 
-        MessageInput(viewModel)
+        MessageInput(
+            viewModel = viewModel,
+            feedId = feed._id,
+            receiverId = feed.userId._id
+        )
 
         Row(
             modifier = Modifier
                 .fillMaxWidth()
                 .padding(start = 25.dp, end = 25.dp),
-            horizontalArrangement = Arrangement.SpaceBetween,
+            horizontalArrangement = Arrangement.Center,
             verticalAlignment = Alignment.CenterVertically
         ) {
-            IconButton(
-                onClick = {
-                    // TODO: Open all feed in grid
-                },
-                modifier = Modifier.size(40.dp)
-            ) {
-                Icon(
-                    imageVector = Icons.Sharp.List,
-                    contentDescription = null,
-                    tint = Color.White,
-                    modifier = Modifier.size(40.dp)
-                )
-            }
+//            IconButton(
+//                onClick = {
+//                    // TODO: Open all feed in grid
+//                },
+//                modifier = Modifier.size(40.dp)
+//            ) {
+//                Icon(
+//                    imageVector = Icons.Sharp.List,
+//                    contentDescription = null,
+//                    tint = Color.White,
+//                    modifier = Modifier.size(40.dp)
+//                )
+//            }
 
             IconButton(
                 onClick = {
@@ -663,26 +732,30 @@ fun FriendFeedItem(
                 )
             }
 
-            IconButton(
-                onClick = {
-                    // TODO: Save image
-                },
-                modifier = Modifier.size(40.dp)
-            ) {
-                Icon(
-                    painter = painterResource(id = R.drawable.ic_download),
-                    contentDescription = null,
-                    tint = Color.White,
-                    modifier = Modifier.size(40.dp)
-                )
-            }
+//            IconButton(
+//                onClick = {
+//                    // TODO: Save image
+//                },
+//                modifier = Modifier.size(40.dp)
+//            ) {
+//                Icon(
+//                    painter = painterResource(id = R.drawable.ic_download),
+//                    contentDescription = null,
+//                    tint = Color.White,
+//                    modifier = Modifier.size(40.dp)
+//                )
+//            }
         }
     }
 }
 
 @Composable
-fun MessageInput(viewModel: FeedViewModel) {
-    val textState = remember { mutableStateOf("") }
+fun MessageInput(
+    viewModel: FeedViewModel,
+    feedId: String,
+    receiverId: String,
+) {
+    val content = remember { mutableStateOf("") }
 
     Surface(
         shape = RoundedCornerShape(50),
@@ -696,12 +769,12 @@ fun MessageInput(viewModel: FeedViewModel) {
             modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp)
         ) {
             BasicTextField(
-                value = textState.value,
-                onValueChange = { textState.value = it },
+                value = content.value,
+                onValueChange = { content.value = it },
                 textStyle = TextStyle(color = Color.White, fontSize = 16.sp),
                 modifier = Modifier.weight(1f),
                 decorationBox = { innerTextField ->
-                    if (textState.value.isEmpty()) {
+                    if (content.value.isEmpty()) {
                         Text(
                             text = "Send message...",
                             style = TextStyle(color = Color.Gray, fontSize = 16.sp)
@@ -716,8 +789,13 @@ fun MessageInput(viewModel: FeedViewModel) {
             CommentButton(
                 icon = painterResource(id = R.drawable.ic_send),
                 tint = Color.White,
-                viewModel = viewModel
-            )
+                viewModel = viewModel,
+                feedId = feedId,
+                receiverId = receiverId,
+                content = content.value
+            ) {
+                content.value = ""
+            }
         }
     }
 }
@@ -727,7 +805,7 @@ fun IconButtonWithBackground(
     iconSource: Painter, tint: Color,
     viewModel: FeedViewModel,
     icon: String,
-    feedId: String
+    feedId: String,
 ) {
     Box(
         modifier = Modifier
@@ -749,7 +827,15 @@ fun IconButtonWithBackground(
 }
 
 @Composable
-fun CommentButton(icon: Painter, tint: Color, viewModel: FeedViewModel) {
+fun CommentButton(
+    icon: Painter,
+    tint: Color,
+    viewModel: FeedViewModel,
+    feedId: String,
+    receiverId: String,
+    content: String,
+    deleteValue: () -> Unit,
+) {
     Box(
         modifier = Modifier
             .size(50.dp)
@@ -763,63 +849,143 @@ fun CommentButton(icon: Painter, tint: Color, viewModel: FeedViewModel) {
             modifier = Modifier
                 .size(30.dp)
                 .clickable {
-                    // TODO: Comment
+                    viewModel.comment(UserSession.signInToken!!, receiverId, content, feedId)
+                    deleteValue()
                 }
         )
     }
 }
 
 @Composable
-fun LikePopup(
-    likes: List<String>,
-    onDismissRequest: () -> Unit
+fun ActivityPopup(
+    showDialog: Boolean,
+    onDismiss: () -> Unit,
+    reaction: List<GetEveryoneFeedsResponse.Feed.Reaction>,
+    friendList: List<SignInUserResponse.Metadata.Friend>,
+    viewModel: FeedViewModel
 ) {
-    Dialog(onDismissRequest = onDismissRequest) {
-        Surface(
-            shape = MaterialTheme.shapes.medium,
-            color = Color.Yellow
-        ) {
-            Column(
-                modifier = Modifier
-                    .padding(16.dp)
-                    .fillMaxWidth(),
-                horizontalAlignment = Alignment.CenterHorizontally
-            ) {
-                Text(
-                    text = "Likes",
-                    style = MaterialTheme.typography.h6,
-                    modifier = Modifier.padding(bottom = 8.dp)
-                )
-                Divider()
-                LazyColumn(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .heightIn(max = 300.dp)
-                ) {
-                    items(likes) { like ->
-                        Text(
-                            text = like,
-                            style = MaterialTheme.typography.body1,
-                            modifier = Modifier.padding(vertical = 4.dp)
-                        )
+    Column(
+        modifier = Modifier.fillMaxSize(),
+        horizontalAlignment = Alignment.CenterHorizontally,
+        verticalArrangement = Arrangement.Center
+    ) {
+
+        if (showDialog) {
+            val activityList = viewModel.createActivityList(friendList, reaction)
+            AlertDialog(
+                onDismissRequest = {
+                    onDismiss()
+                },
+                title = {
+                    Text(
+                        text = "Activity",
+                        style = TextStyle(
+                            color = Color.White,
+                            fontSize = 20.sp,
+                            fontWeight = FontWeight.Bold
+                        ),
+                        textAlign = TextAlign.Center,
+                        modifier = Modifier.fillMaxWidth()
+                    )
+                },
+                text = {
+                    LazyColumn(
+                        modifier = Modifier.fillMaxWidth()
+                    ) {
+                        items(activityList) { item ->
+                            Row(
+                                verticalAlignment = Alignment.CenterVertically,
+                                horizontalArrangement = Arrangement.SpaceBetween,
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .padding(vertical = 4.dp)
+                            ) {
+                                Row(
+                                    verticalAlignment = Alignment.CenterVertically
+                                ) {
+                                    Image(
+                                        painter = rememberAsyncImagePainter(
+                                            model = item.profileImageUrl,
+                                            placeholder = painterResource(id = R.drawable.ic_launcher_background),
+                                            error = painterResource(id = R.drawable.ic_launcher_foreground)
+                                        ),
+                                        contentDescription = "Profile Image",
+                                        modifier = Modifier
+                                            .size(40.dp)
+                                            .clip(CircleShape)
+                                            .background(Color.Gray),
+                                        contentScale = ContentScale.Crop
+                                    )
+                                    Spacer(modifier = Modifier.width(8.dp))
+                                    Text(
+                                        text = if (item.fullname.length > 12) {
+                                            item.fullname.substring(0, 12) + "..."
+                                        } else {
+                                            item.fullname
+                                        },
+                                        color = Color.White
+                                    )
+                                }
+                                Row {
+                                    for (i in item.icon) {
+                                        Log.d("DEBUG", i)
+                                        when (i) {
+                                            "like" -> Icon(
+                                                painter = painterResource(id = R.drawable.ic_like),
+                                                contentDescription = null,
+                                                tint = AppTheme.appButtonStyle.backgroundColor,
+                                                modifier = Modifier.size(15.dp)
+                                            )
+                                            "haha" -> Icon(
+                                                painter = painterResource(id = R.drawable.ic_haha),
+                                                contentDescription = null,
+                                                tint = Color.Yellow,
+                                                modifier = Modifier.size(15.dp)
+                                            )
+                                            "love" -> Icon(
+                                                painter = painterResource(id = R.drawable.ic_heart),
+                                                contentDescription = null,
+                                                tint = Color.Unspecified,
+                                                modifier = Modifier.size(15.dp)
+                                            )
+                                            "wow" -> Icon(
+                                                painter = painterResource(id = R.drawable.ic_wow),
+                                                contentDescription = null,
+                                                tint = Color.Yellow,
+                                                modifier = Modifier.size(15.dp)
+                                            )
+                                            "sad" -> Icon(
+                                                painter = painterResource(id = R.drawable.ic_sad),
+                                                contentDescription = null,
+                                                tint = Color.Yellow,
+                                                modifier = Modifier.size(15.dp)
+                                            )
+                                            "angry" -> Icon(
+                                                painter = painterResource(id = R.drawable.ic_angry),
+                                                contentDescription = null,
+                                                tint = Color.Red,
+                                                modifier = Modifier.size(15.dp)
+                                            )
+                                        }
+                                    }
+                                }
+                            }
+                        }
                     }
-                }
-                Spacer(modifier = Modifier.height(16.dp))
-                Button(onClick = onDismissRequest) {
-                    Text("Close")
-                }
-            }
+                },
+                buttons = {
+                    Box(modifier = Modifier.padding(all = 8.dp)) {
+                        TextButton(
+                            onClick = { onDismiss() }
+                        ) {
+                            Text("Close")
+                        }
+                    }
+                },
+                backgroundColor = Color.Black
+            )
         }
     }
-}
-
-@Preview(showBackground = true, showSystemUi = true)
-@Composable
-fun LikePopupDialogPreview() {
-    LikePopup(
-        likes = listOf("User 1", "User 2", "User 3"),
-        onDismissRequest = {}
-    )
 }
 
 @Preview(showBackground = true, showSystemUi = true)
@@ -861,7 +1027,10 @@ fun UserFeedItemPreview() {
         reactions = listOf(),
         createdAt = "2024-09-28T16:49:07.247Z"
     )
-    UserFeedItem(feed1, { _, _, _, _ -> }, {})
+    val api = RetrofitInstance.api
+    val repository = FeedRepository(api)
+    val viewModel: FeedViewModel = viewModel(factory = FeedViewModelFactory(repository))
+    UserFeedItem(feed1, { _, _, _, _ -> }, {}, listOf(), viewModel)
 }
 
 @Preview(showBackground = true, showSystemUi = true)

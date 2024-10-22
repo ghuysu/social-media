@@ -9,9 +9,12 @@ import kotlinx.coroutines.launch
 import thanhnhan.myproject.socialmedia.data.model.CreateFeedResponse
 import thanhnhan.myproject.socialmedia.data.repository.FeedRepository
 import thanhnhan.myproject.socialmedia.data.Result
+import thanhnhan.myproject.socialmedia.data.model.Activity
+import thanhnhan.myproject.socialmedia.data.model.CommentResponse
 import thanhnhan.myproject.socialmedia.data.model.GetEveryoneFeedsResponse
 import thanhnhan.myproject.socialmedia.data.model.GetUserInfoResponse
 import thanhnhan.myproject.socialmedia.data.model.ReactFeedResponse
+import thanhnhan.myproject.socialmedia.data.model.SignInUserResponse
 import thanhnhan.myproject.socialmedia.data.model.UpdateFeedResponse
 import thanhnhan.myproject.socialmedia.utils.FileUtils.uriToFile
 import java.io.File
@@ -76,5 +79,36 @@ class FeedViewModel(private val repository: FeedRepository) : ViewModel() {
                 _reactFeedResult.value = it
             }
         }
+    }
+
+    private val _commentResult = MutableStateFlow<Result<CommentResponse>?>(null)
+    val commentResult: MutableStateFlow<Result<CommentResponse>?> = _commentResult
+
+    fun comment(authToken: String, receiverId: String, content: String, feedId: String) {
+        viewModelScope.launch {
+            repository.comment(authToken, receiverId, content, feedId).collect {
+                _commentResult.value = it
+            }
+        }
+    }
+
+    fun createActivityList(friends: List<SignInUserResponse.Metadata.Friend>, reactions: List<GetEveryoneFeedsResponse.Feed.Reaction>): List<Activity> {
+        val activityList = mutableListOf<Activity>()
+
+        for (reaction in reactions) {
+            val friend = friends.find { it._id == reaction.userId._id }
+            if (friend != null) {
+                activityList.add(
+                    Activity(
+                        _id = friend._id,
+                        fullname = friend.fullname,
+                        profileImageUrl = friend.profileImageUrl,
+                        icon = reaction.icon
+                    )
+                )
+            }
+        }
+
+        return activityList
     }
 }

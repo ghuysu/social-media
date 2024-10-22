@@ -9,6 +9,8 @@ import retrofit2.HttpException
 import thanhnhan.myproject.socialmedia.data.model.CreateFeedResponse
 import thanhnhan.myproject.socialmedia.data.network.Api
 import thanhnhan.myproject.socialmedia.data.Result
+import thanhnhan.myproject.socialmedia.data.model.CommentRequest
+import thanhnhan.myproject.socialmedia.data.model.CommentResponse
 import thanhnhan.myproject.socialmedia.data.model.EditFeedRequest
 import thanhnhan.myproject.socialmedia.data.model.GetEveryoneFeedsResponse
 import thanhnhan.myproject.socialmedia.data.model.GetUserInfoResponse
@@ -113,6 +115,22 @@ class FeedRepository(private val api: Api) {
         return flow {
             try {
                 val response = api.reactToFeed(authToken, feedId, IconRequest(icon))
+                emit(Result.Success(response))
+            } catch (e: HttpException) {
+                val errorMessage = e.response()?.errorBody()?.string()
+                emit(Result.Error(message = errorMessage ?: "Error occurred"))
+            } catch (e: IOException) {
+                emit(Result.Error(message = "Network error: ${e.message}"))
+            } catch (e: Exception) {
+                emit(Result.Error(message = "Unexpected error: ${e.message}"))
+            }
+        }
+    }
+
+    suspend fun comment(authToken: String, receiverId: String, content: String, feedId: String): Flow<Result<CommentResponse>> {
+        return flow {
+            try {
+                val response = api.sendMessage(authToken, CommentRequest(receiverId, content, feedId))
                 emit(Result.Success(response))
             } catch (e: HttpException) {
                 val errorMessage = e.response()?.errorBody()?.string()

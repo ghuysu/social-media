@@ -35,7 +35,8 @@ import thanhnhan.myproject.socialmedia.data.repository.SignInUserRepository
 @Composable
 fun SignInScreen(
     context: Context,
-    onLoginSuccess: () -> Unit
+    onLoginSuccess: () -> Unit,
+    openIntro: () -> Unit
 ) {
     // Khởi tạo ViewModelFactory với SignInUserRepository
     val viewModelFactory = SignInUserViewModelFactory(SignInUserRepository(RetrofitInstance.api), context)
@@ -87,7 +88,8 @@ fun SignInScreen(
         },
         emailError = emailValidationResult == false,
         passwordError = passwordValidationResult == false,
-        errorMessage = if (manualLoginAttempted) errorMessage else null  // Chỉ hiển thị lỗi khi đã thử đăng nhập thủ công
+        errorMessage = if (manualLoginAttempted) errorMessage else null,  // Chỉ hiển thị lỗi khi đã thử đăng nhập thủ công
+        openIntro = openIntro
     )
 
     // Xử lý kết quả đăng nhập
@@ -118,7 +120,8 @@ fun SignInContent(
     onContinueClick: () -> Unit,
     emailError: Boolean,
     passwordError: Boolean,
-    errorMessage: String?
+    errorMessage: String?,
+    openIntro: () -> Unit
 ) {
     AppTheme {
         Box(
@@ -146,7 +149,13 @@ fun SignInContent(
                     onPasswordChange = onPasswordChange,
                     isError = passwordError
                 )
-                Spacer(modifier = Modifier.height(30.dp))
+                TextButton(onClick = {
+                    openIntro()
+                }) {
+                    Text(
+                        text = "Sign up"
+                    )
+                }
                 SignInReport(text = errorMessage ?: "")
 
                 Spacer(modifier = Modifier.height(100.dp))
@@ -303,6 +312,7 @@ fun SignInScreenPreview() {
         onContinueClick = {},
         emailError = false,
         passwordError = false,
-        errorMessage = null
+        errorMessage = null,
+        openIntro = {}
     )
 }
