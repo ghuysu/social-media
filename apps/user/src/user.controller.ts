@@ -1,5 +1,5 @@
 import { UserService } from './user.service';
-import { MessagePattern, Payload } from '@nestjs/microservices';
+import { EventPattern, MessagePattern, Payload } from '@nestjs/microservices';
 import { GetStrangerInforDto, TokenPayloadInterface } from '@app/common';
 import {
   // Body,
@@ -24,6 +24,7 @@ import { DeleteAccountInterface } from './interfaces/delete-account.interface';
 import { GetUserInforByAdminWithIdInterface } from './interfaces/get-user-infor-by-admin-with-id.interface';
 import { GetUserInforByAdminWithEmailInterface } from './interfaces/get-user-infor-by-admin-with-email.interface';
 import { GetListOfUserInforDto } from './dto/get-list-of-user-infor.dto';
+import { UpdateUserForFeedViolatingDto } from './dto/update-user-for-feed-violating.dto';
 
 @Controller()
 export class UserController {
@@ -295,12 +296,14 @@ export class UserController {
 
   @MessagePattern('get_list_of_user_infor')
   async getListOfUserInfor(@Payload() dto: GetListOfUserInforDto) {
-    // const { userIdList } = dto;
-    // console.log({
-    //   userIdList,
-    //   type: typeof userIdList[0],
-    // });
     return await this.userService.getListOfUserInfor(dto);
+  }
+
+  @EventPattern('feed_violating')
+  async updateUserForFeedViolating(
+    @Payload() dto: UpdateUserForFeedViolatingDto,
+  ) {
+    await this.userService.updateUserForFeedViolating(dto);
   }
 
   private handleError(error: any) {

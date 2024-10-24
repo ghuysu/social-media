@@ -20,10 +20,10 @@ export enum UserReportReason {
   collection: USER_REPORT_DOCUMENT,
 })
 export class UserReportDocument extends AbstractDocument {
-  @Prop({ type: [SchemaTypes.ObjectId], required: true })
+  @Prop({ type: [SchemaTypes.ObjectId], required: true, index: true })
   reporterId: Types.ObjectId[];
 
-  @Prop({ type: SchemaTypes.ObjectId, required: true })
+  @Prop({ type: SchemaTypes.ObjectId, required: true, index: true })
   reportedUserId: Types.ObjectId;
 
   @Prop({ type: Object, required: true })
@@ -35,10 +35,14 @@ export class UserReportDocument extends AbstractDocument {
     type: String,
     enum: UserReportStatus,
     default: UserReportStatus.Pending,
+    index: true,
   })
   status: string;
 
-  @Prop({ type: Boolean, default: false })
+  @Prop({ type: SchemaTypes.ObjectId, index: true })
+  processedAdminId: Types.ObjectId;
+
+  @Prop({ type: Boolean })
   isViolating: boolean;
 }
 

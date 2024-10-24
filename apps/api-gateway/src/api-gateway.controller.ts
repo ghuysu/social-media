@@ -68,6 +68,8 @@ import { Payload } from '@nestjs/microservices';
 import { FeedReportDto } from './dto/feed-report.dto';
 import { FeedIdDto } from './dto/feedId.dto';
 import { GetMoreReportsDto } from './dto/get-more-reports.dto';
+import { ReportIdDto } from './dto/reportId.dto';
+import { ProcessReportDto } from './dto/processReport.dto';
 
 @Controller('api')
 export class ApiGatewayController {
@@ -600,5 +602,22 @@ export class ApiGatewayController {
   @Get('report/processed/feed')
   async getMoreProcessedFeedReports(@Query() dto: GetMoreReportsDto) {
     return this.apiGatewayService.getMoreProcessedFeedReports(dto);
+  }
+
+  @UseGuards(RoleGuard)
+  @UseGuards(JwtGuard)
+  @UseGuards(ApiKeyGuard)
+  @Roles(...ADMIN_ROLE)
+  @HttpCode(HttpStatus.OK)
+  @Post('report/feed/process/:reportId')
+  async processFeedReport(
+    @User() userPayload: TokenPayloadInterface,
+    @Param() { reportId }: ReportIdDto,
+    @Payload() { isViolating }: ProcessReportDto,
+  ) {
+    return this.apiGatewayService.processFeedReport(userPayload, {
+      reportId,
+      isViolating,
+    });
   }
 }

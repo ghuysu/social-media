@@ -15,13 +15,14 @@ import { UserIdDto } from './dto/userId.dto';
 import { FeedIdDto } from './dto/feedId.dto';
 import { GetMoreUserReportsDto } from './dto/get-more-user-reports.dto';
 import { GetMoreFeedReportsDto } from './dto/get-more-feed-reports.dto';
+import { ProcessReportDto } from './dto/process-report.dto';
 
 @Controller()
 export class ReportingController {
   constructor(private readonly reportingService: ReportingService) {}
 
   private handleError(error: any) {
-    console.log(error);
+    console.log({ message: '----------------------------', error });
     if (error instanceof ConflictException) {
       return {
         statusCode: HttpStatus.CONFLICT,
@@ -75,7 +76,7 @@ export class ReportingController {
     try {
       await this.reportingService.reportFeed(userPayload, payload);
       return {
-        status: HttpStatus.OK,
+        status: HttpStatus.CREATED,
         message: 'Report feed successfully.',
       };
     } catch (error) {
@@ -88,7 +89,7 @@ export class ReportingController {
     try {
       await this.reportingService.reportUser(userPayload, payload);
       return {
-        status: HttpStatus.OK,
+        status: HttpStatus.CREATED,
         message: 'Report user successfully.',
       };
     } catch (error) {
@@ -170,13 +171,33 @@ export class ReportingController {
     };
   }
 
-  // @MessagePattern('process_feed_report')
-  // async processFeedReport(@Payload() dto) {
-  // const result = await this.reportingService.getMoreFeedReports(dto);
-  // return {
-  //   status: HttpStatus.OK,
-  //   message: 'Get more feed reports successfully.',
-  //   metadata: result,
-  // };
-  // }
+  @MessagePattern('process_feed_report')
+  async processFeedReport(
+    @Payload() { userPayload, payload }: ProcessReportDto,
+  ) {
+    try {
+      await this.reportingService.processFeedReport(userPayload, payload);
+      return {
+        status: HttpStatus.OK,
+        message: 'Processed feed report successfully.',
+      };
+    } catch (error) {
+      return this.handleError(error);
+    }
+  }
+
+  @MessagePattern('process_user_report')
+  async processUserReport(
+    @Payload() { userPayload, payload }: ProcessReportDto,
+  ) {
+    try {
+      await this.reportingService.processUserReport(userPayload, payload);
+      return {
+        status: HttpStatus.OK,
+        message: 'Processed user report successfully.',
+      };
+    } catch (error) {
+      return this.handleError(error);
+    }
+  }
 }

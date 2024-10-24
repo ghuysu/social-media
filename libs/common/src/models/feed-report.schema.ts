@@ -20,10 +20,10 @@ export enum FeedReportReason {
   collection: FEED_REPORT_DOCUMENT,
 })
 export class FeedReportDocument extends AbstractDocument {
-  @Prop({ type: [SchemaTypes.ObjectId], required: true })
+  @Prop({ type: [SchemaTypes.ObjectId], required: true, index: true })
   reporterId: Types.ObjectId[];
 
-  @Prop({ type: SchemaTypes.ObjectId, required: true })
+  @Prop({ type: SchemaTypes.ObjectId, required: true, index: true })
   reportedFeedId: Types.ObjectId;
 
   @Prop({ type: Object, required: true })
@@ -35,10 +35,14 @@ export class FeedReportDocument extends AbstractDocument {
     type: String,
     enum: FeedReportStatus,
     default: FeedReportStatus.Pending,
+    index: true,
   })
   status: string;
 
-  @Prop({ type: Boolean, default: false })
+  @Prop({ type: SchemaTypes.ObjectId, index: true })
+  processedAdminId: Types.ObjectId;
+
+  @Prop({ type: Boolean })
   isViolating: boolean;
 }
 

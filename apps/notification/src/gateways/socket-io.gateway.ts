@@ -34,7 +34,7 @@ export class SocketGateway implements OnGatewayConnection, OnGatewayDisconnect {
       console.error('WebSocket server is not initialized');
       return;
     }
-    console.log({ name, payload, position: 'gateway' });
+    console.log({ name, payload });
     this.server.emit(name, payload);
   }
 }

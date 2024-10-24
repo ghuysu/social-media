@@ -492,4 +492,102 @@ export class ReportingService {
       reportedFeedId: feedId,
     });
   }
+
+  async processFeedReport({ userId }, { reportId, isViolating }) {
+    //check report is existing or not
+    const report = await this.feedReportRepository.findOne({ _id: reportId });
+
+    if (!report) {
+      throw new NotFoundException('Report not found');
+    }
+
+    //check report is processed or not
+    if (report.status === FeedReportStatus.Processed) {
+      const result = report.isViolating ? 'VIOLATING' : 'NOT VIOLATING';
+      throw new BadRequestException(
+        `Report was processed with result is ${result} by #${report.processedAdminId} admin`,
+      );
+    }
+
+    //check report is ready for processing or not
+    if (report.status === FeedReportStatus.Pending) {
+      throw new BadRequestException('Report is not ready for processing');
+    }
+
+    //check isValidation is true or false
+    if (!isViolating) {
+      //if false, close report
+      await this.feedReportRepository.findOneAndUpdate(
+        {
+          _id: reportId,
+        },
+        {
+          status: FeedReportStatus.Processed,
+          processedAdminId: userId,
+          isViolating: false,
+        },
+      );
+      return;
+    }
+
+    //if true, close report, delete feed, send email, update user violating
+    //close report
+    const updatedReport = await this.feedReportRepository.findOneAndUpdate(
+      {
+        _id: reportId,
+      },
+      {
+        status: FeedReportStatus.Processed,
+        processedAdminId: userId,
+        isViolating: true,
+      },
+    );
+    console.log(updatedReport);
+
+    // get feed
+    const feedInfor: FeedDocument = await lastValueFrom(
+      this.feedClient
+        .send('get_certain_feed', {
+          feedId: report.reportedFeedId,
+        })
+        .pipe(
+          map((response) => {
+            if (response.error) {
+              throw new NotFoundException('Feed not found');
+            }
+            return response;
+          }),
+        ),
+    );
+
+    //delete feed
+    this.feedClient.emit('delete_feed_for_feed_violating', {
+      userPayload: {
+        userId: feedInfor.userId['_id'],
+        email: feedInfor.userId['email'],
+        role: feedInfor.userId['role'],
+      },
+      payload: {
+        feedId: feedInfor._id,
+      },
+    });
+
+    // //update user violating
+    this.userClient.emit('feed_violating', {
+      userId: feedInfor.userId['_id'],
+      email: feedInfor.userId['email'],
+      feedId: feedInfor._id,
+      reason: report.reason,
+    });
+
+    // //emit infor
+    this.notificationClient.emit('emit_message', {
+      name: 'processed_feed_report',
+      payload: {
+        reportId,
+      },
+    });
+  }
+
+  async processUserReport({ userId }, { reportId, isViolating }) {}
 }

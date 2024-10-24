@@ -699,4 +699,87 @@ export class FeedService {
 
     return feed;
   }
+
+  async getCertainFeed(feedId: Types.ObjectId) {
+    const feed = await this.feedRepository.findOne({ _id: feedId }, [
+      { path: 'userId', select: '_id role email' },
+    ]);
+    if (!feed) {
+      throw new NotFoundException('Feed not found');
+    }
+
+    return feed;
+  }
+
+  async deleteFeedForFeedViolating(
+    { userId, email, role }: TokenPayloadInterface,
+    { feedId },
+  ) {
+    //delete feed and relational reactions
+    const [deletedFeed] = await Promise.all([
+      this.feedRepository.findOneAndDelete({ _id: feedId }),
+      this.reactionRepository.findOneAndDelete({ feedId }),
+    ]);
+
+    if (!deletedFeed) {
+      throw new NotFoundException('Resource not found');
+    }
+
+    //delete image in s3
+    const imageName = deletedFeed.imageUrl.split('/').pop();
+
+    this.awss3Client.emit('delete_image', {
+      imageName: imageName,
+    });
+
+    //update redis
+    let redisFeeds: FeedDocument[] = await this.cacheManager.get(
+      `feed:${userId}`,
+    );
+
+    if (!redisFeeds) {
+      redisFeeds = await this.feedRepository.find({ userId }, [
+        { path: 'userId', select: '_id profileImageUrl fullname' },
+        {
+          path: 'reactions',
+          populate: [
+            { path: 'userId', select: '_id profileImageUrl fullname' },
+          ],
+        },
+      ]);
+    } else {
+      redisFeeds = redisFeeds.filter(
+        (f) => f._id.toString() !== feedId.toString(),
+      );
+    }
+
+    this.cacheManager.set(`feed:${userId}`, redisFeeds, {
+      ttl: createTTL(60 * 60 * 24 * 30, 60 * 6 * 24),
+    });
+
+    //emit feed for friends
+    const user = await lastValueFrom(
+      this.userClient.send('get_user', { userId, email, role }).pipe(
+        map((response) => {
+          if (response.error) {
+            throw new NotFoundException('Resource not found');
+          }
+          return response.metadata;
+        }),
+      ),
+    );
+
+    const emitPayload = {
+      userId: user.friendList.map((f) => f._id.toString()),
+      metadata: { feedId: deletedFeed._id },
+    };
+
+    this.notificationClient.emit('emit_message', {
+      name: 'delete_feed',
+      payload: emitPayload,
+    });
+
+    //update feed statistic
+    this.statisticClient.emit('deleted_feed', {});
+  }
 }

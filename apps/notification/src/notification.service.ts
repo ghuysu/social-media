@@ -6,6 +6,7 @@ import { EmitMessageDto } from './dto/emit-message.dto';
 import { SocketGateway } from './gateways/socket-io.gateway';
 import { DeleteAccountDto } from './dto/delete-account.dto';
 import { OAuth2Client } from 'google-auth-library';
+import { SendEmailForFeedViolatingDto } from './dto/send-email-for-feed-violating.dto';
 
 @Injectable()
 export class NotificationService {
@@ -195,8 +196,81 @@ export class NotificationService {
     await this.sendEmail(subject, html, email);
   }
 
+  async sendEmailForFeedViolating({
+    fullname,
+    email,
+    numberOfViolating,
+    reason,
+    feedId,
+  }: SendEmailForFeedViolatingDto) {
+    let actionMessage = '';
+    let reasonText = '';
+    let warningMessage = '';
+
+    // Xử lý số lần vi phạm
+    if (numberOfViolating === 1) {
+      actionMessage =
+        'This is a <strong style="color: #FFA500;">warning</strong> regarding your recent activity.';
+      warningMessage =
+        'If you violate again, your account will be <strong>suspended for 10 days</strong>.';
+    } else if (numberOfViolating === 2) {
+      actionMessage =
+        'Your account has been <strong style="color: #FF4500;">suspended for 10 days</strong> due to repeated violations.';
+      warningMessage =
+        'If you violate again, your account will be <strong>suspended for 20 days</strong>.';
+    } else if (numberOfViolating === 3) {
+      actionMessage =
+        'Your account has been <strong style="color: #FF4500;">suspended for 20 days</strong> due to repeated violations.';
+      warningMessage =
+        'If you violate again, your account will be <strong>permanently deleted</strong>.';
+    } else if (numberOfViolating > 3) {
+      actionMessage =
+        'Your account has been <strong style="color: #FF0000;">permanently deleted</strong> due to excessive violations.';
+      warningMessage =
+        'There is no further action as your account has been deleted.';
+    }
+
+    // Xử lý các lý do vi phạm
+    if (reason['sensitive_image'] > 0) {
+      reasonText += `<li>Sensitive images: <strong>${reason['sensitive_image']} times</strong></li>`;
+    }
+    if (reason['inappropriate_words'] > 0) {
+      reasonText += `<li>Inappropriate language: <strong>${reason['inappropriate_words']} times</strong></li>`;
+    }
+
+    const subject = 'Notification Regarding Your Account Activity';
+    const html = `
+      <div style="font-family: Arial, sans-serif; max-width: 600px; margin: auto; padding: 20px; border: 1px solid #ddd; border-radius: 10px;">
+        <h2 style="text-align: center; color: #FF0000;">Action Required: Feed Violation</h2>
+        <p>Hello <strong>${fullname}</strong>,</p>
+        <p>This email is to inform you that your feed (ID: <strong>${feedId}</strong>) has violated our community guidelines.</p>
+        <p>The following issues were detected:</p>
+        <ul style="color: #FF4500;">
+          ${reasonText || '<li>No specific details provided.</li>'}
+        </ul>
+        <p style="font-size: 16px; color: #333;">${actionMessage}</p>
+        <p style="font-size: 14px; color: #FF0000;">${warningMessage}</p>
+        <hr>
+        <p style="font-size: 14px; color: #333;">
+          Please be aware that we apply penalties based on the number of violations you commit. The penalty structure is as follows:
+        </p>
+        <ul style="font-size: 14px; color: #333;">
+          <li><strong>First violation</strong>: Warning</li>
+          <li><strong>Second violation</strong>: Account suspension for 10 days</li>
+          <li><strong>Third violation</strong>: Account suspension for 20 days</li>
+          <li><strong>More than three violations</strong>: Permanent account deletion</li>
+        </ul>
+        <p>If you believe this is a mistake, please contact our support team immediately.</p>
+        <p>Thank you for your understanding and cooperation.</p>
+        <p>Best regards,</p>
+        <p>The Support Team</p>
+      </div>
+    `;
+
+    await this.sendEmail(subject, html, email);
+  }
+
   async sendMessageToAllClientBySocketIo({ name, payload }: EmitMessageDto) {
-    console.log({ name, payload });
     this.socketGateway.sendMessageToAllClient(name, payload);
   }
 }

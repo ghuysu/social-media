@@ -208,4 +208,25 @@ export class FeedController {
       return this.handleError(error);
     }
   }
+
+  @MessagePattern('get_certain_feed')
+  async getCertainFeed(@Payload() { feedId }: GetFeedByAdminDto) {
+    try {
+      const result = await this.feedService.getCertainFeed(feedId);
+      return result;
+    } catch (error) {
+      return this.handleError(error);
+    }
+  }
+
+  @EventPattern('delete_feed_for_feed_violating')
+  async deleteFeedForFeedViolating(
+    @Payload() { userPayload, payload }: DeleteFeedInterface,
+  ) {
+    try {
+      await this.feedService.deleteFeedForFeedViolating(userPayload, payload);
+    } catch (error) {
+      console.log(error);
+    }
+  }
 }

@@ -4,6 +4,7 @@ import { EventPattern, Payload } from '@nestjs/microservices';
 import { SendCodeDto } from '@app/common';
 import { EmitMessageDto } from './dto/emit-message.dto';
 import { DeleteAccountDto } from './dto/delete-account.dto';
+import { SendEmailForFeedViolatingDto } from './dto/send-email-for-feed-violating.dto';
 
 @Controller()
 export class NotificationController {
@@ -34,9 +35,15 @@ export class NotificationController {
     this.notificationService.sendCodeToDeleteAccount(dto);
   }
 
+  @EventPattern('send_email_for_feed_violating')
+  async sendEmailForFeedViolating(
+    @Payload() dto: SendEmailForFeedViolatingDto,
+  ) {
+    this.notificationService.sendEmailForFeedViolating(dto);
+  }
+
   @EventPattern('emit_message')
   async sendMessageToAllClientBySocketIo(@Payload() dto: EmitMessageDto) {
-    console.log(dto);
     this.notificationService.sendMessageToAllClientBySocketIo(dto);
   }
 
