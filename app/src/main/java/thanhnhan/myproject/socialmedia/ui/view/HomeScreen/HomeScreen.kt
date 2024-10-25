@@ -110,7 +110,9 @@ fun LocketScreen(navController: NavController) {
                     onCaptureImage = { uri -> capturedImageUri = uri },
                     isCameraReady = isCameraReady,
                     isFlashEnabled = isFlashEnabled, // Truyền trạng thái Flash
-                    onFlashToggle = { isFlashEnabled = !isFlashEnabled }, // Thay đổi trạng thái Flash
+                    onFlashToggle = {
+                        isFlashEnabled = !isFlashEnabled
+                    }, // Thay đổi trạng thái Flash
                     cameraProvider = cameraProvider
                 )
             }
@@ -142,7 +144,7 @@ fun TopBar(navController: NavController) {
             onClick = { navController.navigate("friendsScreen") },
             modifier = Modifier
                 .height(50.dp)
-                .width(150.dp) ,
+                .width(150.dp),
             colors = ButtonDefaults.buttonColors(containerColor = Color.DarkGray),
             shape = RoundedCornerShape(20.dp)
         ) {
@@ -150,7 +152,7 @@ fun TopBar(navController: NavController) {
         }
 
         IconButton(
-            onClick = { /* TODO */ },
+            onClick = { navController.navigate("ChatScreen") },
             modifier = Modifier.size(60.dp)
         ) {
             Icon(
@@ -200,7 +202,6 @@ fun MainContent(
         }
     }
 }
-
 
 
 @Composable
@@ -275,20 +276,28 @@ fun BottomBar(
                             tempPhotoFile = withContext(Dispatchers.IO) {
                                 File.createTempFile("IMG_", ".jpg", context.cacheDir)
                             }
-                            val outputOptions = ImageCapture.OutputFileOptions.Builder(tempPhotoFile!!).build()
+                            val outputOptions =
+                                ImageCapture.OutputFileOptions.Builder(tempPhotoFile!!).build()
 
                             imageCapture.takePicture(
                                 outputOptions,
                                 mainExecutor,
                                 object : ImageCapture.OnImageSavedCallback {
                                     override fun onImageSaved(outputFileResults: ImageCapture.OutputFileResults) {
-                                        Log.d("CameraShot", "Image captured at: ${tempPhotoFile!!.absolutePath}")
+                                        Log.d(
+                                            "CameraShot",
+                                            "Image captured at: ${tempPhotoFile!!.absolutePath}"
+                                        )
                                         onCaptureImage(Uri.fromFile(tempPhotoFile!!))
                                         isShotTaken = true
                                     }
 
                                     override fun onError(exception: ImageCaptureException) {
-                                        Log.e("CameraShot", "Image capture failed: ${exception.message}", exception)
+                                        Log.e(
+                                            "CameraShot",
+                                            "Image capture failed: ${exception.message}",
+                                            exception
+                                        )
                                     }
                                 }
                             )
@@ -339,8 +348,21 @@ fun BottomBar(
                 }
             }
         }
+        Spacer(modifier = Modifier.size(30.dp))
+        Text(
+            text = "Lịch sử", style = AppTheme.appTypography.title
+        )
+        IconButton(onClick = { /*TODO*/ },
+            modifier = Modifier.size(30.dp)) {
+            Icon(
+                painter = painterResource(id = R.drawable.arrow), contentDescription = "History",
+                modifier = Modifier.size(20.dp),
+                tint = Color(0xFFCFCFCF)
+            )
+        }
     }
 }
+
 @Composable
 fun CameraPreview(
     modifier: Modifier = Modifier,
@@ -435,9 +457,10 @@ fun bindPreview(
         Log.e("CameraBindError", "Lỗi khi bind camera", exc)
     }
 }
+
 @Preview(showBackground = true)
 @Composable
 fun LocketScreenPreview() {
     val navController = rememberNavController()
-    LocketScreen(navController = navController )
+    LocketScreen(navController = navController)
 }

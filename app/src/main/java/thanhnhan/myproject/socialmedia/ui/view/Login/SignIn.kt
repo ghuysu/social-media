@@ -101,7 +101,7 @@ fun SignInScreen(
                 is Result.Error -> {
                     Log.e("SignInScreen", "Sign-in failed: ${result.message ?: "Unknown error"}")
                     if (manualLoginAttempted) {
-                        errorMessage = "Incorrect username or password"  // Chỉ hiển thị lỗi nếu đăng nhập thủ công
+                        errorMessage = result.message ?: "Incorrect username or password"  // Hiển thị thông báo lỗi cụ thể
                     }
                 }
             }

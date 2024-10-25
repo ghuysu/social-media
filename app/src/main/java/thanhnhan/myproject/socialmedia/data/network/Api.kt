@@ -9,8 +9,8 @@ import retrofit2.http.PATCH
 import retrofit2.http.POST
 import retrofit2.http.Part
 import retrofit2.http.Path
+import retrofit2.http.Query
 import thanhnhan.myproject.socialmedia.data.model.AcceptFriendResponse
-import thanhnhan.myproject.socialmedia.data.model.ChangeAvatarRequest
 import thanhnhan.myproject.socialmedia.data.model.ChangeAvatarResponse
 
 import thanhnhan.myproject.socialmedia.data.model.SignInUserRequest
@@ -25,14 +25,20 @@ import thanhnhan.myproject.socialmedia.data.model.ChangeFullnameRequest
 import thanhnhan.myproject.socialmedia.data.model.ChangeFullnameResponse
 import thanhnhan.myproject.socialmedia.data.model.CheckEmailCodeRequest
 import thanhnhan.myproject.socialmedia.data.model.CheckEmailCodeResponse
+import thanhnhan.myproject.socialmedia.data.model.ConversationResponse
 import thanhnhan.myproject.socialmedia.data.model.DeleteFriendResponse
 
 import thanhnhan.myproject.socialmedia.data.model.EmailVerificationRequest
 import thanhnhan.myproject.socialmedia.data.model.EmailVerificationResponse
+import thanhnhan.myproject.socialmedia.data.model.GetCertainConversationResponse
 import thanhnhan.myproject.socialmedia.data.model.GetUserResponse
+import thanhnhan.myproject.socialmedia.data.model.ReadMessagesRequest
+import thanhnhan.myproject.socialmedia.data.model.ReadMessagesResponse
 import thanhnhan.myproject.socialmedia.data.model.RemoveFriendInviteResponse
 import thanhnhan.myproject.socialmedia.data.model.SendInviteRequest
 import thanhnhan.myproject.socialmedia.data.model.SendInviteResponse
+import thanhnhan.myproject.socialmedia.data.model.SendMessageRequest
+import thanhnhan.myproject.socialmedia.data.model.SendMessageResponse
 import thanhnhan.myproject.socialmedia.data.model.SignUpRequest
 import thanhnhan.myproject.socialmedia.data.model.SignUpResponse
 
@@ -112,5 +118,30 @@ interface Api {
     suspend fun getUser(
         @Header("authorization") authToken: String
     ): GetUserResponse
+    @POST("/api/message")
+    suspend fun sendMessage(
+        @Header("authorization") authToken: String,
+        @Body sendMessageRequest: SendMessageRequest
+    ): SendMessageResponse
+
+    // Read message
+    @PATCH("/api/message/read")
+    suspend fun readMessages(
+        @Header("authorization") authToken: String,
+        @Body readMessageRequest: ReadMessagesRequest
+    ): ReadMessagesResponse
+
+    //Conservation
+    @GET("/api/message/all")
+    suspend fun getAllConservation(
+        @Header("authorization") authToken: String
+    ): ConversationResponse
+    //certain Conservation
+    @GET("/api/message/certain/{friendId}")
+    suspend fun getConversationByFriendId(
+        @Header("authorization") authToken: String,  // Thêm token xác thực
+        @Path("friendId") friendId: String,          // Truyền vào friendId
+        @Query("skip") skip: Int                     // Tham số skip để phân trang (nếu cần)
+    ): GetCertainConversationResponse
 }
 

@@ -10,11 +10,13 @@ import thanhnhan.myproject.socialmedia.data.model.GetUserResponse
 import thanhnhan.myproject.socialmedia.data.repository.UserRepository
 import thanhnhan.myproject.socialmedia.data.Result
 
-class UserViewModel(private val repository: UserRepository) : ViewModel() {
+open class UserViewModel(private val repository: UserRepository) : ViewModel() {
 
     private val _user = MutableStateFlow<GetUserResponse.Metadata?>(null)
     val user: StateFlow<GetUserResponse.Metadata?> = _user
-
+    // Thêm thuộc tính để lưu trữ currentUserId
+    val currentUserId: String?
+        get() = _user.value?._id
     fun getUser(authToken: String) {
         viewModelScope.launch {
             Log.d("UserViewModel1122", "AuthToken: $authToken") // Log token trước khi gọi API
@@ -31,16 +33,35 @@ class UserViewModel(private val repository: UserRepository) : ViewModel() {
     }
 
     // Hàm trả về danh sách bạn bè
-    fun getFriends(): List<GetUserResponse.Friend> {
+    open fun getFriends(): List<GetUserResponse.Friend> {
         val friends = user.value?.friendList ?: emptyList()
-        Log.d("UserViewModel", "Friends List: $friends") // Log friends list
+        Log.d("UserViewModelGetFriends", "Friends List: $friends") // Log friends list
         return friends
     }
 
     // Hàm trả về danh sách lời mời kết bạn
     fun getFriendInvites(): List<GetUserResponse.FriendInvite> {
         val friendInvites = user.value?.friendInvites ?: emptyList()
-        Log.d("UserViewModel", "Friend Invites List: $friendInvites") // Log friend invites list
+        Log.d("UserViewModelGetFriendInvites", "Friend Invites List: $friendInvites") // Log friend invites list
         return friendInvites
+    }
+    // Thêm bạn mới vào danh sách
+    fun addFriend(newFriend: GetUserResponse.Friend) {
+        _user.value?.let { metadata ->
+            val updatedFriends = metadata.friendList.toMutableList().apply {
+                add(newFriend)
+            }
+            _user.value = metadata.copy(friendList = updatedFriends)
+        }
+    }
+
+    // Thêm lời mời kết bạn mới vào danh sách
+    fun addFriendInvite(newInvite: GetUserResponse.FriendInvite) {
+        _user.value?.let { metadata ->
+            val updatedInvites = metadata.friendInvites.toMutableList().apply {
+                add(newInvite)
+            }
+            _user.value = metadata.copy(friendInvites = updatedInvites)
+        }
     }
 }

@@ -36,9 +36,9 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import coil.compose.rememberAsyncImagePainter
-import thanhnhan.myproject.socialmedia.data.model.GetUserResponse
 import thanhnhan.myproject.socialmedia.data.model.UserSession
 import thanhnhan.myproject.socialmedia.data.network.RetrofitInstance
+import thanhnhan.myproject.socialmedia.data.network.SocketManager
 import thanhnhan.myproject.socialmedia.data.repository.FriendRepository
 import thanhnhan.myproject.socialmedia.data.repository.UserRepository
 import thanhnhan.myproject.socialmedia.ui.theme.AppTheme
@@ -46,15 +46,33 @@ import thanhnhan.myproject.socialmedia.viewmodel.FriendViewModel
 import thanhnhan.myproject.socialmedia.viewmodel.UserViewModel
 
 @Composable
-fun FriendsScreen(userViewModel: UserViewModel, friendViewModel: FriendViewModel, authToken: String) {
-    // Gọi API Get User để lấy danh sách bạn bè và lời mời kết bạn
+fun FriendsScreen(
+    userViewModel: UserViewModel,
+    friendViewModel: FriendViewModel,
+    authToken: String,
+    socketManager: SocketManager // Thêm socketManager để quản lý socket
+) {
+    // Khởi tạo socket và lắng nghe sự kiện từ socket
     LaunchedEffect(Unit) {
+        // Khởi tạo và kết nối socket
+        socketManager.initSocket()
+
+        // Gọi API Get User để lấy danh sách bạn bè và lời mời kết bạn ban đầu
         userViewModel.getUser(authToken)
+
+        // Lắng nghe sự kiện lời mời kết bạn mới từ Socket.IO
+        socketManager.listenForFriendInviteUpdates { newInvite ->
+            userViewModel.addFriendInvite(newInvite) // Cập nhật danh sách lời mời
+        }
+
+        // Lắng nghe sự kiện bạn mới được thêm từ Socket.IO
+        socketManager.listenForNewFriendUpdates { newFriend ->
+            userViewModel.addFriend(newFriend) // Cập nhật danh sách bạn bè
+        }
     }
 
-    // Lấy dữ liệu từ UserViewModel, đồng thời lắng nghe các thay đổi của dữ liệu
+    // Giao diện hiển thị bạn bè và lời mời kết bạn
     val user by userViewModel.user.collectAsState()
-
     AppTheme {
         Column(
             modifier = Modifier
@@ -66,12 +84,10 @@ fun FriendsScreen(userViewModel: UserViewModel, friendViewModel: FriendViewModel
 
             Spacer(modifier = Modifier.height(16.dp))
 
-            // Danh sách bạn bè
             YourFriendsList(userViewModel, friendViewModel, authToken)
 
             Spacer(modifier = Modifier.height(16.dp))
 
-            // Danh sách lời mời kết bạn
             FriendsRequestList(userViewModel, friendViewModel, authToken)
         }
     }
@@ -278,7 +294,6 @@ fun FriendList(name: String, profileImageUrl: String?, friendId: String, friendV
         }
     }
 }
-
 @Preview(showBackground = true)
 @Composable
 fun FriendsScreenPreview() {
@@ -288,13 +303,14 @@ fun FriendsScreenPreview() {
     val mockGetUserViewModel = UserViewModel(repository = mockUserRepository)
     val mockFriendViewModel = FriendViewModel(repository = mockRepository)
     val mockAuthToken = "mockAuthToken" // Token giả
+    val mockSocketManager = SocketManager() // Tạo một mock SocketManager
 
     AppTheme { // Sử dụng AppTheme thay vì MaterialTheme
         Surface(
             modifier = Modifier.fillMaxSize(),
             color = Color(0xFF22272E)
         ) {
-            FriendsScreen(userViewModel = mockGetUserViewModel, friendViewModel = mockFriendViewModel, authToken = mockAuthToken)
+            FriendsScreen(userViewModel = mockGetUserViewModel, friendViewModel = mockFriendViewModel, authToken = mockAuthToken, mockSocketManager)
         }
     }
 }

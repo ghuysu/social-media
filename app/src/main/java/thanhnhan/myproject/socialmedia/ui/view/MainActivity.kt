@@ -4,6 +4,8 @@ import android.Manifest
 import android.content.Intent
 import android.content.pm.PackageManager
 import android.os.Bundle
+import android.os.Message
+import android.util.Log
 import android.widget.Toast
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
@@ -26,9 +28,13 @@ import thanhnhan.myproject.socialmedia.data.database.UserDatabaseHelper
 import thanhnhan.myproject.socialmedia.data.network.RetrofitInstance
 import thanhnhan.myproject.socialmedia.data.repository.UserProfileRepository
 import androidx.navigation.navDeepLink
+import thanhnhan.myproject.socialmedia.data.network.SocketManager
 import thanhnhan.myproject.socialmedia.data.repository.FriendRepository
+import thanhnhan.myproject.socialmedia.data.repository.MessageRepository
 import thanhnhan.myproject.socialmedia.data.repository.UserRepository
 import thanhnhan.myproject.socialmedia.ui.theme.SocialMediaTheme
+import thanhnhan.myproject.socialmedia.ui.view.ChatScreen.ChatDetailScreen
+import thanhnhan.myproject.socialmedia.ui.view.ChatScreen.ChatScreen
 import thanhnhan.myproject.socialmedia.ui.view.FriendsScreen.FriendsScreen
 import thanhnhan.myproject.socialmedia.ui.view.HomeScreen.LocketScreen
 import thanhnhan.myproject.socialmedia.ui.view.Login.LocketIntroScreen
@@ -46,11 +52,13 @@ import thanhnhan.myproject.socialmedia.ui.view.user_profile.ChangeFullname
 import thanhnhan.myproject.socialmedia.ui.view.user_profile.ProfileScreen
 import thanhnhan.myproject.socialmedia.ui.view.user_profile.change_email.ChangeEmail
 import thanhnhan.myproject.socialmedia.ui.view.user_profile.change_email.VerifyEmailCodeChangeEmail
+import thanhnhan.myproject.socialmedia.viewmodel.ChatViewModel
 import thanhnhan.myproject.socialmedia.viewmodel.FriendViewModel
 import thanhnhan.myproject.socialmedia.viewmodel.UserViewModel
 
 class MainActivity : ComponentActivity() {
 
+    private lateinit var socketManager: SocketManager
     // Sử dụng ActivityResultContracts để yêu cầu quyền camera
     private val requestPermissionLauncher =
         registerForActivityResult(ActivityResultContracts.RequestPermission()) { isGranted: Boolean ->
@@ -65,6 +73,9 @@ class MainActivity : ComponentActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        // Initialize SocketManager
+        socketManager = SocketManager()
+        socketManager.initSocket()
 
         // Kiểm tra quyền camera trước khi hiển thị giao diện
         checkCameraPermission()
@@ -90,7 +101,7 @@ class MainActivity : ComponentActivity() {
                     modifier = Modifier.fillMaxSize(),
                     color = MaterialTheme.colorScheme.background
                 ) {
-                    MainApp()  // Đây là nơi ứng dụng của bạn bắt đầu
+                    MainApp(socketManager)  // Đây là nơi ứng dụng của bạn bắt đầu
                 }
             }
         }
@@ -98,15 +109,20 @@ class MainActivity : ComponentActivity() {
 }
 
 @Composable
-fun MainApp() {
+fun MainApp(socketManager: SocketManager) {
     val navController = rememberNavController()
     val context = LocalContext.current
     val dbHelper = UserDatabaseHelper(context)
     val savedUser = dbHelper.getUserData()
     val friendViewModel = FriendViewModel(repository = FriendRepository(RetrofitInstance.api))
     val userViewModel = UserViewModel(repository = UserRepository(RetrofitInstance.api))
+    val chatViewModel = ChatViewModel(repository = MessageRepository(RetrofitInstance.api), socketManager)
 
     var authToken: String = savedUser?.token ?: "defaultToken"
+    Log.d("MainApp", "AuthToken: $authToken") // Log token trước khi sử dụng
+
+    // Gọi hàm getUser của UserViewModel với token
+    userViewModel.getUser(authToken)
 
     if (savedUser != null) {
         authToken = savedUser.token // Gán giá trị cho authToken
@@ -457,7 +473,32 @@ fun MainApp() {
                 }
                 // Thêm route cho FriendsScreen
                 composable(route = "friendsScreen") {
-                    FriendsScreen(friendViewModel = friendViewModel, userViewModel = userViewModel, authToken=authToken) // Gọi FriendsScreen
+                    FriendsScreen(friendViewModel = friendViewModel, userViewModel = userViewModel, authToken=authToken, socketManager = socketManager ) // Gọi FriendsScreen
+                }
+                // Chat Screen
+                composable(route = "ChatScreen"){
+                    ChatScreen(chatViewModel = chatViewModel,userViewModel = userViewModel , authToken = authToken,navController)
+                }
+                composable(
+                    route = "chatDetail/{friendId}",
+                    arguments = listOf(
+                        navArgument("friendId") {
+                            type = NavType.StringType
+                        }
+                    )
+                ) { backStackEntry ->
+                    val friendId = backStackEntry.arguments?.getString("friendId")
+                    requireNotNull(friendId) { "friendId parameter wasn't found. Please make sure it's set!" }
+
+                    // Lấy currentUserId từ UserViewModel
+                    val currentUserId = userViewModel.currentUserId ?: "default_user_id"
+
+                    ChatDetailScreen(
+                        chatViewModel = chatViewModel,
+                        friendId = friendId,
+                        authToken = authToken,
+                        currentUserId = currentUserId
+                    )
                 }
             }
         }
