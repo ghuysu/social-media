@@ -71,7 +71,8 @@ fun ChatDetailScreen(
 
                             LazyColumn(
                                 modifier = Modifier.weight(1f),
-                                contentPadding = PaddingValues(vertical = 8.dp)
+                                contentPadding = PaddingValues(vertical = 8.dp),
+                                reverseLayout = true
                             ) {
                                 items(conversation.conversation) { message ->
                                     MessageItem(message, currentUserId)

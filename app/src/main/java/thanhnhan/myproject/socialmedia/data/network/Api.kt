@@ -1,5 +1,6 @@
 package thanhnhan.myproject.socialmedia.data.network
 import okhttp3.MultipartBody
+import okhttp3.RequestBody
 import retrofit2.http.Body
 import retrofit2.http.DELETE
 import retrofit2.http.GET
@@ -11,8 +12,8 @@ import retrofit2.http.Part
 import retrofit2.http.Path
 import retrofit2.http.Query
 import thanhnhan.myproject.socialmedia.data.model.AcceptFriendResponse
+import thanhnhan.myproject.socialmedia.data.model.ChangeAvatarRequest
 import thanhnhan.myproject.socialmedia.data.model.ChangeAvatarResponse
-
 import thanhnhan.myproject.socialmedia.data.model.SignInUserRequest
 import thanhnhan.myproject.socialmedia.data.model.SignInUserResponse
 import thanhnhan.myproject.socialmedia.data.model.ChangeBirthdayRequest
@@ -26,8 +27,9 @@ import thanhnhan.myproject.socialmedia.data.model.ChangeFullnameResponse
 import thanhnhan.myproject.socialmedia.data.model.CheckEmailCodeRequest
 import thanhnhan.myproject.socialmedia.data.model.CheckEmailCodeResponse
 import thanhnhan.myproject.socialmedia.data.model.ConversationResponse
+import thanhnhan.myproject.socialmedia.data.model.CommentRequest
+import thanhnhan.myproject.socialmedia.data.model.CommentResponse
 import thanhnhan.myproject.socialmedia.data.model.DeleteFriendResponse
-
 import thanhnhan.myproject.socialmedia.data.model.EmailVerificationRequest
 import thanhnhan.myproject.socialmedia.data.model.EmailVerificationResponse
 import thanhnhan.myproject.socialmedia.data.model.GetCertainConversationResponse
@@ -35,12 +37,19 @@ import thanhnhan.myproject.socialmedia.data.model.GetUserResponse
 import thanhnhan.myproject.socialmedia.data.model.ReadMessagesRequest
 import thanhnhan.myproject.socialmedia.data.model.ReadMessagesResponse
 import thanhnhan.myproject.socialmedia.data.model.RemoveFriendInviteResponse
+import thanhnhan.myproject.socialmedia.data.model.CreateFeedResponse
+import thanhnhan.myproject.socialmedia.data.model.EditFeedRequest
+import thanhnhan.myproject.socialmedia.data.model.GetEveryoneFeedsResponse
+import thanhnhan.myproject.socialmedia.data.model.GetUserInfoResponse
+import thanhnhan.myproject.socialmedia.data.model.IconRequest
+import thanhnhan.myproject.socialmedia.data.model.ReactFeedResponse
 import thanhnhan.myproject.socialmedia.data.model.SendInviteRequest
 import thanhnhan.myproject.socialmedia.data.model.SendInviteResponse
 import thanhnhan.myproject.socialmedia.data.model.SendMessageRequest
 import thanhnhan.myproject.socialmedia.data.model.SendMessageResponse
 import thanhnhan.myproject.socialmedia.data.model.SignUpRequest
 import thanhnhan.myproject.socialmedia.data.model.SignUpResponse
+import thanhnhan.myproject.socialmedia.data.model.UpdateFeedResponse
 
 interface Api {
     companion object {
@@ -99,6 +108,7 @@ interface Api {
         @Header("authorization") authToken: String,
         @Body request: SendInviteRequest
     ): SendInviteResponse
+
     @PATCH("api/user/invite/accept/{inviteId}")
     suspend fun acceptFriendInvite(
         @Header("authorization") authToken: String,
@@ -143,5 +153,45 @@ interface Api {
         @Path("friendId") friendId: String,          // Truyền vào friendId
         @Query("skip") skip: Int                     // Tham số skip để phân trang (nếu cần)
     ): GetCertainConversationResponse
+
+    @Multipart
+    @POST("api/feed")
+    suspend fun createFeed(
+        @Header("authorization") authToken: String,
+        @Part image: MultipartBody.Part,
+        @Part("description") description: RequestBody,
+        @Part visibility: List<MultipartBody.Part>
+    ): CreateFeedResponse
+
+    @GET("/api/feed/everyone")
+    suspend fun getEveryoneFeeds(
+        @Header("authorization") authToken: String,
+        @Query("skip") skip: Int
+    ): GetEveryoneFeedsResponse
+
+    @GET("/api/user")
+    suspend fun getUserInfo(
+        @Header("authorization") authToken: String
+    ): GetUserInfoResponse
+
+    @PATCH("api/feed/{feedId}")
+    suspend fun updateFeed(
+        @Header("authorization") authToken: String,
+        @Path("feedId") feedId: String,
+        @Body updateFeedRequest: EditFeedRequest
+    ): UpdateFeedResponse
+
+    @POST("api/feed/reaction/{feedId}")
+    suspend fun reactToFeed(
+        @Header("authorization") authToken: String,
+        @Path("feedId") feedId: String,
+        @Body iconRequest: IconRequest
+    ): ReactFeedResponse
+
+    @POST("api/message")
+    suspend fun sendMessage(
+        @Header("authorization") authToken: String,
+        @Body messageRequest: CommentRequest
+    ): CommentResponse
 }
 

@@ -70,7 +70,7 @@ fun ChatScreen(
                     LazyColumn {
                         items(conversations) { conversation ->
                             val friend = friends.find { it._id == conversation.friendId }
-                            val lastMessage = conversation.conversation.lastOrNull()?.content ?: "Bạn không có cuộc trò chuyện nào"
+                            val lastMessage = conversation.conversation.firstOrNull()?.content ?: "Bạn không có cuộc trò chuyện nào"
                             val friendName = friend?.fullname ?: "Unknown"
                             val friendProfileImageUrl = friend?.profileImageUrl
 

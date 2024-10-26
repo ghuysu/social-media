@@ -27,6 +27,8 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.KeyboardArrowDown
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Icon
@@ -65,7 +67,11 @@ import thanhnhan.myproject.socialmedia.ui.theme.AppTheme
 import java.io.File
 
 @Composable
-fun LocketScreen(navController: NavController) {
+fun LocketScreen(
+    navController: NavController,
+    openCreateFeed: (String) -> Unit,
+    openViewFeed: () -> Unit
+) {
     var lensFacing by remember { mutableStateOf(CameraSelector.LENS_FACING_BACK) }
     var capturedImageUri by remember { mutableStateOf<Uri?>(null) }
     val imageCapture = remember { ImageCapture.Builder().build() }
@@ -92,6 +98,7 @@ fun LocketScreen(navController: NavController) {
                 )
                 Spacer(modifier = Modifier.weight(1f))
                 BottomBar(
+                    openCreateFeed = openCreateFeed,
                     lensFacing = lensFacing,
                     onSwitchCamera = {
                         isCameraReady = false
@@ -107,13 +114,16 @@ fun LocketScreen(navController: NavController) {
                         }, 500)
                     },
                     imageCapture = imageCapture,
-                    onCaptureImage = { uri -> capturedImageUri = uri },
+                    onCaptureImage = { uri ->
+                        capturedImageUri = uri
+                    },
                     isCameraReady = isCameraReady,
                     isFlashEnabled = isFlashEnabled, // Truyền trạng thái Flash
                     onFlashToggle = {
                         isFlashEnabled = !isFlashEnabled
                     }, // Thay đổi trạng thái Flash
-                    cameraProvider = cameraProvider
+                    cameraProvider = cameraProvider,
+                    openViewFeed = openViewFeed
                 )
             }
         }
@@ -152,7 +162,7 @@ fun TopBar(navController: NavController) {
         }
 
         IconButton(
-            onClick = { navController.navigate("ChatScreen") },
+            onClick = { navController.navigate("chatScreen") },
             modifier = Modifier.size(60.dp)
         ) {
             Icon(
@@ -173,7 +183,7 @@ fun MainContent(
     onCaptureImage: (Uri) -> Unit,
     imageCapture: ImageCapture,
     onCameraReady: () -> Unit,
-    cameraProvider: ProcessCameraProvider?
+    cameraProvider: ProcessCameraProvider?,
 ) {
     Box(
         modifier = Modifier
@@ -213,7 +223,9 @@ fun BottomBar(
     isCameraReady: Boolean,
     isFlashEnabled: Boolean, // Nhận trạng thái Flash
     onFlashToggle: () -> Unit, // Hàm để thay đổi trạng thái Flash
-    cameraProvider: ProcessCameraProvider?
+    cameraProvider: ProcessCameraProvider?,
+    openCreateFeed: (String) -> Unit,
+    openViewFeed: () -> Unit,
 ) {
     val context = LocalContext.current
     val mainExecutor = ContextCompat.getMainExecutor(context)
@@ -237,6 +249,8 @@ fun BottomBar(
                 IconButton(onClick = {
                     tempPhotoFile?.let { file ->
                         onCaptureImage(Uri.fromFile(file))
+                        val uri = Uri.fromFile(file).toString().replace("/", "+")
+                        openCreateFeed(uri)
                     }
                     isShotTaken = false
                 }, modifier = Modifier.size(60.dp)) {
@@ -348,16 +362,13 @@ fun BottomBar(
                 }
             }
         }
-        Spacer(modifier = Modifier.size(30.dp))
-        Text(
-            text = "Lịch sử", style = AppTheme.appTypography.title
-        )
-        IconButton(onClick = { /*TODO*/ },
-            modifier = Modifier.size(30.dp)) {
+
+        IconButton(onClick = { openViewFeed() }) {
             Icon(
-                painter = painterResource(id = R.drawable.arrow), contentDescription = "History",
-                modifier = Modifier.size(20.dp),
-                tint = Color(0xFFCFCFCF)
+                imageVector = Icons.Default.KeyboardArrowDown,
+                contentDescription = null,
+                modifier = Modifier.size(50.dp),
+                tint = Color.White
             )
         }
     }
@@ -369,7 +380,7 @@ fun CameraPreview(
     lensFacing: Int,
     imageCapture: ImageCapture,
     onCameraReady: () -> Unit,
-    cameraProvider: ProcessCameraProvider? // Truyền camera provider để quản lý session
+    cameraProvider: ProcessCameraProvider?, // Truyền camera provider để quản lý session
 ) {
     val context = LocalContext.current
     val lifecycleOwner = LocalLifecycleOwner.current
@@ -402,7 +413,7 @@ fun bindPreview(
     previewView: PreviewView,
     lifecycleOwner: LifecycleOwner,
     lensFacing: Int,
-    imageCapture: ImageCapture
+    imageCapture: ImageCapture,
 ) {
     val preview = Preview1.Builder().build().also {
         it.setSurfaceProvider(previewView.surfaceProvider)
@@ -462,5 +473,9 @@ fun bindPreview(
 @Composable
 fun LocketScreenPreview() {
     val navController = rememberNavController()
-    LocketScreen(navController = navController)
+    LocketScreen(
+        navController = navController,
+        openCreateFeed = {},
+        openViewFeed = {}
+    )
 }
