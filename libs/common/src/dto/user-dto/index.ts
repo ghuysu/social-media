@@ -9,3 +9,4 @@ export * from './removeInvite.dto';
 export * from './acceptInvite.dto';
 export * from './deleteFriend.dto';
 export * from './deleteAccount.dto';
+export * from './banned-payload.dto';

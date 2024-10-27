@@ -15,6 +15,8 @@ import {
 import { ApiGatewayService } from './api-gateway.service';
 import { GoogleStrategy } from './strategies/google.strategy';
 import { JwtStrategy } from './strategies/jwt.strategy';
+import { CacheModule } from '@nestjs/cache-manager';
+import * as redisStore from 'cache-manager-redis-store';
 
 @Module({
   imports: [
@@ -40,6 +42,9 @@ import { JwtStrategy } from './strategies/jwt.strategy';
         GOOGLE_SECRET: joi.string().required(),
         GOOGLE_REDIRECT: joi.string().required(),
         CLIENT_REDIRECT: joi.string().required(),
+        REDIS_PASSWORD: joi.string().required(),
+        REDIS_HOST: joi.string().required(),
+        REDIS_PORT: joi.number().required(),
       }),
     }),
     ClientsModule.registerAsync([
@@ -110,6 +115,16 @@ import { JwtStrategy } from './strategies/jwt.strategy';
         inject: [ConfigService],
       },
     ]),
+    CacheModule.registerAsync({
+      isGlobal: true,
+      inject: [ConfigService],
+      useFactory: async (configService: ConfigService) => ({
+        store: redisStore,
+        host: configService.get('REDIS_HOST'),
+        port: configService.get('REDIS_PORT'),
+        password: configService.get('REDIS_PASSWORD'),
+      }),
+    }),
   ],
   controllers: [ApiGatewayController],
   providers: [ApiGatewayService, GoogleStrategy, JwtStrategy],

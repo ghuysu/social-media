@@ -1,5 +1,6 @@
 import {
   AWS_S3_SERVICE,
+  BannedPayloadDto,
   ChangeBirthdayDto,
   ChangeCountryDto,
   ChangeEmailDto,
@@ -1551,6 +1552,11 @@ export class UserService {
       ],
     );
 
+    await this.processViolatingBaseOnNumberOfViolating(
+      updatedUser.numberOfViolating,
+      updatedUser.email,
+    );
+
     //update redis
     this.cacheManager.set(`user:${updatedUser.email}`, updatedUser, {
       ttl: createTTL(60 * 60 * 24 * 7, 60 * 60 * 24),
@@ -1603,6 +1609,11 @@ export class UserService {
       ],
     );
 
+    await this.processViolatingBaseOnNumberOfViolating(
+      updatedUser.numberOfViolating,
+      updatedUser.email,
+    );
+
     //update redis
     this.cacheManager.set(`user:${updatedUser.email}`, updatedUser, {
       ttl: createTTL(60 * 60 * 24 * 7, 60 * 60 * 24),
@@ -1625,5 +1636,40 @@ export class UserService {
     });
   }
 
-  async processViolatingBaseOnNumberOfViolating(numberOfViolating: number) {}
+  async processViolatingBaseOnNumberOfViolating(
+    numberOfViolating: number,
+    email: string,
+  ) {
+    switch (numberOfViolating) {
+      case 1:
+        break;
+
+      case 2:
+        const case2Payload: BannedPayloadDto = {
+          numberOfBannedDays: 10,
+          expirationTime: new Date(
+            new Date().getTime() + 10 * 24 * 60 * 60 * 1000,
+          ),
+        };
+        this.cacheManager.set(`banned_user:${email}`, case2Payload, {
+          ttl: createTTL(60 * 60 * 24 * 10, 0),
+        });
+        break;
+
+      case 3:
+        const case3Payload: BannedPayloadDto = {
+          numberOfBannedDays: 20,
+          expirationTime: new Date(
+            new Date().getTime() + 20 * 24 * 60 * 60 * 1000,
+          ),
+        };
+        this.cacheManager.set(`banned_user:${email}`, case3Payload, {
+          ttl: createTTL(60 * 60 * 24 * 10, 0),
+        });
+        break;
+
+      default:
+        console.log('Delete user');
+    }
+  }
 }
