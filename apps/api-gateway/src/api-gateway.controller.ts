@@ -620,4 +620,21 @@ export class ApiGatewayController {
       isViolating,
     });
   }
+
+  @UseGuards(RoleGuard)
+  @UseGuards(JwtGuard)
+  @UseGuards(ApiKeyGuard)
+  @Roles(...ADMIN_ROLE)
+  @HttpCode(HttpStatus.OK)
+  @Post('report/user/process/:reportId')
+  async processUserReport(
+    @User() userPayload: TokenPayloadInterface,
+    @Param() { reportId }: ReportIdDto,
+    @Payload() { isViolating }: ProcessReportDto,
+  ) {
+    return this.apiGatewayService.processUserReport(userPayload, {
+      reportId,
+      isViolating,
+    });
+  }
 }

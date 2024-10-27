@@ -18,7 +18,7 @@ export class FeedReportRepository extends AbstractRepository<FeedReportDocument>
     super(feedReportModel);
   }
 
-  async findAll(
+  async findAllByAscendingCreatedTime(
     filterQuery: FilterQuery<FeedReportDocument>,
     skip: number,
     select: number,
@@ -26,6 +26,19 @@ export class FeedReportRepository extends AbstractRepository<FeedReportDocument>
     return await this.feedReportModel
       .find(filterQuery)
       .sort({ createdAt: 1 })
+      .skip(skip)
+      .limit(select)
+      .lean<FeedReportDocument[]>(true);
+  }
+
+  async findAllByDescendingUpdatedTime(
+    filterQuery: FilterQuery<FeedReportDocument>,
+    skip: number,
+    select: number,
+  ): Promise<FeedReportDocument[]> {
+    return await this.feedReportModel
+      .find(filterQuery)
+      .sort({ updatedAt: -1 })
       .skip(skip)
       .limit(select)
       .lean<FeedReportDocument[]>(true);

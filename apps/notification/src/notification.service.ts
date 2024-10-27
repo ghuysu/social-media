@@ -5,77 +5,32 @@ import { SendCodeDto } from '@app/common';
 import { EmitMessageDto } from './dto/emit-message.dto';
 import { SocketGateway } from './gateways/socket-io.gateway';
 import { DeleteAccountDto } from './dto/delete-account.dto';
-import { OAuth2Client } from 'google-auth-library';
 import { SendEmailForFeedViolatingDto } from './dto/send-email-for-feed-violating.dto';
+import { SendEmailForUserViolatingDto } from './dto/send-email-for-user-violating.dto';
 
 @Injectable()
 export class NotificationService {
-  private accessToken: string;
-  private transporter: nodemailer.Transporter;
-  private retryAttempts = 3;
-  private retryDelay = 1000;
-
   constructor(
     private readonly configService: ConfigService,
     private readonly socketGateway: SocketGateway,
-  ) {
-    this.initializeOAuth2Client();
-  }
+  ) {}
 
-  private async initializeOAuth2Client() {
-    try {
-      const myOAuth2Client = new OAuth2Client(
-        this.configService.get('GOOGLE_OAUTH_CLIENT_ID'),
-        this.configService.get('GOOGLE_OAUTH_CLIENT_SECRET'),
-      );
+  private transporter: nodemailer.Transporter = nodemailer.createTransport({
+    service: 'gmail',
+    auth: {
+      user: this.configService.get('SMTP_USER'),
+      pass: this.configService.get('SMTP_PASSWORD'),
+    },
+  });
 
-      myOAuth2Client.setCredentials({
-        refresh_token: this.configService.get('GOOGLE_OAUTH_REFRESH_TOKEN'),
-      });
-
-      const accessTokenResponse = await myOAuth2Client.getAccessToken();
-      this.accessToken = accessTokenResponse.token;
-
-      this.initializeTransporter();
-    } catch (error) {
-      console.error('OAuth2 initialization failed:', error);
-      throw new Error('Failed to initialize OAuth2 client');
-    }
-  }
-
-  private initializeTransporter() {
-    this.transporter = nodemailer.createTransport({
-      service: 'gmail',
-      auth: {
-        type: 'OAuth2',
-        user: this.configService.get('SMTP_USER'),
-        clientId: this.configService.get('GOOGLE_OAUTH_CLIENT_ID'),
-        clientSecret: this.configService.get('GOOGLE_OAUTH_CLIENT_SECRET'),
-        refreshToken: this.configService.get('GOOGLE_OAUTH_REFRESH_TOKEN'),
-        accessToken: this.accessToken,
-      },
+  async sendEmail(subject: string, html: string, email: string) {
+    await this.transporter.sendMail({
+      from: this.configService.get('SMTP_USER'),
+      to: email,
+      subject: subject,
+      html: html,
     });
-  }
-
-  async sendEmail(subject: string, html: string, email) {
-    for (let attempt = 1; attempt <= this.retryAttempts; attempt++) {
-      try {
-        await this.transporter.sendMail({
-          from: this.configService.get('SMTP_USER'),
-          to: email,
-          subject: subject,
-          html: html,
-        });
-        return;
-      } catch (error) {
-        if (attempt < this.retryAttempts) {
-          await this.initializeOAuth2Client();
-          await new Promise((resolve) => setTimeout(resolve, this.retryDelay));
-          continue;
-        }
-        throw error;
-      }
-    }
+    return;
   }
 
   async sendCodeToCheckEmail({ email, code }: SendCodeDto) {
@@ -244,6 +199,79 @@ export class NotificationService {
         <h2 style="text-align: center; color: #FF0000;">Action Required: Feed Violation</h2>
         <p>Hello <strong>${fullname}</strong>,</p>
         <p>This email is to inform you that your feed (ID: <strong>${feedId}</strong>) has violated our community guidelines.</p>
+        <p>The following issues were detected:</p>
+        <ul style="color: #FF4500;">
+          ${reasonText || '<li>No specific details provided.</li>'}
+        </ul>
+        <p style="font-size: 16px; color: #333;">${actionMessage}</p>
+        <p style="font-size: 14px; color: #FF0000;">${warningMessage}</p>
+        <hr>
+        <p style="font-size: 14px; color: #333;">
+          Please be aware that we apply penalties based on the number of violations you commit. The penalty structure is as follows:
+        </p>
+        <ul style="font-size: 14px; color: #333;">
+          <li><strong>First violation</strong>: Warning</li>
+          <li><strong>Second violation</strong>: Account suspension for 10 days</li>
+          <li><strong>Third violation</strong>: Account suspension for 20 days</li>
+          <li><strong>More than three violations</strong>: Permanent account deletion</li>
+        </ul>
+        <p>If you believe this is a mistake, please contact our support team immediately.</p>
+        <p>Thank you for your understanding and cooperation.</p>
+        <p>Best regards,</p>
+        <p>The Support Team</p>
+      </div>
+    `;
+
+    await this.sendEmail(subject, html, email);
+  }
+
+  async sendEmailForUserViolating({
+    fullname,
+    email,
+    numberOfViolating,
+    reason,
+  }: SendEmailForUserViolatingDto) {
+    let actionMessage = '';
+    let reasonText = '';
+    let warningMessage = '';
+
+    // Xử lý số lần vi phạm
+    if (numberOfViolating === 1) {
+      actionMessage =
+        'This is a <strong style="color: #FFA500;">warning</strong> regarding your recent activity.';
+      warningMessage =
+        'If you violate again, your account will be <strong>suspended for 10 days</strong>.';
+    } else if (numberOfViolating === 2) {
+      actionMessage =
+        'Your account has been <strong style="color: #FF4500;">suspended for 10 days</strong> due to repeated violations.';
+      warningMessage =
+        'If you violate again, your account will be <strong>suspended for 20 days</strong>.';
+    } else if (numberOfViolating === 3) {
+      actionMessage =
+        'Your account has been <strong style="color: #FF4500;">suspended for 20 days</strong> due to repeated violations.';
+      warningMessage =
+        'If you violate again, your account will be <strong>permanently deleted</strong>.';
+    } else if (numberOfViolating > 3) {
+      actionMessage =
+        'Your account has been <strong style="color: #FF0000;">permanently deleted</strong> due to excessive violations.';
+      warningMessage =
+        'There is no further action as your account has been deleted.';
+    }
+
+    // Xử lý các lý do vi phạm
+    if (reason['post_inappropriate_feeds'] > 0) {
+      reasonText += `<li>Posting inappropriate feeds: <strong>${reason['post_inappropriate_feeds']} times</strong></li>`;
+    }
+    if (reason['offend_others'] > 0) {
+      reasonText += `<li>Offending others: <strong>${reason['offend_others']} times</strong></li>`;
+    }
+
+    const subject = 'Notification Regarding Your Account Activity';
+    const html = `
+      <div style="font-family: Arial, sans-serif; max-width: 600px; margin: auto; padding: 20px; border: 1px solid #ddd; border-radius: 10px;">
+        <h2 style="text-align: center; color: #FF0000;">Action Required: User Violation</h2>
+        <p>Hello <strong>${fullname}</strong>,</p>
+        <p>This email is to inform you that your account has violated our community guidelines.</p>
         <p>The following issues were detected:</p>
         <ul style="color: #FF4500;">
           ${reasonText || '<li>No specific details provided.</li>'}

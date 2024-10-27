@@ -42,6 +42,7 @@ import { Types } from 'mongoose';
 import { GetListOfUserInforDto } from './dto/get-list-of-user-infor.dto';
 import { lastValueFrom, map } from 'rxjs';
 import { UpdateUserForFeedViolatingDto } from './dto/update-user-for-feed-violating.dto';
+import { UpdateUserForUserViolatingDto } from './dto/update-user-for-user-violating.dto';
 
 @Injectable()
 export class UserService {
@@ -1572,4 +1573,57 @@ export class UserService {
       numberOfViolating: updatedUser.numberOfViolating,
     });
   }
+
+  async updateUserForUserViolating({
+    userId,
+    reason,
+  }: UpdateUserForUserViolatingDto) {
+    //update user
+    const updatedUser = await this.userRepository.findOneAndUpdate(
+      { _id: userId },
+      {
+        $inc: { numberOfViolating: 1 },
+      },
+      [
+        { path: 'friendList', select: '_id fullname profileImageUrl' },
+        {
+          path: 'friendInvites',
+          select: '_id sender receiver createdAt',
+          populate: [
+            {
+              path: 'sender',
+              select: '_id fullname profileImageUrl',
+            },
+            {
+              path: 'receiver',
+              select: '_id fullname profileImageUrl',
+            },
+          ],
+        },
+      ],
+    );
+
+    //update redis
+    this.cacheManager.set(`user:${updatedUser.email}`, updatedUser, {
+      ttl: createTTL(60 * 60 * 24 * 7, 60 * 60 * 24),
+    });
+
+    //emit violating
+    this.notificationClient.emit('emit_message', {
+      name: 'violating_user',
+      payload: {
+        userId,
+      },
+    });
+
+    //send email
+    this.notificationClient.emit('send_email_for_user_violating', {
+      email: updatedUser.email,
+      fullname: updatedUser.fullname,
+      reason: reason,
+      numberOfViolating: updatedUser.numberOfViolating,
+    });
+  }
+
+  async processViolatingBaseOnNumberOfViolating(numberOfViolating: number) {}
 }

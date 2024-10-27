@@ -204,7 +204,7 @@ export class ReportingService {
   async getReports() {
     const [userReports, feedReports] = await Promise.all([
       //get 20 user reports
-      this.userReportRepository.findAll(
+      this.userReportRepository.findAllByAscendingCreatedTime(
         {
           status: UserReportStatus.ReadyToProcessing,
         },
@@ -212,7 +212,7 @@ export class ReportingService {
         20,
       ),
       //get 20 feed reports
-      this.feedReportRepository.findAll(
+      this.feedReportRepository.findAllByAscendingCreatedTime(
         {
           status: FeedReportStatus.ReadyToProcessing,
         },
@@ -305,13 +305,14 @@ export class ReportingService {
   }
 
   async getMoreUserReports({ skip }: GetMoreUserReportsDto) {
-    const userReports = await this.userReportRepository.findAll(
-      {
-        status: UserReportStatus.ReadyToProcessing,
-      },
-      skip,
-      20,
-    );
+    const userReports =
+      await this.userReportRepository.findAllByAscendingCreatedTime(
+        {
+          status: UserReportStatus.ReadyToProcessing,
+        },
+        skip,
+        20,
+      );
 
     const returnedUserReports = await Promise.all(
       userReports.map(async (report) => {
@@ -333,13 +334,14 @@ export class ReportingService {
   }
 
   async getMoreFeedReports({ skip }: GetMoreFeedReportsDto) {
-    const feedReports = await this.feedReportRepository.findAll(
-      {
-        status: FeedReportStatus.ReadyToProcessing,
-      },
-      skip,
-      20,
-    );
+    const feedReports =
+      await this.feedReportRepository.findAllByAscendingCreatedTime(
+        {
+          status: FeedReportStatus.ReadyToProcessing,
+        },
+        skip,
+        20,
+      );
 
     const returnedFeedReports = await Promise.all(
       feedReports.map(async (report) => {
@@ -361,7 +363,7 @@ export class ReportingService {
   async getProcessedReports() {
     const [userReports, feedReports] = await Promise.all([
       //get 20 user reports
-      this.userReportRepository.findAll(
+      this.userReportRepository.findAllByDescendingUpdatedTime(
         {
           status: UserReportStatus.Processed,
         },
@@ -369,7 +371,7 @@ export class ReportingService {
         20,
       ),
       //get 20 feed reports
-      this.feedReportRepository.findAll(
+      this.feedReportRepository.findAllByDescendingUpdatedTime(
         {
           status: FeedReportStatus.Processed,
         },
@@ -378,93 +380,36 @@ export class ReportingService {
       ),
     ]);
 
-    //get infor's users
-    const returnedUserReports = await Promise.all(
-      userReports.map(async (report) => {
-        const [inforList, reportedUser] = await Promise.all([
-          this.getListOfUserInfor([...report.reporterId]),
-          this.getUserInforByAdminId(report.reportedUserId),
-        ]);
-
-        report.reporterId = inforList;
-        report.reportedUserId = reportedUser;
-
-        return report;
-      }),
-    );
-
-    const returnedFeedReports = await Promise.all(
-      feedReports.map(async (report) => {
-        const [inforList, reportedFeed] = await Promise.all([
-          this.getListOfUserInfor([...report.reporterId]),
-          this.getFeedByAdmin(report.reportedFeedId),
-        ]);
-
-        report.reporterId = inforList;
-        report.reportedFeedId = reportedFeed;
-
-        return report;
-      }),
-    );
-
     return {
-      userReports: returnedUserReports,
-      feedReports: returnedFeedReports,
+      userReports,
+      feedReports,
     };
   }
 
   async getMoreUserProcessedReports({ skip }: GetMoreUserReportsDto) {
-    const userReports = await this.userReportRepository.findAll(
-      {
-        status: UserReportStatus.Processed,
-      },
-      skip,
-      20,
-    );
+    const userReports =
+      await this.userReportRepository.findAllByDescendingUpdatedTime(
+        {
+          status: UserReportStatus.Processed,
+        },
+        skip,
+        20,
+      );
 
-    const returnedUserReports = await Promise.all(
-      userReports.map(async (report) => {
-        const [inforList, reportedUser] = await Promise.all([
-          this.getListOfUserInfor([...report.reporterId]),
-          this.getUserInforByAdminId(report.reportedUserId),
-        ]);
-
-        console.log({ inforList, reportedUser });
-
-        report.reporterId = inforList;
-        report.reportedUserId = reportedUser;
-
-        return report;
-      }),
-    );
-
-    return returnedUserReports;
+    return userReports;
   }
 
   async getMoreFeedProcessedReports({ skip }: GetMoreFeedReportsDto) {
-    const feedReports = await this.feedReportRepository.findAll(
-      {
-        status: FeedReportStatus.Processed,
-      },
-      skip,
-      20,
-    );
+    const feedReports =
+      await this.feedReportRepository.findAllByDescendingUpdatedTime(
+        {
+          status: FeedReportStatus.Processed,
+        },
+        skip,
+        20,
+      );
 
-    const returnedFeedReports = await Promise.all(
-      feedReports.map(async (report) => {
-        const [inforList, reportedFeed] = await Promise.all([
-          this.getListOfUserInfor([...report.reporterId]),
-          this.getFeedByAdmin(report.reportedFeedId),
-        ]);
-
-        report.reporterId = inforList;
-        report.reportedFeedId = reportedFeed;
-
-        return report;
-      }),
-    );
-
-    return returnedFeedReports;
+    return feedReports;
   }
 
   async deleteUserReport(userId: Types.ObjectId | string) {
@@ -532,7 +477,7 @@ export class ReportingService {
 
     //if true, close report, delete feed, send email, update user violating
     //close report
-    const updatedReport = await this.feedReportRepository.findOneAndUpdate(
+    await this.feedReportRepository.findOneAndUpdate(
       {
         _id: reportId,
       },
@@ -542,7 +487,6 @@ export class ReportingService {
         isViolating: true,
       },
     );
-    console.log(updatedReport);
 
     // get feed
     const feedInfor: FeedDocument = await lastValueFrom(
@@ -589,5 +533,68 @@ export class ReportingService {
     });
   }
 
-  async processUserReport({ userId }, { reportId, isViolating }) {}
+  async processUserReport({ userId }, { reportId, isViolating }) {
+    //check report is existing or not
+    const report = await this.userReportRepository.findOne({ _id: reportId });
+
+    if (!report) {
+      throw new NotFoundException('Report not found');
+    }
+
+    //check report is processed or not
+    if (report.status === UserReportStatus.Processed) {
+      const result = report.isViolating ? 'VIOLATING' : 'NOT VIOLATING';
+      throw new BadRequestException(
+        `Report was processed with result is ${result} by #${report.processedAdminId} admin`,
+      );
+    }
+
+    //check report is ready for processing or not
+    if (report.status === UserReportStatus.Pending) {
+      throw new BadRequestException('Report is not ready for processing');
+    }
+
+    //check isViolating is true or false
+    if (!isViolating) {
+      //if false, close report
+      await this.userReportRepository.findOneAndUpdate(
+        {
+          _id: reportId,
+        },
+        {
+          status: UserReportStatus.Processed,
+          processedAdminId: userId,
+          isViolating: false,
+        },
+      );
+      return;
+    }
+
+    //if true, close report, delete feed, send email, update user violating
+    //close report
+    await this.userReportRepository.findOneAndUpdate(
+      {
+        _id: reportId,
+      },
+      {
+        status: UserReportStatus.Processed,
+        processedAdminId: userId,
+        isViolating: true,
+      },
+    );
+
+    // //update user violating
+    this.userClient.emit('user_violating', {
+      userId: report.reportedUserId,
+      reason: report.reason,
+    });
+
+    // //emit infor
+    this.notificationClient.emit('emit_message', {
+      name: 'processed_user_report',
+      payload: {
+        reportId,
+      },
+    });
+  }
 }

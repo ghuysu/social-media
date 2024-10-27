@@ -18,7 +18,7 @@ export class UserReportRepository extends AbstractRepository<UserReportDocument>
     super(userReportModel);
   }
 
-  async findAll(
+  async findAllByAscendingCreatedTime(
     filterQuery: FilterQuery<UserReportDocument>,
     skip: number,
     select: number,
@@ -26,6 +26,19 @@ export class UserReportRepository extends AbstractRepository<UserReportDocument>
     return await this.userReportModel
       .find(filterQuery)
       .sort({ createdAt: 1 })
+      .skip(skip)
+      .limit(select)
+      .lean<UserReportDocument[]>(true);
+  }
+
+  async findAllByDescendingUpdatedTime(
+    filterQuery: FilterQuery<UserReportDocument>,
+    skip: number,
+    select: number,
+  ): Promise<UserReportDocument[]> {
+    return await this.userReportModel
+      .find(filterQuery)
+      .sort({ updatedAt: -1 })
       .skip(skip)
       .limit(select)
       .lean<UserReportDocument[]>(true);

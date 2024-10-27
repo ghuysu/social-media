@@ -25,6 +25,7 @@ import { GetUserInforByAdminWithIdInterface } from './interfaces/get-user-infor-
 import { GetUserInforByAdminWithEmailInterface } from './interfaces/get-user-infor-by-admin-with-email.interface';
 import { GetListOfUserInforDto } from './dto/get-list-of-user-infor.dto';
 import { UpdateUserForFeedViolatingDto } from './dto/update-user-for-feed-violating.dto';
+import { UpdateUserForUserViolatingDto } from './dto/update-user-for-user-violating.dto';
 
 @Controller()
 export class UserController {
@@ -304,6 +305,13 @@ export class UserController {
     @Payload() dto: UpdateUserForFeedViolatingDto,
   ) {
     await this.userService.updateUserForFeedViolating(dto);
+  }
+
+  @EventPattern('user_violating')
+  async updateUserForUserViolating(
+    @Payload() dto: UpdateUserForUserViolatingDto,
+  ) {
+    await this.userService.updateUserForUserViolating(dto);
   }
 
   private handleError(error: any) {

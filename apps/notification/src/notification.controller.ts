@@ -5,6 +5,7 @@ import { SendCodeDto } from '@app/common';
 import { EmitMessageDto } from './dto/emit-message.dto';
 import { DeleteAccountDto } from './dto/delete-account.dto';
 import { SendEmailForFeedViolatingDto } from './dto/send-email-for-feed-violating.dto';
+import { SendEmailForUserViolatingDto } from './dto/send-email-for-user-violating.dto';
 
 @Controller()
 export class NotificationController {
@@ -40,6 +41,13 @@ export class NotificationController {
     @Payload() dto: SendEmailForFeedViolatingDto,
   ) {
     this.notificationService.sendEmailForFeedViolating(dto);
+  }
+
+  @EventPattern('send_email_for_user_violating')
+  async sendEmailForUserViolating(
+    @Payload() dto: SendEmailForUserViolatingDto,
+  ) {
+    this.notificationService.sendEmailForUserViolating(dto);
   }
 
   @EventPattern('emit_message')

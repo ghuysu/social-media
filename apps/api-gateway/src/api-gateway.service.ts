@@ -1101,4 +1101,24 @@ export class ApiGatewayService {
 
     return result;
   }
+
+  async processUserReport(userPayload: TokenPayloadInterface, dto) {
+    const result = await lastValueFrom(
+      this.reportingService
+        .send('process_user_report', { userPayload, payload: dto })
+        .pipe(
+          map((response) => {
+            if (response.error) {
+              this.throwErrorBasedOnStatusCode(
+                response.statusCode,
+                response.message,
+              );
+            }
+            return response;
+          }),
+        ),
+    );
+
+    return result;
+  }
 }

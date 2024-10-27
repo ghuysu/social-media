@@ -11,11 +11,8 @@ import { SocketGateway } from './gateways/socket-io.gateway';
       isGlobal: true,
       validationSchema: joi.object({
         PORT: joi.number().required(),
-        GOOGLE_OAUTH_CLIENT_ID: joi.string().required(),
-        GOOGLE_OAUTH_CLIENT_SECRET: joi.string().required(),
-        GOOGLE_OAUTH_REFRESH_TOKEN: joi.string().required(),
-        GOOGLE_OAUTH_ACCESS_TOKEN: joi.string().required(),
         SMTP_USER: joi.string().required(),
+        SMTP_PASSWORD: joi.string().required(),
         SOCKET_PORT: joi.number().required(),
       }),
     }),
