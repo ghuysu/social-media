@@ -1636,6 +1636,134 @@ export class UserService {
     });
   }
 
+  async deleteAccounDueToViolating(email: string) {
+    //delete user record
+    let deletedUser: UserDocument;
+
+    try {
+      deletedUser = await this.userRepository.findOneAndDelete({ email }, [
+        { path: 'friendList', select: '_id email' },
+      ]);
+    } catch (error) {
+      if (error instanceof NotFoundException) {
+        throw new NotFoundException('Not Found Resource');
+      }
+
+      throw new InternalServerErrorException('Something is wrong');
+    }
+
+    //delete image in s3
+    const prevImageName: string = deletedUser.profileImageUrl.split('/').pop();
+
+    this.awss3Client.emit('delete_image', {
+      imageName: prevImageName,
+    });
+
+    //delete user record redis
+    this.cacheManager.del(`user:${email}`);
+
+    //delete friendInvites in db
+    await this.friendInviteRepository.deleteMany({
+      _id: { $in: deletedUser.friendInvites },
+    });
+
+    //delete friendInvites in redis
+    for (const invite of deletedUser.friendInvites) {
+      this.cacheManager.del(`friend_invite:${invite.toString()}`);
+    }
+
+    //update friendList, friendInvites of friends
+    const updatedFriends: UserDocument[] = await this.userRepository.updateMany(
+      { _id: { $in: deletedUser.friendList } },
+      {
+        $pull: {
+          friendList: deletedUser._id,
+        },
+      },
+      [
+        { path: 'friendList', select: '_id fullname profileImageUrl' },
+        {
+          path: 'friendInvites',
+          select: '_id sender receiver createdAt',
+          populate: [
+            {
+              path: 'sender',
+              select: '_id fullname profileImageUrl',
+            },
+            {
+              path: 'receiver',
+              select: '_id fullname profileImageUrl',
+            },
+          ],
+        },
+      ],
+    );
+
+    //update redis friend records
+    for (const friend of updatedFriends) {
+      this.cacheManager.set(`user:${friend.email}`, friend, {
+        ttl: createTTL(60 * 60 * 24 * 7, 60 * 60 * 24),
+      });
+    }
+
+    //delete users received invite
+    const users = await this.userRepository.updateMany(
+      {
+        friendInvites: { $in: deletedUser.friendInvites },
+      },
+      {
+        $pull: { friendInvites: { $in: deletedUser.friendInvites } },
+      },
+      [
+        { path: 'friendList', select: '_id fullname profileImageUrl' },
+        {
+          path: 'friendInvites',
+          select: '_id sender receiver createdAt',
+          populate: [
+            {
+              path: 'sender',
+              select: '_id fullname profileImageUrl',
+            },
+            {
+              path: 'receiver',
+              select: '_id fullname profileImageUrl',
+            },
+          ],
+        },
+      ],
+    );
+
+    //update redis
+    for (const user of users) {
+      this.cacheManager.set(`user:${user.email}`, user, {
+        ttl: createTTL(60 * 60 * 24 * 7, 60 * 60 * 24),
+      });
+    }
+
+    //delete feeds and reactions
+    this.feedClient.emit('delete_feeds_and_reactions_for_delete_account', {
+      userId: deletedUser._id,
+      friendList: deletedUser.friendList.map((f) => f._id),
+    });
+
+    //delete messages
+    this.messageClient.emit('delete_messages_for_delete_account', {
+      userId: deletedUser._id,
+      friendList: deletedUser.friendList.map((f) => f._id),
+    });
+
+    //updated user statistic
+    this.statisticClient.emit('deleted_user', {});
+
+    //emit friends
+    this.notificationClient.emit('emit_message', {
+      name: 'delete_user',
+      payload: {
+        friendList: deletedUser.friendList.map((friend) => friend._id),
+      },
+    });
+  }
+
   async processViolatingBaseOnNumberOfViolating(
     numberOfViolating: number,
     email: string,
@@ -1669,7 +1797,12 @@ export class UserService {
         break;
 
       default:
-        console.log('Delete user');
+        this.cacheManager.del(`bannned_user:${email}`);
+        const bannedEmailList: string[] =
+          await this.cacheManager.get('banned_email_list');
+        bannedEmailList.push(email);
+        this.cacheManager.set('banned_email_list', bannedEmailList, { ttl: 0 });
+        await this.deleteAccounDueToViolating(email);
     }
   }
 }

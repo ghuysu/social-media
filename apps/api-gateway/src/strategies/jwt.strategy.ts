@@ -36,7 +36,7 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
       });
       if (new Date() < new Date(bannedPayload.expirationTime)) {
         throw new ForbiddenException(
-          `User has been banned for ${bannedPayload.numberOfBannedDays} and will expire at ${bannedPayload.expirationTime.toLocaleString()}`,
+          `User has been banned for ${bannedPayload.numberOfBannedDays} days and will expire at ${bannedPayload.expirationTime.toLocaleString()}`,
         );
       }
       return payload;
