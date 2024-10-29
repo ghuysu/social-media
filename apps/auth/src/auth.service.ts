@@ -696,6 +696,14 @@ export class AuthService {
       ttl: createTTL(60 * 60 * 24 * 30, 60 * 60 * 24),
     });
 
+    //notify admin about new admin
+    this.notificationService.emit('emit_message', {
+      name: 'new_admin',
+      payload: {
+        adminId: admin._id,
+      },
+    });
+
     return { ...admin, defaultPassword: defaultPassword };
   }
 }
