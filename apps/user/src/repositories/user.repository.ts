@@ -45,4 +45,22 @@ export class UserRepository extends AbstractRepository<UserDocument> {
 
     return updatedDocuments;
   }
+
+  async getBaseOnPage(
+    filterQuery: FilterQuery<UserDocument>,
+    page: number,
+    populate?: Array<{
+      path: string;
+      select?: string;
+      populate?: any;
+    }>,
+  ) {
+    return await this.userModel
+      .find(filterQuery)
+      .skip(10 * (page - 1))
+      .sort({ createdAt: 1 })
+      .limit(10)
+      .populate(populate)
+      .lean<UserDocument[]>();
+  }
 }

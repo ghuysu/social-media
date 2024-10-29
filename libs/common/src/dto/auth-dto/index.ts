@@ -4,3 +4,4 @@ export * from './signin.dto';
 export * from './change-password.dto';
 export * from './google-sign-in.dto';
 export * from './check-code.dto';
+export * from './create-admin-account.dto';

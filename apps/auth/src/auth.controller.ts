@@ -9,10 +9,14 @@ import {
   BadRequestException,
 } from '@nestjs/common';
 import { AuthService } from './auth.service';
-import { ChangePasswordDto, CheckEmailDto } from '@app/common';
+import {
+  ChangePasswordDto,
+  CheckEmailDto,
+  CreateAdminAccountDto,
+} from '@app/common';
 import { CreateNormalUserDto } from '@app/common';
 import { SignInDto } from '@app/common';
-import { MessagePattern } from '@nestjs/microservices';
+import { MessagePattern, Payload } from '@nestjs/microservices';
 import { CheckCodeDto } from '@app/common';
 import { GoogleSignInDto } from '@app/common';
 
@@ -124,6 +128,21 @@ export class AuthController {
     try {
       const result = await this.authService.googleSignIn(user);
       return result;
+    } catch (error) {
+      return this.handleError(error);
+    }
+  }
+
+  //root admin
+  @MessagePattern('create_new_admin_account')
+  async createNewAdminAccount(@Payload() dto: CreateAdminAccountDto) {
+    try {
+      const result = await this.authService.createAdminAccount(dto);
+      return {
+        status: HttpStatus.OK,
+        message: 'Created admin account successfully.',
+        metadata: result,
+      };
     } catch (error) {
       return this.handleError(error);
     }

@@ -26,6 +26,7 @@ import { GetUserInforByAdminWithEmailInterface } from './interfaces/get-user-inf
 import { GetListOfUserInforDto } from './dto/get-list-of-user-infor.dto';
 import { UpdateUserForFeedViolatingDto } from './dto/update-user-for-feed-violating.dto';
 import { UpdateUserForUserViolatingDto } from './dto/update-user-for-user-violating.dto';
+import { GetAdminListDto } from './dto/get-admin-list.dto';
 
 @Controller()
 export class UserController {
@@ -312,6 +313,20 @@ export class UserController {
     @Payload() dto: UpdateUserForUserViolatingDto,
   ) {
     await this.userService.updateUserForUserViolating(dto);
+  }
+
+  @MessagePattern('get_admin_list')
+  async getAdminList(@Payload() dto: GetAdminListDto) {
+    try {
+      const list = await this.userService.getAdminList(dto);
+      return {
+        status: HttpStatus.OK,
+        message: 'Get admin list successfully.',
+        metadata: list,
+      };
+    } catch (error) {
+      return this.handleError(error);
+    }
   }
 
   private handleError(error: any) {

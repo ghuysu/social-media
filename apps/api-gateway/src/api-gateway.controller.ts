@@ -30,6 +30,8 @@ import {
   DeleteAccountDto,
   ADMIN_ROLE,
   GetFeedByAdminDto,
+  ROOT_ADMIN_ROLE,
+  CreateAdminAccountDto,
 } from '@app/common';
 import {
   Body,
@@ -64,12 +66,12 @@ import { GetUserInforByAdminInterface } from './interfaces/get_user_infor_by_adm
 import { TypeInterface } from './interfaces/type.interface';
 import { UserIdDto } from './dto/userId.dto';
 import { UserReportDto } from './dto/user-report.dto';
-import { Payload } from '@nestjs/microservices';
 import { FeedReportDto } from './dto/feed-report.dto';
 import { FeedIdDto } from './dto/feedId.dto';
 import { GetMoreReportsDto } from './dto/get-more-reports.dto';
 import { ReportIdDto } from './dto/reportId.dto';
 import { ProcessReportDto } from './dto/processReport.dto';
+import { GetAdminListDto } from './dto/get-admin-list.dto';
 
 @Controller('api')
 export class ApiGatewayController {
@@ -422,7 +424,6 @@ export class ApiGatewayController {
     @User() userPayload: TokenPayloadInterface,
     @Query() dto: GetEveryoneFeedsDto,
   ) {
-    console.log(dto);
     return this.apiGatewayService.getEveryoneFeeds(userPayload, dto);
   }
 
@@ -532,7 +533,7 @@ export class ApiGatewayController {
   async reportUser(
     @User() userPayload: TokenPayloadInterface,
     @Param() { userId }: UserIdDto,
-    @Payload() { reason }: UserReportDto,
+    @Body() { reason }: UserReportDto,
   ) {
     return this.apiGatewayService.reportUser(userPayload, userId, reason);
   }
@@ -545,7 +546,7 @@ export class ApiGatewayController {
   async reportFeed(
     @User() userPayload: TokenPayloadInterface,
     @Param() { feedId }: FeedIdDto,
-    @Payload() { reason }: FeedReportDto,
+    @Body() { reason }: FeedReportDto,
   ) {
     return this.apiGatewayService.reportFeed(userPayload, feedId, reason);
   }
@@ -613,7 +614,7 @@ export class ApiGatewayController {
   async processFeedReport(
     @User() userPayload: TokenPayloadInterface,
     @Param() { reportId }: ReportIdDto,
-    @Payload() { isViolating }: ProcessReportDto,
+    @Body() { isViolating }: ProcessReportDto,
   ) {
     return this.apiGatewayService.processFeedReport(userPayload, {
       reportId,
@@ -630,11 +631,34 @@ export class ApiGatewayController {
   async processUserReport(
     @User() userPayload: TokenPayloadInterface,
     @Param() { reportId }: ReportIdDto,
-    @Payload() { isViolating }: ProcessReportDto,
+    @Body() { isViolating }: ProcessReportDto,
   ) {
     return this.apiGatewayService.processUserReport(userPayload, {
       reportId,
       isViolating,
     });
+  }
+
+  @UseGuards(RoleGuard)
+  @UseGuards(JwtGuard)
+  @UseGuards(ApiKeyGuard)
+  @Roles(ROOT_ADMIN_ROLE)
+  @HttpCode(HttpStatus.CREATED)
+  @Post('admin/account/create')
+  async createAdminAccount(@Body() dto: CreateAdminAccountDto) {
+    return this.apiGatewayService.createAdminAccount(dto);
+  }
+
+  @UseGuards(RoleGuard)
+  @UseGuards(JwtGuard)
+  @UseGuards(ApiKeyGuard)
+  @Roles(ROOT_ADMIN_ROLE)
+  @HttpCode(HttpStatus.OK)
+  @Get('admin/account')
+  async getAdminList(
+    @Query() dto: GetAdminListDto,
+    @User() userPayload: TokenPayloadInterface,
+  ) {
+    return this.apiGatewayService.getAdminList(userPayload, dto);
   }
 }

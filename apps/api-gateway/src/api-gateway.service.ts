@@ -7,6 +7,7 @@ import {
   ChangePasswordDto,
   CheckCodeToChangeEmailDto,
   CheckEmailDto,
+  CreateAdminAccountDto,
   CreateMessageDto,
   CreateNormalUserDto,
   DeleteAccountDto,
@@ -53,6 +54,7 @@ import { GetCertainFriendConversationDto } from '@app/common/dto/message-dto/get
 import { Types } from 'mongoose';
 import { GetUserInforByAdminInterface } from './interfaces/get_user_infor_by_admin.interface';
 import { GetMoreReportsDto } from './dto/get-more-reports.dto';
+import { GetAdminListDto } from './dto/get-admin-list.dto';
 
 @Injectable()
 export class ApiGatewayService {
@@ -1117,6 +1119,46 @@ export class ApiGatewayService {
             return response;
           }),
         ),
+    );
+
+    return result;
+  }
+
+  //root admin
+  async createAdminAccount(dto: CreateAdminAccountDto) {
+    const result = await lastValueFrom(
+      this.authService.send('create_new_admin_account', { ...dto }).pipe(
+        map((response) => {
+          if (response.error) {
+            this.throwErrorBasedOnStatusCode(
+              response.statusCode,
+              response.message,
+            );
+          }
+          return response;
+        }),
+      ),
+    );
+
+    return result;
+  }
+
+  async getAdminList(
+    { userId }: TokenPayloadInterface,
+    { page }: GetAdminListDto,
+  ) {
+    const result = await lastValueFrom(
+      this.userService.send('get_admin_list', { userId, page }).pipe(
+        map((response) => {
+          if (response.error) {
+            this.throwErrorBasedOnStatusCode(
+              response.statusCode,
+              response.message,
+            );
+          }
+          return response;
+        }),
+      ),
     );
 
     return result;

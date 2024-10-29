@@ -654,6 +654,7 @@ export class UserService {
     //get infor from db
     const infor: UserDocument = await this.userRepository.findOne({
       _id: userId,
+      role: 'normal_user',
     });
 
     //if not found throw not found exception
@@ -1804,5 +1805,29 @@ export class UserService {
         this.cacheManager.set('banned_email_list', bannedEmailList, { ttl: 0 });
         await this.deleteAccounDueToViolating(email);
     }
+  }
+
+  async getAdminList({ userId, page }) {
+    const list = await this.userRepository.getBaseOnPage(
+      {
+        $or: [
+          {
+            role: 'admin',
+            _id: { $ne: userId },
+          },
+          {
+            role: 'root_admin',
+            _id: { $ne: userId },
+          },
+        ],
+      },
+      page,
+    );
+
+    list.forEach((admin) => {
+      delete admin.password;
+    });
+
+    return list;
   }
 }

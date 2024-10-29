@@ -10,6 +10,7 @@ import {
 import { AuthRepository } from './auth.repository';
 import {
   AWS_S3_SERVICE,
+  CreateAdminAccountDto,
   NOTIFICATION_SERVICE,
   STATISTIC_SERVICE,
 } from '@app/common';
@@ -58,9 +59,15 @@ export class AuthService {
 
   private async createDefaultProfileImage(fullname: string): Promise<Buffer> {
     // Lấy chữ cái đầu tiên của tên và họ
-    const firstnameLetter = fullname.split(' ')[0].charAt(0).toUpperCase();
-    const lastnameLetter = fullname.split(' ')[1].charAt(0).toUpperCase();
-    const name = `${firstnameLetter} ${lastnameLetter}`;
+    let name: string;
+
+    if (fullname.includes(' ')) {
+      const firstnameLetter = fullname.split(' ')[0].charAt(0).toUpperCase();
+      const lastnameLetter = fullname.split(' ')[1].charAt(0).toUpperCase();
+      name = `${firstnameLetter} ${lastnameLetter}`;
+    } else {
+      name = fullname.charAt(0).toUpperCase();
+    }
 
     // Tạo ảnh mới với kích thước 100x100 và nền đen
     const image = new Jimp(100, 100, '#000000');
@@ -107,7 +114,7 @@ export class AuthService {
         `user:${registeredUser.email}`,
         registeredUser,
         {
-          ttl: createTTL(60 * 60 * 24 * 7, 60 * 60 * 24),
+          ttl: createTTL(60 * 60 * 24 * 30, 60 * 60 * 24),
         },
       );
 
@@ -203,9 +210,9 @@ export class AuthService {
     const user = await this.authRepository.create(newUser);
     delete user.password;
 
-    //save user in redis and ttl is 7 days
+    //save user in redis and ttl is 30 days
     await this.cacheManager.set(`user:${user.email}`, user, {
-      ttl: createTTL(60 * 60 * 24 * 7, 60 * 60 * 24),
+      ttl: createTTL(60 * 60 * 24 * 30, 60 * 60 * 24),
     });
 
     //update user statistic
@@ -296,7 +303,7 @@ export class AuthService {
           `admin:${registeredUser.email}`,
           registeredUser,
           {
-            ttl: createTTL(60 * 60 * 24 * 7, 60 * 60 * 24),
+            ttl: createTTL(60 * 60 * 24 * 30, 60 * 60 * 24),
           },
         );
       } else {
@@ -632,5 +639,63 @@ export class AuthService {
       user: registeredUser,
       signInToken: bearerToken,
     };
+  }
+
+  //admin
+  async createAdminAccount({
+    email,
+    fullname,
+    birthday,
+    country,
+  }: CreateAdminAccountDto) {
+    //check email
+    const usedEmail = await this.authRepository.findOne({ email });
+    if (usedEmail) {
+      throw new ConflictException('Used resource');
+    }
+    //default password
+    const defaultPassword = 'Abcxyz-123';
+    //hash password
+    const hashedPassword = await argon2.hash(defaultPassword, {
+      type: argon2.argon2id,
+      memoryCost: 2 ** 10,
+      timeCost: 2,
+      parallelism: 1,
+      secret: Buffer.from(this.configService.get('ARGON2_SERCET')),
+    });
+
+    //create default profile image
+    const image = await this.createDefaultProfileImage(fullname);
+
+    //upload to awss3 to get url
+    const imageName = this.createImageNameFromFullname(fullname);
+    this.awss3Service.emit('upload_image', {
+      image,
+      imageName,
+    });
+    const profileImageUrl = `https://${this.configService.get('BUCKET_NAME')}.s3.${this.configService.get(
+      'AWSS3_REGION',
+    )}.amazonaws.com/${imageName}`;
+
+    //create new account
+    const newAdmin = {
+      email,
+      fullname,
+      password: hashedPassword,
+      birthday,
+      country,
+      profileImageUrl,
+      role: 'admin',
+    };
+
+    const admin = await this.authRepository.create(newAdmin);
+    delete admin.password;
+
+    //save user in redis and ttl is 30 days
+    await this.cacheManager.set(`admin:${admin.email}`, admin, {
+      ttl: createTTL(60 * 60 * 24 * 30, 60 * 60 * 24),
+    });
+
+    return { ...admin, defaultPassword: defaultPassword };
   }
 }
