@@ -1,7 +1,11 @@
-import { IsEmail, IsString } from 'class-validator';
+import { IsEmail, IsMongoId, IsString } from 'class-validator';
 import { IsValidBirthday } from '../../validators/IsValidBirthday.validator';
+import { Types } from 'mongoose';
 
 export class CreateAdminAccountDto {
+  @IsMongoId()
+  adminId: Types.ObjectId;
+
   @IsEmail()
   email: string;
 

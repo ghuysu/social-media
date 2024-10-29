@@ -643,6 +643,7 @@ export class AuthService {
 
   //admin
   async createAdminAccount({
+    adminId,
     email,
     fullname,
     birthday,
@@ -700,7 +701,8 @@ export class AuthService {
     this.notificationService.emit('emit_message', {
       name: 'new_admin',
       payload: {
-        adminId: admin._id,
+        rootAdminId: adminId,
+        newAdminId: admin._id,
       },
     });
 

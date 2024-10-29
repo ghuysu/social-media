@@ -7,7 +7,6 @@ import {
   ChangePasswordDto,
   CheckCodeToChangeEmailDto,
   CheckEmailDto,
-  CreateAdminAccountDto,
   CreateMessageDto,
   CreateNormalUserDto,
   DeleteAccountDto,
@@ -55,6 +54,7 @@ import { Types } from 'mongoose';
 import { GetUserInforByAdminInterface } from './interfaces/get_user_infor_by_admin.interface';
 import { GetMoreReportsDto } from './dto/get-more-reports.dto';
 import { GetAdminListDto } from './dto/get-admin-list.dto';
+import { CreateAdminDto } from './dto/create-admin.dto';
 
 @Injectable()
 export class ApiGatewayService {
@@ -1125,19 +1125,25 @@ export class ApiGatewayService {
   }
 
   //root admin
-  async createAdminAccount(dto: CreateAdminAccountDto) {
+  async createAdminAccount(
+    { userId }: TokenPayloadInterface,
+    dto: CreateAdminDto,
+  ) {
+    console.log({ adminId: userId, ...dto });
     const result = await lastValueFrom(
-      this.authService.send('create_new_admin_account', { ...dto }).pipe(
-        map((response) => {
-          if (response.error) {
-            this.throwErrorBasedOnStatusCode(
-              response.statusCode,
-              response.message,
-            );
-          }
-          return response;
-        }),
-      ),
+      this.authService
+        .send('create_new_admin_account', { adminId: userId, ...dto })
+        .pipe(
+          map((response) => {
+            if (response.error) {
+              this.throwErrorBasedOnStatusCode(
+                response.statusCode,
+                response.message,
+              );
+            }
+            return response;
+          }),
+        ),
     );
 
     return result;

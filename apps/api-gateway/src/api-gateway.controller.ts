@@ -31,7 +31,6 @@ import {
   ADMIN_ROLE,
   GetFeedByAdminDto,
   ROOT_ADMIN_ROLE,
-  CreateAdminAccountDto,
 } from '@app/common';
 import {
   Body,
@@ -72,6 +71,7 @@ import { GetMoreReportsDto } from './dto/get-more-reports.dto';
 import { ReportIdDto } from './dto/reportId.dto';
 import { ProcessReportDto } from './dto/processReport.dto';
 import { GetAdminListDto } from './dto/get-admin-list.dto';
+import { CreateAdminDto } from './dto/create-admin.dto';
 
 @Controller('api')
 export class ApiGatewayController {
@@ -645,8 +645,11 @@ export class ApiGatewayController {
   @Roles(ROOT_ADMIN_ROLE)
   @HttpCode(HttpStatus.CREATED)
   @Post('admin/account/create')
-  async createAdminAccount(@Body() dto: CreateAdminAccountDto) {
-    return this.apiGatewayService.createAdminAccount(dto);
+  async createAdminAccount(
+    @User() userPayload: TokenPayloadInterface,
+    @Body() dto: CreateAdminDto,
+  ) {
+    return this.apiGatewayService.createAdminAccount(userPayload, dto);
   }
 
   @UseGuards(RoleGuard)
