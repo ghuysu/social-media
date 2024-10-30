@@ -3,6 +3,7 @@ import { StatisticService } from './statistic.service';
 import { EventPattern, MessagePattern, Payload } from '@nestjs/microservices';
 import { ChangeCountryDto } from './dto/changeCountry.dto';
 import { NewReportDto } from './dto/new-report.dto';
+import { ProcessedReportDto } from './dto/processed-report.dto';
 
 @Controller()
 export class StatisticController {
@@ -58,6 +59,11 @@ export class StatisticController {
   @EventPattern('new_report')
   async newReport(@Payload() { type }: NewReportDto) {
     this.statisticService.newReport(type);
+  }
+
+  @EventPattern('processed_report')
+  async processedReport(@Payload() { type, number }: ProcessedReportDto) {
+    this.statisticService.processedReport(type, number);
   }
 
   @MessagePattern('get_statistic_infor')

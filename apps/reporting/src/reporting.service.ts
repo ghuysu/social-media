@@ -13,6 +13,7 @@ import {
   FeedReportReason,
   FeedReportStatus,
   NOTIFICATION_SERVICE,
+  STATISTIC_SERVICE,
   USER_SERVICE,
   UserDocument,
   UserReportReason,
@@ -23,6 +24,8 @@ import { lastValueFrom, map } from 'rxjs';
 import { Types } from 'mongoose';
 import { GetMoreUserReportsDto } from './dto/get-more-user-reports.dto';
 import { GetMoreFeedReportsDto } from './dto/get-more-feed-reports.dto';
+import { Cache } from 'cache-manager';
+import { CACHE_MANAGER } from '@nestjs/cache-manager';
 
 @Injectable()
 export class ReportingService {
@@ -35,6 +38,9 @@ export class ReportingService {
     private readonly notificationClient: ClientProxy,
     @Inject(USER_SERVICE)
     private readonly userClient: ClientProxy,
+    @Inject(STATISTIC_SERVICE)
+    private readonly statisticClient: ClientProxy,
+    @Inject(CACHE_MANAGER) private cacheManager: Cache,
   ) {}
 
   async reportUser({ userId }, { reportedUserId, reason: userReason }) {
@@ -106,6 +112,9 @@ export class ReportingService {
           $inc: { [`reason.${reasonConverter[userReason]}`]: 1 },
         },
       );
+
+      //update report statistics
+      this.statisticClient.emit('new_report', { type: 'user' });
 
       return;
     }
@@ -186,6 +195,8 @@ export class ReportingService {
         },
       );
 
+      //update report statistics
+      this.statisticClient.emit('new_report', { type: 'feed' });
       return;
     }
 
@@ -250,7 +261,12 @@ export class ReportingService {
       }),
     );
 
+    //get report statistics
+    const reportStatistics = await this.cacheManager.get('report_statistics');
+
     return {
+      numberOfUserReports: reportStatistics['user'],
+      numberOfFeedReports: reportStatistics['feed'],
       userReports: returnedUserReports,
       feedReports: returnedFeedReports,
     };
@@ -420,8 +436,14 @@ export class ReportingService {
       },
     });
 
-    await this.userReportRepository.deleteMany({
+    const { deletedCount } = await this.userReportRepository.deleteMany({
       reportedUserId: userId,
+    });
+
+    // update feed report statistics
+    this.statisticClient.emit('processed_report', {
+      type: 'user',
+      number: deletedCount,
     });
   }
 
@@ -433,8 +455,14 @@ export class ReportingService {
       },
     });
 
-    await this.feedReportRepository.deleteMany({
+    const { deletedCount } = await this.feedReportRepository.deleteMany({
       reportedFeedId: feedId,
+    });
+
+    // update feed report statistics
+    this.statisticClient.emit('processed_report', {
+      type: 'feed',
+      number: deletedCount,
     });
   }
 
@@ -531,6 +559,9 @@ export class ReportingService {
         reportId,
       },
     });
+
+    // update feed report statistics
+    this.statisticClient.emit('processed_report', { type: 'feed', number: 1 });
   }
 
   async processUserReport({ userId }, { reportId, isViolating }) {
@@ -596,5 +627,8 @@ export class ReportingService {
         reportId,
       },
     });
+
+    // update feed report statistics
+    this.statisticClient.emit('processed_report', { type: 'user', number: 1 });
   }
 }

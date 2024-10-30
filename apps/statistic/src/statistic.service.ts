@@ -285,6 +285,22 @@ export class StatisticService {
     });
   }
 
+  async processedReport(type: string, number: number) {
+    //get country redis
+    const reportRecord = await this.cacheManager.get('report_statistics');
+
+    //check country is exiting or not
+    if (type === 'user') {
+      reportRecord['user'] -= number;
+    } else {
+      reportRecord['feed'] -= number;
+    }
+
+    this.cacheManager.set('report_statistics', reportRecord, {
+      ttl: 0,
+    });
+  }
+
   async getStatisticInfor() {
     //get number of users, number of feeds
     const userFeedStatistic = await this.cacheManager.get(

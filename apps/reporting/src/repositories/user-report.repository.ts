@@ -45,6 +45,6 @@ export class UserReportRepository extends AbstractRepository<UserReportDocument>
   }
 
   async deleteMany(filterQuery: FilterQuery<UserReportDocument>) {
-    await this.userReportModel.deleteMany(filterQuery);
+    return await this.userReportModel.deleteMany(filterQuery);
   }
 }

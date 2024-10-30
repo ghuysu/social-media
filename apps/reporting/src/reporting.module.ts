@@ -11,6 +11,7 @@ import {
   UserReportSchema,
   FeedReportSchema,
   NOTIFICATION_SERVICE,
+  STATISTIC_SERVICE,
 } from '@app/common';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import * as joi from 'joi';
@@ -35,6 +36,8 @@ import { ClientsModule, Transport } from '@nestjs/microservices';
         FEED_PORT: joi.number().required(),
         NOTIFICATION_HOST: joi.string().required(),
         NOTIFICATION_PORT: joi.number().required(),
+        STATISTIC_HOST: joi.string().required(),
+        STATISTIC_PORT: joi.number().required(),
         REDIS_PASSWORD: joi.string().required(),
         REDIS_HOST: joi.string().required(),
         REDIS_PORT: joi.number().required(),
@@ -84,6 +87,17 @@ import { ClientsModule, Transport } from '@nestjs/microservices';
           options: {
             host: configService.get('FEED_HOST'),
             port: configService.get('FEED_PORT'),
+          },
+        }),
+        inject: [ConfigService],
+      },
+      {
+        name: STATISTIC_SERVICE,
+        useFactory: (configService: ConfigService) => ({
+          transport: Transport.TCP,
+          options: {
+            host: configService.get('STATISTIC_HOST'),
+            port: configService.get('STATISTIC_PORT'),
           },
         }),
         inject: [ConfigService],

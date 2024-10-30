@@ -45,6 +45,6 @@ export class FeedReportRepository extends AbstractRepository<FeedReportDocument>
   }
 
   async deleteMany(filterQuery: FilterQuery<FeedReportDocument>) {
-    await this.feedReportModel.deleteMany(filterQuery);
+    return await this.feedReportModel.deleteMany(filterQuery);
   }
 }
