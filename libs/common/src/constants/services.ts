@@ -4,5 +4,5 @@ export const AUTH_SERVICE = 'auth';
 export const USER_SERVICE = 'user';
 export const FEED_SERVICE = 'feed';
 export const MESSAGE_SERVICE = 'message';
-export const STATISTIC_SERVICE = 'statistic';
+export const STATISTIC_SERVICE = 'statistics';
 export const REPORTING_SERVICE = 'reporting';

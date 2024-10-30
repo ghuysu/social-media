@@ -2,8 +2,8 @@ import { Module } from '@nestjs/common';
 import { StatisticController } from './statistic.controller';
 import { StatisticService } from './statistic.service';
 import {
-  DAILY_STATISTIC_DOCUMENT,
-  DailyStatisticSchema,
+  STATISTIC_DOCUMENT,
+  StatisticSchema,
   DatabaseModule,
   LoggerModule,
 } from '@app/common';
@@ -11,7 +11,7 @@ import { ConfigModule, ConfigService } from '@nestjs/config';
 import * as joi from 'joi';
 import { CacheModule } from '@nestjs/cache-manager';
 import * as redisStore from 'cache-manager-redis-store';
-import { DailyStatisticRepository } from './repositories/daily-statistic.repository';
+import { StatisticRepository } from './repositories/statistic.repository';
 
 @Module({
   imports: [
@@ -28,7 +28,7 @@ import { DailyStatisticRepository } from './repositories/daily-statistic.reposit
       }),
     }),
     DatabaseModule.forFeature([
-      { name: DAILY_STATISTIC_DOCUMENT, schema: DailyStatisticSchema },
+      { name: STATISTIC_DOCUMENT, schema: StatisticSchema },
     ]),
     CacheModule.registerAsync({
       isGlobal: true,
@@ -42,6 +42,6 @@ import { DailyStatisticRepository } from './repositories/daily-statistic.reposit
     }),
   ],
   controllers: [StatisticController],
-  providers: [StatisticService, DailyStatisticRepository],
+  providers: [StatisticService, StatisticRepository],
 })
 export class StatisticModule {}

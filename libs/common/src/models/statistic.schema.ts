@@ -1,9 +1,9 @@
 import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
 import { AbstractDocument } from '@app/common';
-import { DAILY_STATISTIC_DOCUMENT } from '../constants/schema';
+import { STATISTIC_DOCUMENT } from '../constants/schema';
 
-@Schema({ versionKey: false, collection: DAILY_STATISTIC_DOCUMENT })
-export class DailyStatisticDocument extends AbstractDocument {
+@Schema({ versionKey: false, collection: STATISTIC_DOCUMENT })
+export class StatisticDocument extends AbstractDocument {
   @Prop({ type: Number, default: 0 })
   newUsers: number;
 
@@ -23,6 +23,4 @@ export class DailyStatisticDocument extends AbstractDocument {
   createdAt: Date;
 }
 
-export const DailyStatisticSchema = SchemaFactory.createForClass(
-  DailyStatisticDocument,
-);
+export const StatisticSchema = SchemaFactory.createForClass(StatisticDocument);

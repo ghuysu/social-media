@@ -1,29 +1,27 @@
 import { Inject, Injectable } from '@nestjs/common';
-import { DailyStatisticRepository } from './repositories/daily-statistic.repository';
+import { StatisticRepository } from './repositories/statistic.repository';
 import { Cache } from 'cache-manager';
 import { CACHE_MANAGER } from '@nestjs/cache-manager';
 
 @Injectable()
 export class StatisticService {
   constructor(
-    private readonly dailyStatisticRepository: DailyStatisticRepository,
+    private readonly statisticRepository: StatisticRepository,
     @Inject(CACHE_MANAGER) private cacheManager: Cache,
   ) {}
 
-  async isExistingDailyRecord(
-    day: number,
-    month: number,
-    year: number,
-  ): Promise<boolean> {
-    const dailyRecord = await this.dailyStatisticRepository.findOne({
-      createdAt: new Date(year, month, day),
+  async isExistingDailyRecord(month: number, year: number): Promise<boolean> {
+    const startDate = new Date(year, month, 1);
+    const endDate = new Date(year, month + 1, 0);
+
+    const monthlyRecord = await this.statisticRepository.findOne({
+      createdAt: {
+        $gte: startDate,
+        $lte: endDate,
+      },
     });
 
-    if (!dailyRecord) {
-      return false;
-    }
-
-    return true;
+    return !!monthlyRecord;
   }
 
   async createdUser() {
@@ -31,12 +29,14 @@ export class StatisticService {
     const day = new Date().getDate();
     const month = new Date().getMonth();
     const year = new Date().getFullYear();
+    const startDate = new Date(year, month, 1);
+    const endDate = new Date(year, month + 1, 0);
 
-    const isExitingRecord = await this.isExistingDailyRecord(day, month, year);
+    const isExitingRecord = await this.isExistingDailyRecord(month, year);
 
     //if not create new
     if (!isExitingRecord) {
-      await this.dailyStatisticRepository.create({
+      await this.statisticRepository.create({
         newUsers: 1,
         createdAt: new Date(year, month, day),
       });
@@ -45,8 +45,13 @@ export class StatisticService {
     }
 
     //if existing, update record
-    await this.dailyStatisticRepository.updateOne(
-      { createdAt: new Date(year, month, day) },
+    await this.statisticRepository.updateOne(
+      {
+        createdAt: {
+          $gte: startDate,
+          $lte: endDate,
+        },
+      },
       {
         $inc: { newUsers: 1 },
       },
@@ -67,12 +72,14 @@ export class StatisticService {
     const day = new Date().getDate();
     const month = new Date().getMonth();
     const year = new Date().getFullYear();
+    const startDate = new Date(year, month, 1);
+    const endDate = new Date(year, month + 1, 0);
 
-    const isExitingRecord = await this.isExistingDailyRecord(day, month, year);
+    const isExitingRecord = await this.isExistingDailyRecord(month, year);
 
     //if not create new
     if (!isExitingRecord) {
-      await this.dailyStatisticRepository.create({
+      await this.statisticRepository.create({
         deletedUsers: 1,
         createdAt: new Date(year, month, day),
       });
@@ -81,8 +88,13 @@ export class StatisticService {
     }
 
     //if existing, update record
-    await this.dailyStatisticRepository.updateOne(
-      { createdAt: new Date(year, month, day) },
+    await this.statisticRepository.updateOne(
+      {
+        createdAt: {
+          $gte: startDate,
+          $lte: endDate,
+        },
+      },
       {
         $inc: { deletedUsers: 1 },
       },
@@ -101,12 +113,14 @@ export class StatisticService {
     const day = new Date().getDate();
     const month = new Date().getMonth();
     const year = new Date().getFullYear();
+    const startDate = new Date(year, month, 1);
+    const endDate = new Date(year, month + 1, 0);
 
-    const isExitingRecord = await this.isExistingDailyRecord(day, month, year);
+    const isExitingRecord = await this.isExistingDailyRecord(month, year);
 
     //if not create new
     if (!isExitingRecord) {
-      await this.dailyStatisticRepository.create({
+      await this.statisticRepository.create({
         newFeeds: 1,
         createdAt: new Date(year, month, day),
       });
@@ -115,8 +129,13 @@ export class StatisticService {
     }
 
     //if existing, update record
-    await this.dailyStatisticRepository.updateOne(
-      { createdAt: new Date(year, month, day) },
+    await this.statisticRepository.updateOne(
+      {
+        createdAt: {
+          $gte: startDate,
+          $lte: endDate,
+        },
+      },
       {
         $inc: { newFeeds: 1 },
       },
@@ -147,12 +166,14 @@ export class StatisticService {
     const day = new Date().getDate();
     const month = new Date().getMonth();
     const year = new Date().getFullYear();
+    const startDate = new Date(year, month, 1);
+    const endDate = new Date(year, month + 1, 0);
 
-    const isExitingRecord = await this.isExistingDailyRecord(day, month, year);
+    const isExitingRecord = await this.isExistingDailyRecord(month, year);
 
     //if not create new
     if (!isExitingRecord) {
-      await this.dailyStatisticRepository.create({
+      await this.statisticRepository.create({
         createdAt: new Date(year, month, day),
         newFriends: 1,
       });
@@ -161,8 +182,13 @@ export class StatisticService {
     }
 
     //if existing, update record
-    await this.dailyStatisticRepository.updateOne(
-      { createdAt: new Date(year, month, day) },
+    await this.statisticRepository.updateOne(
+      {
+        createdAt: {
+          $gte: startDate,
+          $lte: endDate,
+        },
+      },
       {
         $inc: { newFriends: 1 },
       },
@@ -174,12 +200,14 @@ export class StatisticService {
     const day = new Date().getDate();
     const month = new Date().getMonth();
     const year = new Date().getFullYear();
+    const startDate = new Date(year, month, 1);
+    const endDate = new Date(year, month + 1, 0);
 
-    const isExitingRecord = await this.isExistingDailyRecord(day, month, year);
+    const isExitingRecord = await this.isExistingDailyRecord(month, year);
 
     //if not create new
     if (!isExitingRecord) {
-      await this.dailyStatisticRepository.create({
+      await this.statisticRepository.create({
         createdAt: new Date(year, month, day),
         deletedFriends: 1,
       });
@@ -188,8 +216,13 @@ export class StatisticService {
     }
 
     //if existing, update record
-    await this.dailyStatisticRepository.updateOne(
-      { createdAt: new Date(year, month, day) },
+    await this.statisticRepository.updateOne(
+      {
+        createdAt: {
+          $gte: startDate,
+          $lte: endDate,
+        },
+      },
       {
         $inc: { deletedFriends: 1 },
       },
@@ -238,7 +271,7 @@ export class StatisticService {
 
   async newReport(type: string) {
     //get country redis
-    const reportRecord = await this.cacheManager.get('report_statistic');
+    const reportRecord = await this.cacheManager.get('report_statistics');
 
     //check country is exiting or not
     if (type === 'user') {
@@ -247,17 +280,12 @@ export class StatisticService {
       reportRecord['feed'] += 1;
     }
 
-    this.cacheManager.set('report_statistic', reportRecord, {
+    this.cacheManager.set('report_statistics', reportRecord, {
       ttl: 0,
     });
   }
 
   async getStatisticInfor() {
-    const day = new Date().getDate();
-    const month = new Date().getMonth();
-    const year = new Date().getFullYear();
-    console.log({ day, month, year });
-
     //get number of users, number of feeds
     const userFeedStatistic = await this.cacheManager.get(
       'user_feed_statistic',
@@ -270,20 +298,15 @@ export class StatisticService {
     const countryStatistic = await this.cacheManager.get('country_statistic');
 
     //get 7 last day new user, new feed, new friend
-    const sevenLastDaysRecord = await this.dailyStatisticRepository.find({
-      createdAt: {
-        $gte: new Date(year, month, day - 7),
-        $lte: new Date(year, month, day),
-      },
-    });
+    const monthlyRecords = await this.statisticRepository.findAll();
 
     const statistic = {
       numberOfTotalUsers: userFeedStatistic['user'],
       numberOfTotalFeeds: userFeedStatistic['feed'],
       numberOfUserReports: reportStatistic['user'],
       numberOfFeedReports: reportStatistic['feed'],
-      sevenLastDaysRecords: sevenLastDaysRecord,
       countryStatistic: countryStatistic,
+      monthlyRecords: monthlyRecords,
     };
 
     return statistic;
