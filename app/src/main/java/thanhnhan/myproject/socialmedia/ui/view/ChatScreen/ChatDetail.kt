@@ -44,8 +44,11 @@ fun ChatDetailScreen(
 
     // Lắng nghe tin nhắn mới và cập nhật cuộc trò chuyện
     LaunchedEffect(newMessage) {
-        newMessage?.let {
-            chatViewModel.updateConversationWithNewMessage(it)
+        newMessage?.let { message ->
+            // Kiểm tra xem tin nhắn có phải từ cuộc trò chuyện hiện tại không
+            if (message.senderId._id == friendId || message.receiverId._id == friendId) {
+                chatViewModel.updateConversationWithNewMessage(message)
+            }
         }
     }
 
@@ -72,9 +75,11 @@ fun ChatDetailScreen(
                             LazyColumn(
                                 modifier = Modifier.weight(1f),
                                 contentPadding = PaddingValues(vertical = 8.dp),
-                                reverseLayout = true
+                                // Xóa reverseLayout = true để tin nhắn mới hiển thị ở dưới
+                                reverseLayout = false
                             ) {
-                                items(conversation.conversation) { message ->
+                                // Đảo ngược thứ tự danh sách tin nhắn
+                                items(conversation.conversation.reversed()) { message ->
                                     MessageItem(message, currentUserId)
                                 }
                             }

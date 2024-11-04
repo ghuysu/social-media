@@ -33,9 +33,13 @@ class ChatViewModel(
 
     init {
         socketManager.initSocket()
-        socketManager.listenForEvent<Message>("newMessage") { message ->
-            _newMessage.value = message // Cập nhật tin nhắn mới vào StateFlow
-            println("New message received: ${message.content}")
+        // Lắng nghe tin nhắn mới
+        socketManager.listenForNewMessages { message ->
+            viewModelScope.launch {
+                _newMessage.value = message
+                // Cập nhật danh sách tin nhắn
+                updateConversationWithNewMessage(message)
+            }
         }
     }
 
@@ -46,17 +50,17 @@ class ChatViewModel(
                 _sendMessageResult.value = result
                 when (result) {
                     is Result.Success -> {
-                        // Lấy nội dung tin nhắn từ metadata trong response
-                        val messageContent = result.data?.metadata?.content
-
-                        messageContent?.let {
-                            socketManager.emit("sendMessage", it) // Gửi tin nhắn qua socket
-                            println("sendMessage success: ${result.data}")
+                        result.data?.metadata?.let { message ->
+                            // Gửi tin nhắn qua socket
+                            socketManager.sendMessage(message)
+                            // Cập nhật UI
+                            _newMessage.value = message
+                            updateConversationWithNewMessage(message)
                         }
                         println("sendMessage success: ${result.data}")
                     }
                     is Result.Error -> {
-                        println("sendMessage error: ${result.message}")
+                        println("Send message error: ${result.message}")
                     }
                 }
             }

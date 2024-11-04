@@ -6,6 +6,7 @@ import io.socket.client.IO
 import io.socket.client.Socket
 import org.json.JSONObject
 import thanhnhan.myproject.socialmedia.data.model.GetUserResponse
+import thanhnhan.myproject.socialmedia.data.model.Message
 import java.net.URISyntaxException
 
 class SocketManager {
@@ -13,9 +14,13 @@ class SocketManager {
 
     fun initSocket() {
         try {
-            // Thiết lập kết nối với socket
-            socket = IO.socket("https://skn7vgp9-10005.asse.devtunnels.ms")
-            socket.connect()  // Kết nối với server socket
+            val options = IO.Options().apply {
+                reconnection = true
+                reconnectionDelay = 1000
+                reconnectionAttempts = 10
+            }
+            socket = IO.socket("https://skn7vgp9-10005.asse.devtunnels.ms", options)
+            socket.connect()
             println("Socket connected")
         } catch (e: URISyntaxException) {
             e.printStackTrace()
@@ -88,6 +93,25 @@ class SocketManager {
     }
     fun emit(event: String, data: Any) {
         socket.emit(event, data)
+    }
+
+    fun listenForNewMessages(onNewMessage: (Message) -> Unit) {
+        socket.on("newMessage") { args ->
+            if (args.isNotEmpty()) {
+                try {
+                    val messageJson = args[0] as JSONObject
+                    val message = Gson().fromJson(messageJson.toString(), Message::class.java)
+                    onNewMessage(message)
+                } catch (e: Exception) {
+                    println("Error parsing message: ${e.message}")
+                }
+            }
+        }
+    }
+
+    fun sendMessage(message: Message) {
+        val messageJson = JSONObject(Gson().toJson(message))
+        socket.emit("sendMessage", messageJson)
     }
 }
 
