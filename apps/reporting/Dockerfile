@@ -5,11 +5,11 @@ WORKDIR /usr/src/app
 
 COPY package*.json ./
 COPY tsconfig.json tsconfig.json
-COPY nest-cli.json nest-cli.json
 
 RUN npm install
 
-COPY . .
+COPY libs libs
+COPY apps/reporting apps/reporting
 
 RUN npm run build
 

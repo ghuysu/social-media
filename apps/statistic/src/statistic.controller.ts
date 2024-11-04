@@ -68,11 +68,15 @@ export class StatisticController {
 
   @MessagePattern('get_statistic_infor')
   async getStatisticInfor() {
-    const statistic = await this.statisticService.getStatisticInfor();
-    return {
-      status: HttpStatus.OK,
-      message: 'Get statistic information successfully.',
-      metadata: statistic,
-    };
+    try {
+      const statistic = await this.statisticService.getStatisticInfor();
+      return {
+        status: HttpStatus.OK,
+        message: 'Get statistic information successfully.',
+        metadata: statistic,
+      };
+    } catch (error) {
+      console.log(error);
+    }
   }
 }

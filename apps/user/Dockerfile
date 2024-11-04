@@ -5,11 +5,11 @@ WORKDIR /usr/src/app
 
 COPY package*.json ./
 COPY tsconfig.json tsconfig.json
-COPY nest-cli.json nest-cli.json
+
+COPY libs libs
+COPY apps/user apps/user
 
 RUN npm install
-
-COPY . .
 
 RUN npm run build
 

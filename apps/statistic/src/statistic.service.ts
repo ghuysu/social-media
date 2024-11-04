@@ -306,9 +306,10 @@ export class StatisticService {
     const userFeedStatistic = await this.cacheManager.get(
       'user_feed_statistic',
     );
+    console.log(userFeedStatistic);
 
     //get number of user, feed reports
-    const reportStatistic = await this.cacheManager.get('report_statistic');
+    const reportStatistic = await this.cacheManager.get('report_statistics');
 
     //get number of user of each country
     const countryStatistic = await this.cacheManager.get('country_statistic');
@@ -324,6 +325,7 @@ export class StatisticService {
       countryStatistic: countryStatistic,
       monthlyRecords: monthlyRecords,
     };
+    console.log(statistic);
 
     return statistic;
   }
