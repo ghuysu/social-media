@@ -55,15 +55,6 @@
         "tsConfigPath": "apps/message/tsconfig.app.json"
       }
     },
-    "analytics": {
-      "type": "application",
-      "root": "apps/analytics",
-      "entryFile": "main",
-      "sourceRoot": "apps/analytics/src",
-      "compilerOptions": {
-        "tsConfigPath": "apps/analytics/tsconfig.app.json"
-      }
-    },
     "reporting": {
       "type": "application",
       "root": "apps/reporting",
@@ -98,6 +89,15 @@
       "sourceRoot": "apps/api-gateway/src",
       "compilerOptions": {
         "tsConfigPath": "apps/api-gateway/tsconfig.app.json"
+      }
+    },
+    "statistic": {
+      "type": "application",
+      "root": "apps/statistic",
+      "entryFile": "main",
+      "sourceRoot": "apps/statistic/src",
+      "compilerOptions": {
+        "tsConfigPath": "apps/statistic/tsconfig.app.json"
       }
     }
   }

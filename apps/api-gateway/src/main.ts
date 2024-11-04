@@ -2,20 +2,26 @@ import { NestFactory } from '@nestjs/core';
 import { ApiGatewayModule } from './api-gateway.module';
 import { ConfigService } from '@nestjs/config';
 import { ValidationPipe } from '@nestjs/common';
-import { ApiKeyGuard } from './guards/api-key.guard';
 import helmet from 'helmet';
-
+import * as compression from 'compression';
 async function bootstrap() {
   const app = await NestFactory.create(ApiGatewayModule);
+
   const configService = app.get(ConfigService);
+
+  app.use(compression());
   app.use(helmet());
   app.useGlobalPipes(
     new ValidationPipe({
       whitelist: true,
     }),
   );
-  app.enableCors();
-  app.useGlobalGuards(new ApiKeyGuard(app.get(ConfigService)));
+
+  app.enableCors({
+    origin: '*', // Chỉ định nguồn gốc được phép
+    methods: 'GET,HEAD,PUT,PATCH,POST,DELETE', // Các phương thức HTTP được phép
+  });
+
   await app.listen(configService.get('PORT'));
 }
 bootstrap();

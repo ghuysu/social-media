@@ -20,5 +20,6 @@ async function bootstrap() {
     }),
   );
   await app.startAllMicroservices();
+  await app.listen(configService.get('SOCKET_PORT'));
 }
 bootstrap();

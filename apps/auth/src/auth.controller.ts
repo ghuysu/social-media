@@ -9,11 +9,16 @@ import {
   BadRequestException,
 } from '@nestjs/common';
 import { AuthService } from './auth.service';
-import { ChangePasswordDto, CheckEmailDto } from '@app/common';
+import {
+  ChangePasswordDto,
+  CheckEmailDto,
+  CreateAdminAccountDto,
+} from '@app/common';
 import { CreateNormalUserDto } from '@app/common';
 import { SignInDto } from '@app/common';
-import { MessagePattern } from '@nestjs/microservices';
-import { CheckCodeDto } from '@app/common/dto/auth-dto/check-code.dto';
+import { MessagePattern, Payload } from '@nestjs/microservices';
+import { CheckCodeDto } from '@app/common';
+import { GoogleSignInDto } from '@app/common';
 
 @Controller()
 export class AuthController {
@@ -77,7 +82,9 @@ export class AuthController {
   @MessagePattern('sign_in_as_user')
   async signinAsUser(@Body() dto: SignInDto) {
     try {
+      console.log(dto);
       const data = await this.authService.signInAsNormalUser(dto);
+      console.log(data);
       return {
         status: HttpStatus.OK,
         message: 'Signed in as normal user successfully.',
@@ -108,6 +115,32 @@ export class AuthController {
       return {
         status: HttpStatus.OK,
         message: 'Sign in as admin successfully.',
+        metadata: result,
+      };
+    } catch (error) {
+      return this.handleError(error);
+    }
+  }
+
+  //Google authentication
+  @MessagePattern('google_redirect')
+  async handleRedirect(user: GoogleSignInDto) {
+    try {
+      const result = await this.authService.googleSignIn(user);
+      return result;
+    } catch (error) {
+      return this.handleError(error);
+    }
+  }
+
+  //root admin
+  @MessagePattern('create_new_admin_account')
+  async createNewAdminAccount(@Payload() dto: CreateAdminAccountDto) {
+    try {
+      const result = await this.authService.createAdminAccount(dto);
+      return {
+        status: HttpStatus.OK,
+        message: 'Created admin account successfully.',
         metadata: result,
       };
     } catch (error) {
@@ -151,7 +184,7 @@ export class AuthController {
     if (error instanceof InternalServerErrorException) {
       return {
         statusCode: HttpStatus.INTERNAL_SERVER_ERROR,
-        message: 'An unexpected error occurred',
+        message: error.message,
         error: 'Internal Server Error',
       };
     }
@@ -159,7 +192,7 @@ export class AuthController {
     // Default case for other errors
     return {
       statusCode: HttpStatus.INTERNAL_SERVER_ERROR,
-      message: 'An unexpected error occurred',
+      message: error.message,
       error: 'Internal Server Error',
     };
   }

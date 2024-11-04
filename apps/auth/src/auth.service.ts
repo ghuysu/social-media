@@ -8,21 +8,28 @@ import {
   UnauthorizedException,
 } from '@nestjs/common';
 import { AuthRepository } from './auth.repository';
-import { AWS_S3_SERVICE, NOTIFICATION_SERVICE } from '@app/common/constants';
+import {
+  AWS_S3_SERVICE,
+  CreateAdminAccountDto,
+  NOTIFICATION_SERVICE,
+  STATISTIC_SERVICE,
+} from '@app/common';
 import { ClientProxy } from '@nestjs/microservices';
 import {
   ChangePasswordDto,
   CheckEmailDto,
   CreateNormalUserDto,
   createTTL,
+  GoogleSignInDto,
+  UserDocument,
 } from '@app/common';
 import * as argon2 from 'argon2';
 import * as Jimp from 'jimp';
 import { ConfigService } from '@nestjs/config';
 import { SignInDto } from '@app/common';
 import { JwtService } from '@nestjs/jwt';
-import { TokenPayload } from './interfaces/token-payload.interface';
-import { CheckCodeDto } from '@app/common/dto/auth-dto/check-code.dto';
+import { TokenPayloadInterface } from '@app/common';
+import { CheckCodeDto } from '@app/common';
 import { CACHE_MANAGER } from '@nestjs/cache-manager';
 import { AdminCodeInterface } from './interfaces/admin-code.interface';
 import { Cache } from 'cache-manager';
@@ -35,12 +42,14 @@ export class AuthService {
     private readonly notificationService: ClientProxy,
     @Inject(AWS_S3_SERVICE)
     private readonly awss3Service: ClientProxy,
+    @Inject(STATISTIC_SERVICE)
+    private readonly statisticService: ClientProxy,
     private readonly configService: ConfigService,
     private readonly jwtService: JwtService,
     @Inject(CACHE_MANAGER) private cacheManager: Cache,
   ) {}
 
-  createImageNameFromFullname(fullname: string): string {
+  private createImageNameFromFullname(fullname: string): string {
     let imageName = fullname.split(' ').join('_');
     //get current time
     const timestamp = new Date().getTime();
@@ -48,46 +57,17 @@ export class AuthService {
     return imageName;
   }
 
-  isValidBirthday(birthday: string): boolean {
-    // Regex để kiểm tra định dạng dd/mm/yyyy
-    const regex = /^(\d{2})\/(\d{2})\/(\d{4})$/;
-
-    // Kiểm tra nếu chuỗi birthday khớp với regex
-    const match = birthday.match(regex);
-    if (!match) {
-      return false;
-    }
-
-    const day = parseInt(match[1], 10);
-    const month = parseInt(match[2], 10);
-    const year = parseInt(match[3], 10);
-
-    // Kiểm tra các giá trị ngày, tháng, năm có hợp lệ không
-    if (
-      month < 1 ||
-      month > 12 ||
-      day < 1 ||
-      day > 31 ||
-      year < 1900 ||
-      year >= new Date().getFullYear()
-    ) {
-      return false;
-    }
-
-    // Kiểm tra số ngày trong tháng
-    const daysInMonth = new Date(year, month, 0).getDate();
-    if (day > daysInMonth) {
-      return false;
-    }
-
-    return true;
-  }
-
-  async createDefaultProfileImage(fullname: string): Promise<Buffer> {
+  private async createDefaultProfileImage(fullname: string): Promise<Buffer> {
     // Lấy chữ cái đầu tiên của tên và họ
-    const firstnameLetter = fullname.split(' ')[0].charAt(0).toUpperCase();
-    const lastnameLetter = fullname.split(' ')[1].charAt(0).toUpperCase();
-    const name = `${firstnameLetter} ${lastnameLetter}`;
+    let name: string;
+
+    if (fullname.includes(' ')) {
+      const firstnameLetter = fullname.split(' ')[0].charAt(0).toUpperCase();
+      const lastnameLetter = fullname.split(' ')[1].charAt(0).toUpperCase();
+      name = `${firstnameLetter} ${lastnameLetter}`;
+    } else {
+      name = fullname.charAt(0).toUpperCase();
+    }
 
     // Tạo ảnh mới với kích thước 100x100 và nền đen
     const image = new Jimp(100, 100, '#000000');
@@ -113,14 +93,31 @@ export class AuthService {
 
   //sign up
   async checkEmailForSignUp({ email }) {
-    //check if email has been registered or not
-    const registeredEmail = await this.authRepository.findOne({
-      email: email,
-      role: 'normal_user',
-    });
+    //get from redis
+    let registeredUser: UserDocument = await this.cacheManager.get(
+      `user:${email}`,
+    );
+
+    if (!registeredUser) {
+      registeredUser = await this.authRepository.findOne({
+        email: email,
+        role: 'normal_user',
+      });
+    }
 
     //throw error if existed
-    if (registeredEmail) {
+    if (registeredUser) {
+      delete registeredUser.password;
+      delete registeredUser.role;
+
+      await this.cacheManager.set(
+        `user:${registeredUser.email}`,
+        registeredUser,
+        {
+          ttl: createTTL(60 * 60 * 24 * 30, 60 * 60 * 24),
+        },
+      );
+
       throw new ConflictException('Existed Resource');
     }
 
@@ -130,9 +127,9 @@ export class AuthService {
     //hash code
     const hashedCode = await argon2.hash(code.toString(), {
       type: argon2.argon2id,
-      memoryCost: 2 ** 16,
-      timeCost: 4,
-      parallelism: 2,
+      memoryCost: 2 ** 10,
+      timeCost: 2,
+      parallelism: 1,
       secret: Buffer.from(this.configService.get('ARGON2_SERCET')),
     });
 
@@ -144,11 +141,9 @@ export class AuthService {
     });
 
     //save code in redis and ttl is 5p
-    this.cacheManager.set(
-      `sign_up_code:${email}`,
-      hashedCode,
-      createTTL(60 * 5 * 1000, 0),
-    );
+    await this.cacheManager.set(`sign_up_code:${email}`, hashedCode, {
+      ttl: createTTL(60 * 5, 0),
+    });
   }
 
   async checkCodeForSignUp({
@@ -184,9 +179,9 @@ export class AuthService {
     //hash password
     const hashedPassword = await argon2.hash(password, {
       type: argon2.argon2id,
-      memoryCost: 2 ** 16, // Tăng số lượng bộ nhớ được sử dụng (64MB)
-      timeCost: 4, // Tăng số lần lặp lại
-      parallelism: 2, // Số luồng đồng thời,
+      memoryCost: 2 ** 10,
+      timeCost: 2,
+      parallelism: 1,
       secret: Buffer.from(this.configService.get('ARGON2_SERCET')),
     });
 
@@ -214,25 +209,66 @@ export class AuthService {
     };
     const user = await this.authRepository.create(newUser);
     delete user.password;
-    delete user.role;
 
-    //save user in redis and ttl is 7 days
-    await this.cacheManager.set(
-      `user:${user.email}`,
-      user,
-      createTTL(60 * 60 * 24 * 7, 60 * 60 * 24),
-    );
+    //save user in redis and ttl is 30 days
+    await this.cacheManager.set(`user:${user.email}`, user, {
+      ttl: createTTL(60 * 60 * 24 * 30, 60 * 60 * 24),
+    });
+
+    //update user statistic
+    this.statisticService.emit('created_user', {});
+
+    //update country statistic
+    this.statisticService.emit('country', { country: country });
   }
 
   //change password
   async checkEmailForChangePassword({ email }: CheckEmailDto) {
-    //check if email has been registered or not
-    const registeredEmail = await this.authRepository.findOne({ email: email });
+    let needToSaveIntoRedis = false;
+    let isAdmin = false;
+    //get from redis
+    let registeredUser: UserDocument = await this.cacheManager.get(
+      `user:${email}`,
+    );
+
+    if (!registeredUser) {
+      isAdmin = true;
+      registeredUser = await this.cacheManager.get(`admin:${email}`);
+    }
+
+    if (!registeredUser) {
+      needToSaveIntoRedis = true;
+
+      registeredUser = await this.authRepository.findOne(
+        {
+          email,
+        },
+        [
+          { path: 'friendList', select: '_id fullname profileImageUrl' },
+          {
+            path: 'friendInvites',
+            select: '_id sender receiver createdAt',
+            populate: [
+              {
+                path: 'sender',
+                select: '_id fullname profileImageUrl',
+              },
+              {
+                path: 'receiver',
+                select: '_id fullname profileImageUrl',
+              },
+            ],
+          },
+        ],
+      );
+    }
 
     //throw error if existed
-    if (!registeredEmail) {
+    if (!registeredUser) {
       throw new NotFoundException('Not Found Resource');
     }
+
+    isAdmin = registeredUser.role === 'normal_user' ? false : true;
 
     //create a 6-digit validation code
     const code = Math.floor(100000 + Math.random() * 900000);
@@ -240,9 +276,9 @@ export class AuthService {
     //hash code
     const hashedCode = await argon2.hash(code.toString(), {
       type: argon2.argon2id,
-      memoryCost: 2 ** 16,
-      timeCost: 4,
-      parallelism: 2,
+      memoryCost: 2 ** 10,
+      timeCost: 2,
+      parallelism: 1,
       secret: Buffer.from(this.configService.get('ARGON2_SERCET')),
     });
 
@@ -257,6 +293,31 @@ export class AuthService {
     this.cacheManager.set(`change_password_code:${email}`, hashedCode, {
       ttl: createTTL(60 * 5, 0),
     });
+
+    //save into redis if needed
+    if (needToSaveIntoRedis) {
+      if (isAdmin) {
+        delete registeredUser.password;
+
+        await this.cacheManager.set(
+          `admin:${registeredUser.email}`,
+          registeredUser,
+          {
+            ttl: createTTL(60 * 60 * 24 * 30, 60 * 60 * 24),
+          },
+        );
+      } else {
+        delete registeredUser.password;
+
+        await this.cacheManager.set(
+          `user:${registeredUser.email}`,
+          registeredUser,
+          {
+            ttl: createTTL(60 * 60 * 24 * 7, 60 * 60 * 24),
+          },
+        );
+      }
+    }
   }
 
   async checkCodeForChangePassword({
@@ -289,9 +350,9 @@ export class AuthService {
 
     const hashedPassword = await argon2.hash(password, {
       type: argon2.argon2id,
-      memoryCost: 2 ** 16, // Tăng số lượng bộ nhớ được sử dụng (64MB)
-      timeCost: 4, // Tăng số lần lặp lại
-      parallelism: 2, // Số luồng đồng thời,
+      memoryCost: 2 ** 10,
+      timeCost: 2,
+      parallelism: 1,
       secret: Buffer.from(this.configService.get('ARGON2_SERCET')),
     });
 
@@ -310,18 +371,37 @@ export class AuthService {
 
   //sign in
   async signInAsNormalUser({ email, password }: SignInDto) {
-    //find user by email
-    const user = await this.authRepository.findOne({
-      email,
-      role: 'normal_user',
-    });
+    // find user by email
+    const user = await this.authRepository.findOne(
+      {
+        email,
+        role: 'normal_user',
+      },
+      [
+        { path: 'friendList', select: '_id fullname profileImageUrl' },
+        {
+          path: 'friendInvites',
+          select: '_id sender receiver createdAt',
+          populate: [
+            {
+              path: 'sender',
+              select: '_id fullname profileImageUrl',
+            },
+            {
+              path: 'receiver',
+              select: '_id fullname profileImageUrl',
+            },
+          ],
+        },
+      ],
+    );
 
-    //if user doesn't exist
+    // if user doesn't exist
     if (!user) {
       throw new UnauthorizedException('Not found credentials');
     }
 
-    //check password is correct or not
+    // check password is correct or not
     const isCorrectPassword = await argon2.verify(user.password, password, {
       secret: Buffer.from(this.configService.get('ARGON2_SERCET')),
     });
@@ -330,29 +410,59 @@ export class AuthService {
       throw new UnauthorizedException('Incorrect credentials');
     }
 
-    //delete sensitive properties
+    // delete sensitive properties
     delete user.password;
-    delete user.role;
 
-    //create sign-in token
-    const tokenPayload: TokenPayload = {
+    // create sign-in token
+    const tokenPayload: TokenPayloadInterface = {
       userId: user._id,
+      email: user.email,
+      role: user.role,
     };
 
-    const signInToken = await this.jwtService.signAsync(tokenPayload);
+    const signInToken = await this.jwtService.signAsync(tokenPayload, {
+      secret: this.configService.get('JWT_SECRET'),
+      expiresIn: `${this.configService.get('JWT_EXPIRATION_USER')}s`,
+    });
+
+    // Prepend 'Bearer ' to the token
+    const bearerToken = `Bearer ${signInToken}`;
+
+    await this.cacheManager.set(`user:${user.email}`, user, {
+      ttl: createTTL(60 * 60 * 24 * 30, 60 * 60 * 24),
+    });
 
     return {
       user,
-      signInToken,
+      signInToken: bearerToken,
     };
   }
 
   async signInAsAdmin({ email, password }: SignInDto) {
     //find admin by email
-    const admin = await this.authRepository.findOne({
-      email,
-      $or: [{ role: 'admin' }, { role: 'root_admin' }],
-    });
+    const admin = await this.authRepository.findOne(
+      {
+        email,
+        $or: [{ role: 'admin' }, { role: 'root_admin' }],
+      },
+      [
+        { path: 'friendList', select: '_id fullname profileImageUrl' },
+        {
+          path: 'friendInvites',
+          select: '_id sender receiver createdAt',
+          populate: [
+            {
+              path: 'sender',
+              select: '_id fullname profileImageUrl',
+            },
+            {
+              path: 'receiver',
+              select: '_id fullname profileImageUrl',
+            },
+          ],
+        },
+      ],
+    );
 
     //if admin doesn't exist
     if (!admin) {
@@ -377,9 +487,9 @@ export class AuthService {
     //hash code
     const hashedCode = await argon2.hash(code.toString(), {
       type: argon2.argon2id,
-      memoryCost: 2 ** 16,
-      timeCost: 4,
-      parallelism: 2,
+      memoryCost: 2 ** 10,
+      timeCost: 2,
+      parallelism: 1,
       secret: Buffer.from(this.configService.get('ARGON2_SERCET')),
     });
 
@@ -392,11 +502,9 @@ export class AuthService {
 
     const redisRecord: AdminCodeInterface = { code: hashedCode, admin };
     //save code in redis and ttl is 5p
-    this.cacheManager.set(
-      `admin_sign_in_code:${email}`,
-      redisRecord,
-      createTTL(60 * 5, 0),
-    );
+    this.cacheManager.set(`admin_sign_in_code:${email}`, redisRecord, {
+      ttl: createTTL(60 * 5, 0),
+    });
   }
 
   async checkCodeToSignInAsAdmin({ email, code }: CheckCodeDto) {
@@ -426,22 +534,178 @@ export class AuthService {
     await this.cacheManager.del(id);
 
     //save admin record to redis
-    await this.cacheManager.set(
-      `admin:${admin.email}`,
-      admin,
-      createTTL(60 * 60 * 24 * 7, 60 * 60 * 24),
-    );
+    await this.cacheManager.set(`admin:${admin.email}`, admin, {
+      ttl: createTTL(60 * 60 * 24 * 7, 60 * 60 * 24),
+    });
 
     //create sign-in token
-    const tokenPayload: TokenPayload = {
+    const tokenPayload: TokenPayloadInterface = {
       userId: admin._id,
+      email: admin.email,
+      role: admin.role,
     };
 
     const signInToken = await this.jwtService.signAsync(tokenPayload, {
-      secret: this.configService.get('JWT_SECRET_ADMIN'),
-      expiresIn: this.configService.get('JWT_EXPIRATION_ADMIN'),
+      secret: this.configService.get('JWT_SECRET'),
+      expiresIn: `${this.configService.get('JWT_EXPIRATION_ADMIN')}s`,
     });
 
-    return { admin, signInToken };
+    // Prepend 'Bearer ' to the token
+    const bearerToken = `Bearer ${signInToken}`;
+
+    return { admin, signInToken: bearerToken };
+  }
+
+  //google authentication
+  async googleSignIn({ email, fullname, profileImageUrl }: GoogleSignInDto) {
+    let needToSaveIntoRedis = false;
+    //get from redis
+    let registeredUser: UserDocument = await this.cacheManager.get(
+      `user:${email}`,
+    );
+
+    //if redis don't have, check from db
+    if (!registeredUser) {
+      needToSaveIntoRedis = true;
+
+      registeredUser = await this.authRepository.findOne(
+        {
+          email,
+          role: 'normal_user',
+        },
+        [
+          { path: 'friendList', select: '_id fullname profileImageUrl' },
+          {
+            path: 'friendInvites',
+            select: '_id sender receiver createdAt',
+            populate: [
+              {
+                path: 'sender',
+                select: '_id fullname profileImageUrl',
+              },
+              {
+                path: 'receiver',
+                select: '_id fullname profileImageUrl',
+              },
+            ],
+          },
+        ],
+      );
+    }
+
+    //if account is not existed, sign up
+    if (!registeredUser) {
+      const user: UserDocument = await this.authRepository.create({
+        email,
+        fullname,
+        profileImageUrl,
+        isSignedInByGoogle: true,
+      });
+
+      registeredUser = user;
+    }
+
+    //create sign-in token
+    const tokenPayload: TokenPayloadInterface = {
+      userId: registeredUser._id,
+      email: registeredUser.email,
+      role: registeredUser.role,
+    };
+
+    const signInToken = await this.jwtService.signAsync(tokenPayload, {
+      secret: this.configService.get('JWT_SECRET'),
+      expiresIn: `${this.configService.get('JWT_EXPIRATION_USER')}s`,
+    });
+
+    // Prepend 'Bearer ' to the token
+    const bearerToken = `Bearer ${signInToken}`;
+
+    //delete sensitive information
+    delete registeredUser.password;
+
+    //save into redis if needed
+    if (needToSaveIntoRedis) {
+      await this.cacheManager.set(
+        `user:${registeredUser.email}`,
+        registeredUser,
+        {
+          ttl: createTTL(60 * 60 * 24 * 7, 60 * 60 * 24),
+        },
+      );
+    }
+
+    //return user information and sign in token
+    return {
+      user: registeredUser,
+      signInToken: bearerToken,
+    };
+  }
+
+  //admin
+  async createAdminAccount({
+    adminId,
+    email,
+    fullname,
+    birthday,
+    country,
+  }: CreateAdminAccountDto) {
+    //check email
+    const usedEmail = await this.authRepository.findOne({ email });
+    if (usedEmail) {
+      throw new ConflictException('Used resource');
+    }
+    //default password
+    const defaultPassword = 'Abcxyz-123';
+    //hash password
+    const hashedPassword = await argon2.hash(defaultPassword, {
+      type: argon2.argon2id,
+      memoryCost: 2 ** 10,
+      timeCost: 2,
+      parallelism: 1,
+      secret: Buffer.from(this.configService.get('ARGON2_SERCET')),
+    });
+
+    //create default profile image
+    const image = await this.createDefaultProfileImage(fullname);
+
+    //upload to awss3 to get url
+    const imageName = this.createImageNameFromFullname(fullname);
+    this.awss3Service.emit('upload_image', {
+      image,
+      imageName,
+    });
+    const profileImageUrl = `https://${this.configService.get('BUCKET_NAME')}.s3.${this.configService.get(
+      'AWSS3_REGION',
+    )}.amazonaws.com/${imageName}`;
+
+    //create new account
+    const newAdmin = {
+      email,
+      fullname,
+      password: hashedPassword,
+      birthday,
+      country,
+      profileImageUrl,
+      role: 'admin',
+    };
+
+    const admin = await this.authRepository.create(newAdmin);
+    delete admin.password;
+
+    //save user in redis and ttl is 30 days
+    await this.cacheManager.set(`admin:${admin.email}`, admin, {
+      ttl: createTTL(60 * 60 * 24 * 30, 60 * 60 * 24),
+    });
+
+    //notify admin about new admin
+    this.notificationService.emit('emit_message', {
+      name: 'new_admin',
+      payload: {
+        rootAdminId: adminId,
+        newAdminId: admin._id,
+      },
+    });
+
+    return { ...admin, defaultPassword: defaultPassword };
   }
 }

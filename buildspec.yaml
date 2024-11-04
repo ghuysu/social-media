@@ -1,0 +1,45 @@
+version: 0.2
+
+phases:
+  pre_build:
+    commands:
+      - aws ecr get-login-password --region ap-southeast-2 | docker login --username AWS --password-stdin 654654586768.dkr.ecr.ap-southeast-2.amazonaws.com
+  build:
+    commands:
+      - docker build -t api-gateway -f ./apps/api-gateway/Dockerfile .
+      - docker tag api-gateway:latest 654654586768.dkr.ecr.ap-southeast-2.amazonaws.com/api-gateway:latest
+
+      - docker build -t auth -f ./apps/auth/Dockerfile .
+      - docker tag auth:latest 654654586768.dkr.ecr.ap-southeast-2.amazonaws.com/auth:latest
+
+      - docker build -t aws-s3 -f ./apps/aws-s3/Dockerfile .
+      - docker tag aws-s3:latest 654654586768.dkr.ecr.ap-southeast-2.amazonaws.com/aws-s3:latest
+
+      - docker build -t feed -f ./apps/feed/Dockerfile .
+      - docker tag feed:latest 654654586768.dkr.ecr.ap-southeast-2.amazonaws.com/feed:latest
+
+      - docker build -t message -f ./apps/message/Dockerfile .
+      - docker tag message:latest 654654586768.dkr.ecr.ap-southeast-2.amazonaws.com/message:latest
+
+      - docker build -t notification -f ./apps/notification/Dockerfile .
+      - docker tag notification:latest 654654586768.dkr.ecr.ap-southeast-2.amazonaws.com/notification:latest
+
+      - docker build -t reporting -f ./apps/reporting/Dockerfile .
+      - docker tag reporting:latest 654654586768.dkr.ecr.ap-southeast-2.amazonaws.com/reporting:latest
+
+      - docker build -t statistic -f ./apps/statistic/Dockerfile .
+      - docker tag statistic:latest 654654586768.dkr.ecr.ap-southeast-2.amazonaws.com/statistic:latest
+
+      - docker build -t user -f ./apps/user/Dockerfile .
+      - docker tag user:latest 654654586768.dkr.ecr.ap-southeast-2.amazonaws.com/user:latest
+  post_build:
+    commands:
+      - docker push 654654586768.dkr.ecr.ap-southeast-2.amazonaws.com/api-gateway:latest
+      - docker push 654654586768.dkr.ecr.ap-southeast-2.amazonaws.com/auth:latest
+      - docker push 654654586768.dkr.ecr.ap-southeast-2.amazonaws.com/aws-s3:latest
+      - docker push 654654586768.dkr.ecr.ap-southeast-2.amazonaws.com/feed:latest
+      - docker push 654654586768.dkr.ecr.ap-southeast-2.amazonaws.com/message:latest
+      - docker push 654654586768.dkr.ecr.ap-southeast-2.amazonaws.com/notification:latest
+      - docker push 654654586768.dkr.ecr.ap-southeast-2.amazonaws.com/reporting:latest
+      - docker push 654654586768.dkr.ecr.ap-southeast-2.amazonaws.com/statistic:latest
+      - docker push 654654586768.dkr.ecr.ap-southeast-2.amazonaws.com/user:latest

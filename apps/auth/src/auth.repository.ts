@@ -1,4 +1,4 @@
-import { AbstractRepository } from '@app/common';
+import { AbstractRepository, USER_DOCUMENT } from '@app/common';
 import { Injectable, Logger } from '@nestjs/common';
 import { UserDocument } from '@app/common';
 import { Model } from 'mongoose';
@@ -9,7 +9,7 @@ export class AuthRepository extends AbstractRepository<UserDocument> {
   protected readonly logger = new Logger(AuthRepository.name);
 
   constructor(
-    @InjectModel(UserDocument.name)
+    @InjectModel(USER_DOCUMENT)
     private readonly userModel: Model<UserDocument>,
   ) {
     super(userModel);

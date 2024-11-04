@@ -2,8 +2,24 @@
   "extends": "../../tsconfig.json",
   "compilerOptions": {
     "declaration": false,
-    "outDir": "../../dist/apps/auth"
+    "outDir": "../../dist/apps/auth",
+    "baseUrl": "./",
+    "paths": {
+      "@app/common": ["../../libs/common/src"]
+    },
+    "typeRoots": [
+      "../../node_modules/@types",
+      "./types" // Thư mục riêng cho types
+    ]
   },
-  "include": ["src/**/*"],
-  "exclude": ["node_modules", "dist", "test", "**/*spec.ts"]
+  "include": [
+    "src/**/*",
+    "express.d.ts"
+  ],
+  "exclude": [
+    "node_modules",
+    "dist",
+    "test",
+    "**/*spec.ts"
+  ]
 }

@@ -1,0 +1,65 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+* {
+  padding: 0;
+  margin: 0;
+  box-sizing: border-box;
+}
+
+body {
+  color: white;
+  width: 100dvw;
+  overflow-x: hidden;
+  height: 100%;
+  background: #000;
+  border-color: #3b3b3b;
+  user-select: none;
+  background-color: black;
+  font-family: 'Quicksand', sans-serif;
+}
+
+#root {
+  width: 100%;
+  max-width: 1680px;
+  padding: 0;
+}
+
+.regular {
+  font-weight: 400;
+}
+
+.medium {
+  font-weight: 500;
+}
+
+.semibold {
+  font-weight: 600;
+}
+
+.bold {
+  font-weight: 700;
+}
+
+.btn {
+  background-color: #252428;
+  color: #9c9899;
+  padding: 15px 15px;
+  border-radius: 30px;
+  font-size: 16px;
+  cursor: default;
+}
+
+.btn-sm {
+  background-color: #252428;
+  padding: 7px 10px;
+  border-radius: 15px;
+  cursor: pointer;
+}
+
+.btn.isActive {
+  background-color: #ffb700;
+  color: black;
+  cursor: pointer;
+}
