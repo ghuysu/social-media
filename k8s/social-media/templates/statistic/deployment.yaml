@@ -1,0 +1,19 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  labels:
+    app: statistic
+  name: statistic
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: statistic
+  template:
+    metadata:
+      labels:
+        app: statistic
+    spec:
+      containers:
+        - image: 654654586768.dkr.ecr.ap-southeast-2.amazonaws.com/statistic:latest
+          name: statistic
