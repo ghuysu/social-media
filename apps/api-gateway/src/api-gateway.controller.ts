@@ -343,7 +343,7 @@ export class ApiGatewayController {
   @Delete('user')
   async deleteAccount(
     @User() userPayload: TokenPayloadInterface,
-    @Body() dto: DeleteAccountDto,
+    @Query() dto: DeleteAccountDto,
   ) {
     return this.apiGatewayService.deleteAccount(userPayload, dto);
   }

@@ -1,0 +1,19 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  labels:
+    app: aws-s3
+  name: aws-s3
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: aws-s3
+  template:
+    metadata:
+      labels:
+        app: aws-s3
+    spec:
+      containers:
+        - image: 654654586768.dkr.ecr.ap-southeast-2.amazonaws.com/aws-s3:latest
+          name: aws-s3
