@@ -10,7 +10,7 @@ import thanhnhan.myproject.socialmedia.data.model.Message
 import java.net.URISyntaxException
 
 class SocketManager {
-    private lateinit var socket: Socket
+    lateinit var socket: Socket
 
     fun initSocket() {
         try {

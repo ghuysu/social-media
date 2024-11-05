@@ -5,8 +5,11 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Clear
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -24,6 +27,9 @@ import thanhnhan.myproject.socialmedia.ui.theme.AppTheme
 import thanhnhan.myproject.socialmedia.viewmodel.ChatViewModel
 import thanhnhan.myproject.socialmedia.data.Result
 import thanhnhan.myproject.socialmedia.data.model.SendMessageRequest
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.delay
+import androidx.compose.ui.platform.LocalFocusManager
 
 @Composable
 fun ChatDetailScreen(
@@ -32,10 +38,42 @@ fun ChatDetailScreen(
     authToken: String,
     currentUserId: String
 ) {
+    // Set currentUserId cho ViewModel khi màn hình được tạo
+    LaunchedEffect(Unit) {
+        chatViewModel.setCurrentUserId(currentUserId)
+    }
+
     val conversationResult by chatViewModel.conversationsResult.collectAsState()
     val sendMessageResult by chatViewModel.sendMessageResult.collectAsState()
+    val pendingMessageId by chatViewModel.pendingMessageId.collectAsState()
     val newMessage by chatViewModel.newMessage.collectAsState()
     var message by remember { mutableStateOf(TextFieldValue("")) }
+
+    val scope = rememberCoroutineScope()
+    val focusManager = LocalFocusManager.current
+    var isSubmitting by remember { mutableStateOf(false) }
+
+    // Thêm LazyListState
+    val listState = rememberLazyListState()
+
+    // Tự động cuộn xuống khi có tin nhắn mới
+    LaunchedEffect(conversationResult) {
+        conversationResult?.let { result ->
+            when (result) {
+                is Result.Success -> {
+                    val conversation = result.data?.metadata?.find { it.friendId == friendId }
+                    conversation?.conversation?.size?.let { size ->
+                        if (size > 0) {
+                            scope.launch {
+                                listState.animateScrollToItem(size - 1)
+                            }
+                        }
+                    }
+                }
+                else -> {}
+            }
+        }
+    }
 
     // Truy vấn 1 cuộc trò chuyện với bạn bè cụ thể
     LaunchedEffect(friendId) {
@@ -61,50 +99,70 @@ fun ChatDetailScreen(
             Column(
                 modifier = Modifier
                     .fillMaxSize()
-                    .padding(16.dp)
             ) {
+                // Header luôn hiển thị ở trên cùng
                 when (val result = conversationResult) {
                     is Result.Success -> {
                         val conversation = result.data?.metadata?.find { it.friendId == friendId }
-                        if (conversation != null) {
-                            ChatHeader(
-                                profileImageUrl = conversation.conversation.firstOrNull()?.receiverId?.profileImageUrl,
-                                fullname = conversation.conversation.firstOrNull()?.receiverId?.fullname ?: "Unknown"
-                            )
-
-                            LazyColumn(
-                                modifier = Modifier.weight(1f),
-                                contentPadding = PaddingValues(vertical = 8.dp),
-                                // Bỏ reverseLayout vì không cần thiết
-                                reverseLayout = false
-                            ) {
-                                items(conversation.conversation) { message ->
-                                    MessageItem(message, currentUserId)
-                                }
-                            }
-                        } else {
-                            ChatHeader(
-                                profileImageUrl = conversation?.conversation?.firstOrNull()?.receiverId?.profileImageUrl,
-                                fullname = conversation?.conversation?.firstOrNull()?.receiverId?.fullname ?: "Unknown"
-                            )
-                            Text("Không tìm thấy cuộc trò chuyện", color = Color.Gray)
-                        }
+                        ChatHeader(
+                            profileImageUrl = conversation?.conversation?.firstOrNull()?.receiverId?.profileImageUrl,
+                            fullname = conversation?.conversation?.firstOrNull()?.receiverId?.fullname ?: "Unknown"
+                        )
                     }
-                    is Result.Error -> {
-                        Text("Lỗi: ${result.message}", color = Color.Red)
-                    }
-                    null -> {
-                        Text("Đang tải...", color = Color.Gray)
+                    else -> {
+                        ChatHeader(
+                            profileImageUrl = null,
+                            fullname = "Unknown"
+                        )
                     }
                 }
 
-                Spacer(modifier = Modifier.weight(1f)) // Đẩy Row xuống dưới cùng
+                // Content chính
+                Box(
+                    modifier = Modifier
+                        .weight(1f) // Chiếm phần còn lại của màn hình
+                        .fillMaxWidth()
+                ) {
+                    when (val result = conversationResult) {
+                        is Result.Success -> {
+                            val conversation = result.data?.metadata?.find { it.friendId == friendId }
+                            if (conversation != null) {
+                                LazyColumn(
+                                    state = listState,
+                                    modifier = Modifier
+                                        .fillMaxSize()
+                                        .padding(horizontal = 16.dp),
+                                    contentPadding = PaddingValues(vertical = 8.dp),
+                                    reverseLayout = false
+                                ) {
+                                    items(
+                                        items = conversation.conversation,
+                                        key = { message -> message._id }
+                                    ) { message ->
+                                        MessageItem(
+                                            message = message,
+                                            currentUserId = currentUserId,
+                                            isPending = message._id == pendingMessageId,
+                                            isError = sendMessageResult is Result.Error && message._id == pendingMessageId
+                                        )
+                                    }
+                                }
+                            }
+                        }
+                        is Result.Error -> {
+                            Text("Lỗi: ${result.message}", color = Color.Red)
+                        }
+                        null -> {
+                            Text("Đang tải...", color = Color.Gray)
+                        }
+                    }
+                }
 
-                // Ô nhập tin nhắn và nút gửi
+                // Input field ở dưới cùng
                 Row(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .padding(vertical = 8.dp),
+                        .padding(16.dp),
                     verticalAlignment = Alignment.CenterVertically
                 ) {
                     TextField(
@@ -113,22 +171,72 @@ fun ChatDetailScreen(
                         placeholder = { Text("Nhập tin nhắn...") },
                         modifier = Modifier
                             .weight(1f)
-                            .background(Color(0xFF333333), RoundedCornerShape(8.dp))
+                            .background(Color(0xFF333333), RoundedCornerShape(8.dp)),
+                        enabled = !isSubmitting,
+                        colors = TextFieldDefaults.colors(
+                            focusedContainerColor = Color(0xFF333333),
+                            unfocusedContainerColor = Color(0xFF333333),
+                            disabledContainerColor = Color(0xFF333333),
+                        )
                     )
+
                     IconButton(
                         onClick = {
-                            if (message.text.isNotBlank()) {
-                                val sendMessageRequest = SendMessageRequest(friendId, message.text)
-                                chatViewModel.sendMessage(authToken, sendMessageRequest)
-                                message = TextFieldValue("")
+                            if (message.text.isNotBlank() && !isSubmitting) {
+                                scope.launch {
+                                    try {
+                                        isSubmitting = true
+                                        // Lưu nội dung tin nhắn
+                                        val messageText = message.text
+
+                                        // Clear focus trước
+                                        focusManager.clearFocus()
+
+                                        // Đợi một chút để input connection được xử lý
+                                        delay(50)
+
+                                        // Clear input
+                                        message = TextFieldValue("")
+
+                                        // Đợi thêm một chút trước khi gửi tin nhắn
+                                        delay(50)
+
+                                        // Tạo request và gửi tin nhắn
+                                        val sendMessageRequest = SendMessageRequest(friendId, messageText)
+                                        chatViewModel.sendMessage(authToken, sendMessageRequest)
+
+                                        // Cuộn xuống sau khi gửi tin nhắn
+                                        delay(100) // Đợi một chút để tin nhắn được thêm vào
+                                        listState.animateScrollToItem(
+                                            conversationResult?.let { result ->
+                                                when (result) {
+                                                    is Result.Success -> {
+                                                        result.data?.metadata
+                                                            ?.find { it.friendId == friendId }
+                                                            ?.conversation?.size?.minus(1) ?: 0
+                                                    }
+                                                    else -> 0
+                                                }
+                                            } ?: 0
+                                        )
+                                    }
+                                    finally {
+                                        // Đảm bảo reset trạng thái submitting
+                                        isSubmitting = false
+                                    }
+                                }
                             }
                         },
-                        modifier = Modifier.padding(start = 8.dp)
+                        modifier = Modifier.padding(start = 8.dp),
+                        enabled = message.text.isNotBlank() && !isSubmitting
                     ) {
                         Icon(
                             painter = painterResource(id = R.drawable.send),
                             contentDescription = "Send",
-                            tint = Color(0xFFCFCFCF)
+                            tint = if (message.text.isNotBlank() && !isSubmitting)
+                                Color(0xFFCFCFCF)
+                            else
+                                Color(0xFF666666)
                         )
                     }
                 }
@@ -138,67 +246,116 @@ fun ChatDetailScreen(
 }
 
 @Composable
-fun ChatHeader(profileImageUrl: String?, fullname: String) {
-    Row(
+fun ChatHeader(
+    profileImageUrl: String?,
+    fullname: String
+) {
+    Surface(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(vertical = 16.dp),
-        verticalAlignment = Alignment.CenterVertically
+            .height(60.dp),
+        color = Color(0xFF2D333B) // Màu tối hơn một chút so với background
     ) {
-        if (profileImageUrl != null) {
-            Image(
-                painter = rememberAsyncImagePainter(profileImageUrl),
-                contentDescription = "Profile Image",
-                modifier = Modifier
-                    .size(40.dp)
-                    .clip(CircleShape)
-                    .background(Color.Gray)
-            )
-        } else {
-            Box(
-                modifier = Modifier
-                    .size(40.dp)
-                    .background(Color.Gray, CircleShape),
-                contentAlignment = Alignment.Center
-            ) {
-                Text(
-                    text = fullname.take(2).uppercase(),
-                    color = Color.White,
-                    fontSize = 16.sp
+        Row(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(horizontal = 16.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            if (profileImageUrl != null) {
+                Image(
+                    painter = rememberAsyncImagePainter(profileImageUrl),
+                    contentDescription = "Profile Image",
+                    modifier = Modifier
+                        .size(40.dp)
+                        .clip(CircleShape)
+                        .background(Color.Gray)
                 )
+            } else {
+                Box(
+                    modifier = Modifier
+                        .size(40.dp)
+                        .background(Color.Gray, CircleShape),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Text(
+                        text = fullname.take(2).uppercase(),
+                        color = Color.White,
+                        fontSize = 16.sp
+                    )
+                }
             }
+
+            Spacer(modifier = Modifier.width(12.dp))
+
+            Text(
+                text = fullname,
+                style = AppTheme.appTypography.title,
+                color = Color.White
+            )
         }
-        Spacer(modifier = Modifier.width(8.dp))
-        Text(
-            text = fullname,
-            style = AppTheme.appTypography.title,
-            color = Color.White
-        )
     }
 }
 
 @Composable
-fun MessageItem(message: Message, currentUserId: String) {
-    // Kiểm tra tin nhắn có phải của người dùng hiện tại hay không
-    val isCurrentUser = message.senderId?._id == currentUserId
-    val backgroundColor = if (isCurrentUser) Color(0xFF4CAF50) else Color(0xFF333333)
-    val alignment = if (isCurrentUser) Alignment.End else Alignment.Start
+fun MessageItem(
+    message: Message,
+    currentUserId: String,
+    isPending: Boolean,
+    isError: Boolean
+) {
+    // Thêm log để debug
+    println("Message display - ID: ${message._id}")
+    println("Sender ID: ${message.senderId._id}")
+    println("Current User ID: $currentUserId")
+    println("Is Current User: ${message.senderId._id == currentUserId}")
+
+    // Kiểm tra lại logic xác định người gửi
+    val isCurrentUser = message.senderId._id == currentUserId
 
     Column(
         modifier = Modifier
             .fillMaxWidth()
             .padding(vertical = 4.dp),
-        horizontalAlignment = alignment
+        // Đảm bảo alignment đúng với người gửi
+        horizontalAlignment = if (isCurrentUser) Alignment.End else Alignment.Start
     ) {
         Box(
             modifier = Modifier
-                .background(backgroundColor, RoundedCornerShape(8.dp))
+                .background(
+                    when {
+                        isError -> Color.Red.copy(alpha = 0.7f)
+                        isCurrentUser -> Color(0xFF4CAF50)
+                        else -> Color(0xFF333333)
+                    },
+                    RoundedCornerShape(8.dp)
+                )
                 .padding(8.dp)
         ) {
-            Text(
-                text = message.content,
-                color = Color.White
-            )
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(4.dp)
+            ) {
+                Text(
+                    text = message.content,
+                    color = Color.White
+                )
+
+                if (isPending) {
+                    Box(
+                        modifier = Modifier
+                            .size(8.dp)
+                            .background(Color.White, CircleShape)
+                    )
+                } else if (isError) {
+                    Icon(
+                        imageVector = Icons.Default.Clear,
+                        contentDescription = "Error",
+                        tint = Color.White,
+                        modifier = Modifier.size(16.dp)
+                    )
+                }
+            }
         }
     }
 }
