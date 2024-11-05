@@ -27,4 +27,4 @@ RUN npm ci --only=production
 
 COPY --from=development /usr/src/app/dist/ ./dist
 
-CMD ["node", "dist/apps/notification/main"]
+CMD ["node", "dist/apps/notification/src/main"]
