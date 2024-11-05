@@ -15,7 +15,8 @@ import thanhnhan.myproject.socialmedia.data.model.ChangeCountryResponse
 import thanhnhan.myproject.socialmedia.data.model.ChangeEmailResponse
 import thanhnhan.myproject.socialmedia.data.model.ChangeFullnameResponse
 import thanhnhan.myproject.socialmedia.data.model.CheckEmailCodeResponse
-import java.io.File
+import thanhnhan.myproject.socialmedia.data.model.DeleteAccountResponse
+import thanhnhan.myproject.socialmedia.data.model.SendCodeDeleteAccountResponse
 
 class UserProfileViewModel(
     private val repository: UserProfileRepository
@@ -91,6 +92,28 @@ class UserProfileViewModel(
                     }
                 }
                 _changeAvatarResult.value = result
+            }
+        }
+    }
+
+    private val _sendDeleteAccountCodeResult = MutableStateFlow<Result<SendCodeDeleteAccountResponse>?>(null)
+    val sendDeleteAccountCodeResult: MutableStateFlow<Result<SendCodeDeleteAccountResponse>?> = _sendDeleteAccountCodeResult
+
+    fun sendDeleteAccountCode(authToken: String) {
+        viewModelScope.launch {
+            repository.sendDeleteAccountCode(authToken).collect {
+                _sendDeleteAccountCodeResult.value = it
+            }
+        }
+    }
+
+    private val _deleteAccountResult = MutableStateFlow<Result<DeleteAccountResponse>?>(null)
+    val deleteAccountResult: MutableStateFlow<Result<DeleteAccountResponse>?> = _deleteAccountResult
+
+    fun deleteAccount(authToken: String, code: Int) {
+        viewModelScope.launch {
+            repository.deleteAccount(authToken, code).collect {
+                _deleteAccountResult.value = it
             }
         }
     }

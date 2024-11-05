@@ -12,7 +12,6 @@ import retrofit2.http.Part
 import retrofit2.http.Path
 import retrofit2.http.Query
 import thanhnhan.myproject.socialmedia.data.model.AcceptFriendResponse
-import thanhnhan.myproject.socialmedia.data.model.ChangeAvatarRequest
 import thanhnhan.myproject.socialmedia.data.model.ChangeAvatarResponse
 import thanhnhan.myproject.socialmedia.data.model.SignInUserRequest
 import thanhnhan.myproject.socialmedia.data.model.SignInUserResponse
@@ -38,6 +37,9 @@ import thanhnhan.myproject.socialmedia.data.model.ReadMessagesRequest
 import thanhnhan.myproject.socialmedia.data.model.ReadMessagesResponse
 import thanhnhan.myproject.socialmedia.data.model.RemoveFriendInviteResponse
 import thanhnhan.myproject.socialmedia.data.model.CreateFeedResponse
+import thanhnhan.myproject.socialmedia.data.model.DeleteAccountRequest
+import thanhnhan.myproject.socialmedia.data.model.DeleteAccountResponse
+import thanhnhan.myproject.socialmedia.data.model.SendCodeDeleteAccountResponse
 import thanhnhan.myproject.socialmedia.data.model.EditFeedRequest
 import thanhnhan.myproject.socialmedia.data.model.GetEveryoneFeedsResponse
 import thanhnhan.myproject.socialmedia.data.model.GetUserInfoResponse
@@ -193,5 +195,16 @@ interface Api {
         @Header("authorization") authToken: String,
         @Body messageRequest: CommentRequest
     ): CommentResponse
+
+    @POST("api/user/delete/check")
+    suspend fun sendDeleteAccountCode(
+        @Header("authorization") authToken: String
+    ): SendCodeDeleteAccountResponse
+
+    @DELETE("api/user")
+    suspend fun deleteAccount(
+        @Header("authorization") authToken: String,
+        @Query("code") request: Int
+    ): DeleteAccountResponse
 }
 
