@@ -19,6 +19,9 @@ import thanhnhan.myproject.socialmedia.data.model.ChangeFullnameRequest
 import thanhnhan.myproject.socialmedia.data.model.ChangeFullnameResponse
 import thanhnhan.myproject.socialmedia.data.model.CheckEmailCodeRequest
 import thanhnhan.myproject.socialmedia.data.model.CheckEmailCodeResponse
+import thanhnhan.myproject.socialmedia.data.model.DeleteAccountRequest
+import thanhnhan.myproject.socialmedia.data.model.DeleteAccountResponse
+import thanhnhan.myproject.socialmedia.data.model.SendCodeDeleteAccountResponse
 
 
 class UserProfileRepository(
@@ -132,6 +135,39 @@ class UserProfileRepository(
                 emit(Result.Error(message = "Network error: ${e.message}"))
             } catch (e: Exception) {
                 Log.e("ChangeAvatar", "Unexpected error: ${e.message}")
+                emit(Result.Error(message = "Unexpected error: ${e.message}"))
+            }
+        }
+    }
+
+    suspend fun sendDeleteAccountCode(authToken: String): Flow<Result<SendCodeDeleteAccountResponse>> {
+        return flow {
+            try {
+                val response = api.sendDeleteAccountCode(authToken)
+                emit(Result.Success(response))
+            } catch (e: HttpException) {
+                val errorMessage = e.response()?.errorBody()?.string()
+                emit(Result.Error(message = errorMessage ?: "Error occurred"))
+            } catch (e: IOException) {
+                emit(Result.Error(message = "Network error: ${e.message}"))
+            } catch (e: Exception) {
+                emit(Result.Error(message = "Unexpected error: ${e.message}"))
+            }
+        }
+    }
+
+    suspend fun deleteAccount(authToken: String, code: Int): Flow<Result<DeleteAccountResponse>> {
+        return flow {
+            try {
+//                val request = DeleteAccountRequest(code)
+                val response = api.deleteAccount(authToken, code)
+                emit(Result.Success(response))
+            } catch (e: HttpException) {
+                val errorMessage = e.response()?.errorBody()?.string()
+                emit(Result.Error(message = errorMessage ?: "Error occurred"))
+            } catch (e: IOException) {
+                emit(Result.Error(message = "Network error: ${e.message}"))
+            } catch (e: Exception) {
                 emit(Result.Error(message = "Unexpected error: ${e.message}"))
             }
         }

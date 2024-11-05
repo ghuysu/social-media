@@ -29,6 +29,7 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.DateRange
@@ -37,6 +38,7 @@ import androidx.compose.material.icons.filled.Email
 import androidx.compose.material.icons.filled.ExitToApp
 import androidx.compose.material.icons.filled.Place
 import androidx.compose.material.icons.filled.Share
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Divider
@@ -45,6 +47,7 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ModalBottomSheet
+import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -62,6 +65,7 @@ import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.TextStyle
+import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
@@ -70,6 +74,7 @@ import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import coil.compose.rememberAsyncImagePainter
 import com.yalantis.ucrop.UCrop
+import kotlinx.coroutines.delay
 import okhttp3.MediaType.Companion.toMediaTypeOrNull
 import okhttp3.MultipartBody
 import okhttp3.RequestBody
@@ -98,7 +103,7 @@ fun ProfileScreen(
     openChangeFullname: () -> Unit,
     repository: UserProfileRepository,  // Truyền repository từ đây
     authToken: String,  // Nhận authToken
-    openIntro: () -> Unit
+    openIntro: () -> Unit,
 ) {
     val user = UserSession.user
 
@@ -114,7 +119,8 @@ fun ProfileScreen(
                 mutableStateOf("https://selection-page.onrender.com/friend/" + user._id)
             }
             val context = LocalContext.current
-            val clipboardManager = context.getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager
+            val clipboardManager =
+                context.getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager
 
             ProfileSection(
                 userAvatar = user.profileImageUrl,
@@ -164,7 +170,7 @@ fun ProfileSection(
     userName: String,
     openChangeFullname: () -> Unit,
     repository: UserProfileRepository,  // Nhận repository
-    authToken: String  // Nhận authToken
+    authToken: String,  // Nhận authToken
 ) {
     Column(
         horizontalAlignment = Alignment.CenterHorizontally,
@@ -253,7 +259,7 @@ fun InviteSection(
     userAvatar: String,
     linkAddFriend: String,
     context: Context,
-    clipboardManager: ClipboardManager
+    clipboardManager: ClipboardManager,
 ) {
     Column(
         modifier = Modifier
@@ -301,7 +307,7 @@ fun InviteSection(
 fun SettingsSection(
     openChangeEmail: () -> Unit,
     openChangeBirthday: () -> Unit,
-    openChangeCountry: () -> Unit
+    openChangeCountry: () -> Unit,
 ) {
     Column(
         modifier = Modifier
@@ -340,7 +346,8 @@ fun SettingsSection(
 @Composable
 fun SummarySection(openIntro: () -> Unit) {
     val context = LocalContext.current
-    val viewModelFactory = SignInUserViewModelFactory(SignInUserRepository(RetrofitInstance.api), context)
+    val viewModelFactory =
+        SignInUserViewModelFactory(SignInUserRepository(RetrofitInstance.api), context)
     val viewModel: SignInUserViewModel = viewModel(factory = viewModelFactory)
     Column(
         modifier = Modifier
@@ -357,11 +364,104 @@ fun SummarySection(openIntro: () -> Unit) {
             }
         )
         Divider(color = Color.Gray)
+        var showDialog by remember { mutableStateOf(false) }
+        var inputValue by remember { mutableStateOf("") }
+
+        val api = RetrofitInstance.api
+        val repository = UserProfileRepository(api)
+        val userViewModel: UserProfileViewModel = viewModel(factory = UserProfileViewModelFactory(repository))
+        val sendDeleteAccountCodeResult = userViewModel.sendDeleteAccountCodeResult.collectAsState().value
+        val deleteAccountResult = userViewModel.deleteAccountResult.collectAsState().value
+
+        LaunchedEffect(key1 = sendDeleteAccountCodeResult) {
+            sendDeleteAccountCodeResult?.let { result ->
+                when (result) {
+                    is Result.Success -> {
+                        Toast.makeText(
+                            context,
+                            "${result.data?.message}",
+                            Toast.LENGTH_LONG
+                        ).show()
+                    }
+                    is Result.Error -> {
+                        Toast.makeText(
+                            context,
+                            result.message ?: "Error occurred",
+                            Toast.LENGTH_LONG
+                        ).show()
+                    }
+                }
+            }
+        }
+
+        LaunchedEffect(key1 = deleteAccountResult) {
+            deleteAccountResult?.let { result ->
+                when (result) {
+                    is Result.Success -> {
+                        Toast.makeText(
+                            context,
+                            "${result.data?.message}",
+                            Toast.LENGTH_LONG
+                        ).show()
+                        viewModel.logout()
+                        openIntro()
+                    }
+                    is Result.Error -> {
+                        Toast.makeText(
+                            context,
+                            result.message ?: "Error occurred",
+                            Toast.LENGTH_LONG
+                        ).show()
+                        Log.d("DEBUG", result.message ?: "Error occurred")
+                    }
+                }
+            }
+        }
+
+        if (showDialog) {
+            AlertDialog(
+                onDismissRequest = { showDialog = false },
+                title = { Text(text = "Confirmation") },
+                text = {
+                    Column {
+                        Text(text = "Please enter the code sent to your email to delete your account.")
+                        Spacer(modifier = Modifier.height(8.dp))
+                        OutlinedTextField(
+                            value = inputValue,
+                            onValueChange = {
+                                if (it.all { char -> char.isDigit() }) {
+                                    inputValue = it
+                                }
+                            },
+                            label = { Text("Enter number") },
+                            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number)
+                        )
+                    }
+                },
+                confirmButton = {
+                    Button(
+                        onClick = {
+                            userViewModel.deleteAccount(UserSession.signInToken!!, inputValue.toInt())
+                        }
+                    ) {
+                        Text("Confirm")
+                    }
+                },
+                dismissButton = {
+                    Button(
+                        onClick = { showDialog = false }
+                    ) {
+                        Text("Cancel")
+                    }
+                }
+            )
+        }
         SettingItem(
             icon = Icons.Default.Delete,
             text = "Delete account",
             onClick = {
-                // TODO: Delete account
+                userViewModel.sendDeleteAccountCode(UserSession.signInToken!!)
+                showDialog = true
             },
             color = Color.Red
         )
@@ -373,7 +473,7 @@ fun SettingItem(
     icon: ImageVector,
     text: String,
     onClick: () -> Unit,
-    color: Color = Color.White
+    color: Color = Color.White,
 ) {
     Row(
         verticalAlignment = Alignment.CenterVertically,
@@ -456,6 +556,7 @@ fun AvatarChangeButton(authToken: String, repository: UserProfileRepository) {
                     // Cập nhật UserSession
                     UserSession.user?.profileImageUrl = newProfileImageUrl
                 }
+
                 is Result.Error -> {
                     Toast.makeText(
                         context,
@@ -463,6 +564,7 @@ fun AvatarChangeButton(authToken: String, repository: UserProfileRepository) {
                         Toast.LENGTH_LONG
                     ).show()
                 }
+
                 else -> {
                     // Optional: handle other cases if needed
                 }
@@ -494,7 +596,8 @@ fun AvatarChangeButton(authToken: String, repository: UserProfileRepository) {
         bitmap?.let {
             val uri = bitmapToUri(bitmap, context)  // Chuyển bitmap sang URI để sử dụng với UCrop
             uri?.let { uri ->
-                val destinationUri = Uri.fromFile(File(context.cacheDir, "cropped_camera_image.jpg"))
+                val destinationUri =
+                    Uri.fromFile(File(context.cacheDir, "cropped_camera_image.jpg"))
                 val uCropIntent = UCrop.of(uri, destinationUri)
                     .withAspectRatio(1f, 1f)  // Kích thước vuông
                     .withMaxResultSize(1080, 1080)
@@ -532,7 +635,11 @@ fun AvatarChangeButton(authToken: String, repository: UserProfileRepository) {
                 horizontalAlignment = Alignment.CenterHorizontally,
                 verticalArrangement = Arrangement.spacedBy(16.dp)
             ) {
-                Text("Choose an option", style = MaterialTheme.typography.titleMedium, color = Color.White)
+                Text(
+                    "Choose an option",
+                    style = MaterialTheme.typography.titleMedium,
+                    color = Color.White
+                )
 
                 // Tùy chọn 1: Choose from Gallery
                 Button(
@@ -544,7 +651,7 @@ fun AvatarChangeButton(authToken: String, repository: UserProfileRepository) {
                         .fillMaxWidth()
                         .height(70.dp)
                         .padding(horizontal = 8.dp, vertical = 8.dp),
-                    colors =ButtonDefaults.buttonColors(Color(0xFF3C434A))
+                    colors = ButtonDefaults.buttonColors(Color(0xFF3C434A))
                 ) {
                     Text("Choose from Gallery")
                 }
@@ -561,7 +668,7 @@ fun AvatarChangeButton(authToken: String, repository: UserProfileRepository) {
                         .fillMaxWidth()
                         .height(70.dp)
                         .padding(horizontal = 8.dp, vertical = 8.dp),
-                    colors =ButtonDefaults.buttonColors(Color(0xFF3C434A))
+                    colors = ButtonDefaults.buttonColors(Color(0xFF3C434A))
                 ) {
                     Text("Shot by camera")
                 }
@@ -583,6 +690,7 @@ fun AvatarChangeButton(authToken: String, repository: UserProfileRepository) {
         }
     }
 }
+
 @Preview(showBackground = true)
 @Composable
 fun ProfileScreenPreview() {
