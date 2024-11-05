@@ -75,11 +75,10 @@ fun ChatDetailScreen(
                             LazyColumn(
                                 modifier = Modifier.weight(1f),
                                 contentPadding = PaddingValues(vertical = 8.dp),
-                                // Xóa reverseLayout = true để tin nhắn mới hiển thị ở dưới
+                                // Bỏ reverseLayout vì không cần thiết
                                 reverseLayout = false
                             ) {
-                                // Đảo ngược thứ tự danh sách tin nhắn
-                                items(conversation.conversation.reversed()) { message ->
+                                items(conversation.conversation) { message ->
                                     MessageItem(message, currentUserId)
                                 }
                             }
