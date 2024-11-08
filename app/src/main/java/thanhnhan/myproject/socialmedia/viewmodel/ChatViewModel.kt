@@ -52,7 +52,7 @@ class ChatViewModel(
         socketManager.listenForNewMessages { message ->
             viewModelScope.launch {
                 _newMessage.value = message
-                // Cập nhật danh sách tin nhắn
+                // Cập nhật danh s��ch tin nhắn
                 updateConversationWithNewMessage(message)
             }
         }
@@ -126,14 +126,6 @@ class ChatViewModel(
         }
     }
 
-    // Hàm cập nhật tin nhắn local thành tin nhắn từ server
-    private fun updateLocalMessageToServerMessage(localId: String, serverMessage: Message) {
-        _localMessages.value = _localMessages.value.map { message ->
-            if (message._id == localId) serverMessage else message
-        }
-    }
-
-
     // Lắng nghe tin nhắn mới từ socket và cập nhật giao diện
     private val _readMessagesResult = MutableStateFlow<Result<ReadMessagesResponse>?>(null)
     val readMessagesResult: StateFlow<Result<ReadMessagesResponse>?> get() = _readMessagesResult
@@ -145,12 +137,8 @@ class ChatViewModel(
                 _readMessagesResult.value = result
                 when (result) {
                     is Result.Success -> {
-                        println("readMessages success: ${result.data}")
-                        // Cập nhật trạng thái đã đọc cho các tin nhắn
-                        updateConversationReadStatus(
-                            friendId = friendId,
-                            messageIds = messageIds
-                        )
+                        // Cập nhật trạng thái đã đọc trong conversation
+                        updateConversationReadStatus(friendId, messageIds)
                     }
                     is Result.Error -> {
                         println("readMessages error: ${result.message}")

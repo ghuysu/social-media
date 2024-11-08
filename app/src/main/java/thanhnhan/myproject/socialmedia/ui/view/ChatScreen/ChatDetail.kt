@@ -172,14 +172,31 @@ fun ChatDetailScreen(
                                             MessageTimestamp(message.createdAt)
                                         }
 
-                                        MessageItem(
-                                            message = message,
-                                            currentUserId = currentUserId,
-                                            isPending = message._id == pendingMessageId,
-                                            isError = sendMessageResult is Result.Error && message._id == pendingMessageId,
-                                            isLastMessage = message == conversation.conversation.lastOrNull(),
-                                            isRead = message.isRead
-                                        )
+                                        val isLastMessage = message == conversation.conversation.lastOrNull()
+                                        val isCurrentUserMessage = message.senderId._id == currentUserId
+
+                                        Column {
+                                            MessageItem(
+                                                message = message,
+                                                currentUserId = currentUserId,
+                                                isPending = message._id == pendingMessageId,
+                                                isError = sendMessageResult is Result.Error && message._id == pendingMessageId,
+                                                isLastMessage = isLastMessage && isCurrentUserMessage,
+                                                isRead = message.isRead
+                                            )
+
+                                            // Hiển thị trạng thái seen/unseen cho tin nhắn cuối cùng của người dùng hiện tại
+                                            if (isLastMessage && isCurrentUserMessage) {
+                                                Text(
+                                                    text = if (message.isRead) "Seen" else "Unseen",
+                                                    color = Color.Gray,
+                                                    fontSize = 12.sp,
+                                                    modifier = Modifier
+                                                        .padding(top = 2.dp, end = 8.dp)
+                                                        .align(Alignment.End)
+                                                )
+                                            }
+                                        }
                                     }
                                 }
                             }
@@ -385,15 +402,6 @@ fun MessageItem(
                     )
                 }
             }
-        }
-
-        if (isLastMessage && isCurrentUser && isRead) {
-            Text(
-                text = "Seen",
-                color = Color.Gray,
-                fontSize = 12.sp,
-                modifier = Modifier.padding(top = 2.dp, end = 4.dp)
-            )
         }
     }
 }
