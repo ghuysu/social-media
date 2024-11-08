@@ -30,6 +30,7 @@ import thanhnhan.myproject.socialmedia.data.model.SendMessageRequest
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.delay
 import androidx.compose.ui.platform.LocalFocusManager
+import thanhnhan.myproject.socialmedia.utils.DateTimeUtils
 
 @Composable
 fun ChatDetailScreen(
@@ -90,6 +91,29 @@ fun ChatDetailScreen(
         }
     }
 
+    LaunchedEffect(Unit) {
+        // Lấy danh sách ID tin nhắn chưa đọc
+        conversationResult?.let { result ->
+            when (result) {
+                is Result.Success -> {
+                    val conversation = result.data?.metadata?.find { it.friendId == friendId }
+                    val unreadMessageIds = conversation?.conversation
+                        ?.filter { !it.isRead && it.senderId._id != currentUserId }
+                        ?.map { it._id }
+
+                    if (!unreadMessageIds.isNullOrEmpty()) {
+                        chatViewModel.readMessages(
+                            authToken = authToken,
+                            friendId = friendId,
+                            messageIds = unreadMessageIds
+                        )
+                    }
+                }
+                else -> {}
+            }
+        }
+    }
+
     AppTheme {
         Box(
             modifier = Modifier
@@ -139,11 +163,22 @@ fun ChatDetailScreen(
                                         items = conversation.conversation,
                                         key = { message -> message._id }
                                     ) { message ->
+                                        val previousMessage = conversation.conversation.getOrNull(
+                                            conversation.conversation.indexOf(message) - 1
+                                        )
+
+                                        // Hiển thị timestamp nếu cần
+                                        if (DateTimeUtils.shouldShowTimestamp(message, previousMessage)) {
+                                            MessageTimestamp(message.createdAt)
+                                        }
+
                                         MessageItem(
                                             message = message,
                                             currentUserId = currentUserId,
                                             isPending = message._id == pendingMessageId,
-                                            isError = sendMessageResult is Result.Error && message._id == pendingMessageId
+                                            isError = sendMessageResult is Result.Error && message._id == pendingMessageId,
+                                            isLastMessage = message == conversation.conversation.lastOrNull(),
+                                            isRead = message.isRead
                                         )
                                     }
                                 }
@@ -174,9 +209,9 @@ fun ChatDetailScreen(
                             .background(Color(0xFF333333), RoundedCornerShape(8.dp)),
                         enabled = !isSubmitting,
                         colors = TextFieldDefaults.colors(
-                            focusedContainerColor = Color(0xFF333333),
-                            unfocusedContainerColor = Color(0xFF333333),
-                            disabledContainerColor = Color(0xFF333333),
+                            focusedContainerColor = Color(0xFFCFCFCF),
+                            unfocusedContainerColor = Color(0xFFCFCFCF),
+                            disabledContainerColor = Color(0xFFCFCFCF),
                         )
                     )
 
@@ -302,22 +337,16 @@ fun MessageItem(
     message: Message,
     currentUserId: String,
     isPending: Boolean,
-    isError: Boolean
+    isError: Boolean,
+    isLastMessage: Boolean = false,
+    isRead: Boolean = false
 ) {
-    // Thêm log để debug
-    println("Message display - ID: ${message._id}")
-    println("Sender ID: ${message.senderId._id}")
-    println("Current User ID: $currentUserId")
-    println("Is Current User: ${message.senderId._id == currentUserId}")
-
-    // Kiểm tra lại logic xác định người gửi
     val isCurrentUser = message.senderId._id == currentUserId
 
     Column(
         modifier = Modifier
             .fillMaxWidth()
             .padding(vertical = 4.dp),
-        // Đảm bảo alignment đúng với người gửi
         horizontalAlignment = if (isCurrentUser) Alignment.End else Alignment.Start
     ) {
         Box(
@@ -357,5 +386,37 @@ fun MessageItem(
                 }
             }
         }
+
+        if (isLastMessage && isCurrentUser && isRead) {
+            Text(
+                text = "Seen",
+                color = Color.Gray,
+                fontSize = 12.sp,
+                modifier = Modifier.padding(top = 2.dp, end = 4.dp)
+            )
+        }
+    }
+}
+
+@Composable
+fun MessageTimestamp(timestamp: String) {
+    println("Debug - Timestamp received: $timestamp")
+    Box(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(vertical = 8.dp),
+        contentAlignment = Alignment.Center
+    ) {
+        Text(
+            text = DateTimeUtils.formatMessageTime(timestamp),
+            color = Color.Gray,
+            fontSize = 12.sp,
+            modifier = Modifier
+                .background(
+                    color = Color(0xFF2D333B),
+                    shape = RoundedCornerShape(12.dp)
+                )
+                .padding(horizontal = 12.dp, vertical = 4.dp)
+        )
     }
 }

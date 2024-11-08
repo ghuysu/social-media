@@ -138,18 +138,55 @@ class ChatViewModel(
     private val _readMessagesResult = MutableStateFlow<Result<ReadMessagesResponse>?>(null)
     val readMessagesResult: StateFlow<Result<ReadMessagesResponse>?> get() = _readMessagesResult
 
-    fun readMessages(authToken: String, readMessagesRequest: ReadMessagesRequest) {
+    fun readMessages(authToken: String, friendId: String, messageIds: List<String>) {
         viewModelScope.launch {
-            repository.readMessages(authToken, readMessagesRequest).collect { result ->
+            val request = ReadMessagesRequest(messageIds)
+            repository.readMessages(authToken, request).collect { result ->
                 _readMessagesResult.value = result
                 when (result) {
                     is Result.Success -> {
                         println("readMessages success: ${result.data}")
+                        // Cập nhật trạng thái đã đọc cho các tin nhắn
+                        updateConversationReadStatus(
+                            friendId = friendId,
+                            messageIds = messageIds
+                        )
                     }
                     is Result.Error -> {
                         println("readMessages error: ${result.message}")
                     }
                 }
+            }
+        }
+    }
+
+    private fun updateConversationReadStatus(friendId: String, messageIds: List<String>) {
+        _conversationsResult.value?.let { currentResult ->
+            when (currentResult) {
+                is Result.Success -> {
+                    val updatedMetadata = currentResult.data?.metadata?.map { conversation ->
+                        if (conversation.friendId == friendId) {
+                            conversation.copy(
+                                conversation = conversation.conversation.map { message ->
+                                    if (messageIds.contains(message._id)) {
+                                        message.copy(isRead = true)
+                                    } else {
+                                        message
+                                    }
+                                }
+                            )
+                        } else {
+                            conversation
+                        }
+                    }
+
+                    updatedMetadata?.let {
+                        _conversationsResult.value = Result.Success(
+                            currentResult.data?.copy(metadata = it)
+                        )
+                    }
+                }
+                else -> {}
             }
         }
     }
