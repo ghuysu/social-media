@@ -181,8 +181,6 @@ fun ChatDetailScreen(
                                                 currentUserId = currentUserId,
                                                 isPending = message._id == pendingMessageId,
                                                 isError = sendMessageResult is Result.Error && message._id == pendingMessageId,
-                                                isLastMessage = isLastMessage && isCurrentUserMessage,
-                                                isRead = message.isRead
                                             )
 
                                             // Hiển thị trạng thái seen/unseen cho tin nhắn cuối cùng của người dùng hiện tại
@@ -217,20 +215,26 @@ fun ChatDetailScreen(
                         .padding(16.dp),
                     verticalAlignment = Alignment.CenterVertically
                 ) {
-                    TextField(
-                        value = message,
-                        onValueChange = { message = it },
-                        placeholder = { Text("Nhập tin nhắn...") },
+                    Box(
                         modifier = Modifier
                             .weight(1f)
-                            .background(Color(0xFF333333), RoundedCornerShape(8.dp)),
-                        enabled = !isSubmitting,
-                        colors = TextFieldDefaults.colors(
-                            focusedContainerColor = Color(0xFFCFCFCF),
-                            unfocusedContainerColor = Color(0xFFCFCFCF),
-                            disabledContainerColor = Color(0xFFCFCFCF),
+                            .background(Color(0xFF333333), RoundedCornerShape(40.dp))  // Màu nền bên ngoài của TextField
+                            .padding(2.dp)  // Khoảng cách giữa Box và TextField
+                    ) {
+                        TextField(
+                            value = message,
+                            onValueChange = { message = it },
+                            placeholder = { Text("Message ...") },
+                            modifier = Modifier.fillMaxWidth(),
+                            enabled = !isSubmitting,
+                            shape = RoundedCornerShape(40.dp),  // Bo góc cho TextField
+                            colors = TextFieldDefaults.colors(
+                                focusedContainerColor = Color(0xFFCFCFCF),
+                                unfocusedContainerColor = Color(0xFFCFCFCF),
+                                disabledContainerColor = Color(0xFFCFCFCF),
+                            )
                         )
-                    )
+                    }
 
                     IconButton(
                         onClick = {
@@ -319,7 +323,7 @@ fun ChatHeader(
                     painter = rememberAsyncImagePainter(profileImageUrl),
                     contentDescription = "Profile Image",
                     modifier = Modifier
-                        .size(40.dp)
+                        .size(50.dp)
                         .clip(CircleShape)
                         .background(Color.Gray)
                 )
@@ -355,28 +359,32 @@ fun MessageItem(
     currentUserId: String,
     isPending: Boolean,
     isError: Boolean,
-    isLastMessage: Boolean = false,
-    isRead: Boolean = false
 ) {
     val isCurrentUser = message.senderId._id == currentUserId
 
     Column(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(vertical = 4.dp),
+            .padding(vertical = 2.dp, horizontal = 8.dp),
         horizontalAlignment = if (isCurrentUser) Alignment.End else Alignment.Start
     ) {
         Box(
             modifier = Modifier
+                .widthIn(max = 280.dp) // Giới hạn chiều rộng tối đa
                 .background(
                     when {
                         isError -> Color.Red.copy(alpha = 0.7f)
                         isCurrentUser -> Color(0xFF4CAF50)
                         else -> Color(0xFF333333)
                     },
-                    RoundedCornerShape(8.dp)
+                    RoundedCornerShape(
+                        topStart = 16.dp,
+                        topEnd = 16.dp,
+                        bottomStart = if (isCurrentUser) 16.dp else 4.dp,
+                        bottomEnd = if (isCurrentUser) 4.dp else 16.dp
+                    )
                 )
-                .padding(8.dp)
+                .padding(horizontal = 12.dp, vertical = 8.dp)
         ) {
             Row(
                 verticalAlignment = Alignment.CenterVertically,

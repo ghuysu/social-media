@@ -113,5 +113,23 @@ class SocketManager {
         val messageJson = JSONObject(Gson().toJson(message))
         socket.emit("sendMessage", messageJson)
     }
+    fun listenForFullnameChanges(onFullnameChanged: (String, String, String) -> Unit) {
+        socket.on("change_fullname") { args ->
+            if (args.isNotEmpty()) {
+                try {
+                    val data = args[0] as JSONObject
+                    val userId = data.getString("userId")
+                    val metadata = data.getJSONObject("metadata")
+                    val newFullname = metadata.getString("fullname")
+                    val profileImageUrl = metadata.getString("profileImageUrl")
+
+                    onFullnameChanged(userId, newFullname, profileImageUrl)
+                    println("Received fullname change: User $userId changed name to $newFullname")
+                } catch (e: Exception) {
+                    println("Error parsing fullname change: ${e.message}")
+                }
+            }
+        }
+    }
 }
 

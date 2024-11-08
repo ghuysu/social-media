@@ -132,9 +132,9 @@ fun SignInContent(
             contentAlignment = Alignment.TopCenter
         ) {
             Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                Spacer(modifier = Modifier.height(50.dp))
+                Spacer(modifier = Modifier.height(20.dp))
                 SignInLogo()
-                Spacer(modifier = Modifier.height(80.dp))
+                Spacer(modifier = Modifier.height(40.dp))
                 SignInTitle()
 
                 SignInEmailField(
@@ -157,12 +157,11 @@ fun SignInContent(
                     )
                 }
                 SignInReport(text = errorMessage ?: "")
-
-                Spacer(modifier = Modifier.height(100.dp))
+                SignInButton(onClick = onContinueClick)
+                Spacer(modifier = Modifier.height(50.dp))
                 SignInAgreementText()
 
                 Spacer(modifier = Modifier.height(20.dp))
-                SignInButton(onClick = onContinueClick)
             }
         }
     }

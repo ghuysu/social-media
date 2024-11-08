@@ -15,6 +15,7 @@ import thanhnhan.myproject.socialmedia.data.model.ChangeCountryResponse
 import thanhnhan.myproject.socialmedia.data.model.ChangeEmailResponse
 import thanhnhan.myproject.socialmedia.data.model.ChangeFullnameResponse
 import thanhnhan.myproject.socialmedia.data.model.CheckEmailCodeResponse
+import thanhnhan.myproject.socialmedia.data.network.SocketManager
 import java.io.File
 
 class UserProfileViewModel(
@@ -93,5 +94,33 @@ class UserProfileViewModel(
                 _changeAvatarResult.value = result
             }
         }
+    }
+    private val socketManager = SocketManager()
+    private val _friendFullnameUpdates = MutableStateFlow<Triple<String, String, String>?>(null)
+    val friendFullnameUpdates: StateFlow<Triple<String, String, String>?> = _friendFullnameUpdates
+
+    init {
+        socketManager.initSocket()
+        setupSocketListeners()
+    }
+
+    private fun setupSocketListeners() {
+        socketManager.listenForFullnameChanges { userId, newFullname, profileImageUrl ->
+            viewModelScope.launch {
+                _friendFullnameUpdates.value = Triple(userId, newFullname, profileImageUrl)
+            }
+        }
+    }
+    fun connectSocket() {
+        socketManager.connect()
+    }
+
+    fun disconnectSocket() {
+        socketManager.disconnect()
+    }
+
+    override fun onCleared() {
+        super.onCleared()
+        socketManager.disconnect()
     }
 }
