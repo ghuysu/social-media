@@ -14,6 +14,8 @@ import thanhnhan.myproject.socialmedia.data.model.CommentResponse
 import thanhnhan.myproject.socialmedia.data.model.GetEveryoneFeedsResponse
 import thanhnhan.myproject.socialmedia.data.model.GetUserInfoResponse
 import thanhnhan.myproject.socialmedia.data.model.ReactFeedResponse
+import thanhnhan.myproject.socialmedia.data.model.ReportFeedResponse
+import thanhnhan.myproject.socialmedia.data.model.ReportUserResponse
 import thanhnhan.myproject.socialmedia.data.model.SignInUserResponse
 import thanhnhan.myproject.socialmedia.data.model.UpdateFeedResponse
 import thanhnhan.myproject.socialmedia.utils.FileUtils.uriToFile
@@ -110,5 +112,27 @@ class FeedViewModel(private val repository: FeedRepository) : ViewModel() {
         }
 
         return activityList
+    }
+
+    private val _reportUserResult = MutableStateFlow<Result<ReportUserResponse>?>(null)
+    val reportUserResult: MutableStateFlow<Result<ReportUserResponse>?> = _reportUserResult
+
+    fun reportUser(authToken: String, userId: String, reason: Int) {
+        viewModelScope.launch {
+            repository.reportUser(authToken, userId, reason).collect {
+                _reportUserResult.value = it
+            }
+        }
+    }
+
+    private val _reportFeedResult = MutableStateFlow<Result<ReportFeedResponse>?>(null)
+    val reportFeedResult: MutableStateFlow<Result<ReportFeedResponse>?> = _reportFeedResult
+
+    fun reportFeed(authToken: String, feedId: String, reason: Int) {
+        viewModelScope.launch {
+            repository.reportFeed(authToken, feedId, reason).collect {
+                _reportFeedResult.value = it
+            }
+        }
     }
 }
