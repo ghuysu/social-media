@@ -27,13 +27,16 @@ import androidx.compose.material.AlertDialog
 import androidx.compose.material.DropdownMenu
 import androidx.compose.material.DropdownMenuItem
 import androidx.compose.material.MaterialTheme
+import androidx.compose.material.RadioButton
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.AccountBox
 import androidx.compose.material.icons.filled.AccountCircle
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.KeyboardArrowDown
 import androidx.compose.material.icons.filled.MailOutline
 import androidx.compose.material.icons.filled.MoreVert
+import androidx.compose.material.icons.filled.Warning
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -99,6 +102,8 @@ fun ViewFeed(
     val reactFeedResult by viewModel.reactFeedResult.collectAsState()
     val commentResult by viewModel.commentResult.collectAsState()
     val getUserInfoResult by viewModel.getUserResult.collectAsState()
+    val reportUserResult by viewModel.reportUserResult.collectAsState()
+    val reportFeedResult by viewModel.reportFeedResult.collectAsState()
 
     var friendList by remember { mutableStateOf<List<SignInUserResponse.Metadata.Friend>>(emptyList()) }
 
@@ -168,6 +173,53 @@ fun ViewFeed(
                 is Result.Success -> {
                     friendList = result.data?.metadata?.friendList ?: emptyList()
                 }
+
+                is Result.Error -> {
+                    Toast.makeText(
+                        context,
+                        result.message ?: "Error occurred",
+                        Toast.LENGTH_LONG
+                    ).show()
+                    Log.d("DEBUG", result.message ?: "Error occurred")
+                }
+            }
+        }
+    }
+
+    LaunchedEffect(reportUserResult) {
+        reportUserResult?.let { result ->
+            when (result) {
+                is Result.Success -> {
+                    Toast.makeText(
+                        context,
+                        result.data?.message,
+                        Toast.LENGTH_LONG
+                    ).show()
+                }
+
+                is Result.Error -> {
+                    Toast.makeText(
+                        context,
+                        result.message ?: "Error occurred",
+                        Toast.LENGTH_LONG
+                    ).show()
+                    Log.d("DEBUG", result.message ?: "Error occurred")
+                }
+            }
+        }
+    }
+
+    LaunchedEffect(reportFeedResult) {
+        reportFeedResult?.let { result ->
+            when (result) {
+                is Result.Success -> {
+                    Toast.makeText(
+                        context,
+                        result.data?.message,
+                        Toast.LENGTH_LONG
+                    ).show()
+                }
+
                 is Result.Error -> {
                     Toast.makeText(
                         context,
@@ -693,22 +745,22 @@ fun FriendFeedItem(
             modifier = Modifier
                 .fillMaxWidth()
                 .padding(start = 25.dp, end = 25.dp),
-            horizontalArrangement = Arrangement.Center,
+            horizontalArrangement = Arrangement.SpaceBetween,
             verticalAlignment = Alignment.CenterVertically
         ) {
-//            IconButton(
-//                onClick = {
-//                    // TODO: Open all feed in grid
-//                },
-//                modifier = Modifier.size(40.dp)
-//            ) {
+            IconButton(
+                onClick = {
+                    // TODO: Open all feed in grid
+                },
+                modifier = Modifier.size(40.dp)
+            ) {
 //                Icon(
 //                    imageVector = Icons.Sharp.List,
 //                    contentDescription = null,
 //                    tint = Color.White,
 //                    modifier = Modifier.size(40.dp)
 //                )
-//            }
+            }
 
             IconButton(
                 onClick = {
@@ -732,21 +784,253 @@ fun FriendFeedItem(
                 )
             }
 
-//            IconButton(
-//                onClick = {
-//                    // TODO: Save image
-//                },
-//                modifier = Modifier.size(40.dp)
-//            ) {
-//                Icon(
-//                    painter = painterResource(id = R.drawable.ic_download),
-//                    contentDescription = null,
-//                    tint = Color.White,
-//                    modifier = Modifier.size(40.dp)
-//                )
-//            }
+            Box() {
+                var expanded by remember { mutableStateOf(false) }
+
+                IconButton(
+                    onClick = {
+                        expanded = true
+                    },
+                    modifier = Modifier.size(40.dp)
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.Warning,
+                        contentDescription = null,
+                        tint = Color.White,
+                        modifier = Modifier.size(40.dp)
+                    )
+                }
+
+                var showReportUserDialog by remember { mutableStateOf(false) }
+                var showReportFeedDialog by remember { mutableStateOf(false) }
+
+                if (showReportUserDialog) {
+                    ReportUserDialog(
+                        onDismissRequest = { showReportUserDialog = false },
+                        onConfirm = { showReportUserDialog = false },
+                        onCancel = { showReportUserDialog = false },
+                        viewmodel = viewModel,
+                        userId = feed.userId._id
+                    )
+                }
+
+                if (showReportFeedDialog) {
+                    ReportFeedDialog(
+                        onDismissRequest = { showReportFeedDialog = false },
+                        onConfirm = { showReportFeedDialog = false },
+                        onCancel = { showReportFeedDialog = false },
+                        viewmodel = viewModel,
+                        feedId = feed._id
+                    )
+                }
+                DropdownMenu(
+                    expanded = expanded,
+                    onDismissRequest = { expanded = false },
+                    modifier = Modifier.width(150.dp)
+                ) {
+                    DropdownMenuItem(onClick = {
+                        expanded = false
+                        showReportUserDialog = true
+                    }) {
+                        Box(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .background(
+                                    MaterialTheme.colors.surface,
+                                    shape = RoundedCornerShape(8.dp)
+                                ) // Nền với góc bo
+                                .clickable {
+                                    expanded = false
+                                    showReportUserDialog = true
+                                }, // Thêm sự kiện nhấp
+                            contentAlignment = Alignment.Center // Căn giữa nội dung
+                        ) {
+                            Row(
+                                verticalAlignment = Alignment.CenterVertically, // Căn giữa theo chiều dọc
+                                modifier = Modifier.padding(16.dp) // Padding cho chữ
+                            ) {
+                                // Thêm biểu tượng ở đây
+                                Icon(
+                                    imageVector = Icons.Default.AccountBox, // Thay đổi thành biểu tượng bạn muốn
+                                    contentDescription = "Report User",
+                                    tint = AppTheme.appButtonStyle.backgroundColor, // Màu cho biểu tượng
+                                    modifier = Modifier.size(26.dp) // Kích thước biểu tượng
+                                )
+                                Spacer(modifier = Modifier.width(8.dp)) // Khoảng cách giữa biểu tượng và chữ
+                                Text(
+                                    text = "Report User",
+                                    style = MaterialTheme.typography.body1.copy(
+                                        color = AppTheme.appButtonStyle.backgroundColor, // Màu chữ
+                                        fontWeight = FontWeight.Bold // Chữ đậm
+                                    )
+                                )
+                            }
+                        }
+                    }
+
+                    DropdownMenuItem(onClick = {
+                        expanded = false
+                        showReportFeedDialog = true
+                    }) {
+                        Box(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .background(
+                                    MaterialTheme.colors.surface,
+                                    shape = RoundedCornerShape(8.dp)
+                                ) // Nền với góc bo
+                                .clickable {
+                                    expanded = false
+                                    showReportFeedDialog = true
+                                }, // Thêm sự kiện nhấp
+                            contentAlignment = Alignment.Center // Căn giữa nội dung
+                        ) {
+                            Row(
+                                verticalAlignment = Alignment.CenterVertically, // Căn giữa theo chiều dọc
+                                modifier = Modifier.padding(16.dp) // Padding cho chữ
+                            ) {
+                                // Thêm biểu tượng ở đây
+                                Icon(
+                                    painter = painterResource(id = R.drawable.ic_feed), // Thay đổi thành biểu tượng bạn muốn
+                                    contentDescription = "Report Feed",
+                                    tint = AppTheme.appButtonStyle.backgroundColor, // Màu cho biểu tượng
+                                    modifier = Modifier.size(22.dp) // Kích thước biểu tượng
+                                )
+                                Spacer(modifier = Modifier.width(8.dp)) // Khoảng cách giữa biểu tượng và chữ
+                                Text(
+                                    text = "Report Feed",
+                                    style = MaterialTheme.typography.body1.copy(
+                                        color = AppTheme.appButtonStyle.backgroundColor, // Màu chữ
+                                        fontWeight = FontWeight.Bold // Chữ đậm
+                                    )
+                                )
+                            }
+                        }
+                    }
+                }
+            }
         }
     }
+}
+
+@Composable
+fun ReportUserDialog(
+    onDismissRequest: () -> Unit,
+    onConfirm: () -> Unit,
+    onCancel: () -> Unit,
+    viewmodel: FeedViewModel,
+    userId: String,
+) {
+    var selectedOption by remember { mutableStateOf("Option 1") }
+
+    AlertDialog(
+        onDismissRequest = onDismissRequest,
+        title = { Text(text = "Report User") },
+        text = {
+            Column {
+                Text("Please choose a reason:")
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    modifier = Modifier.padding(vertical = 8.dp)
+                ) {
+                    RadioButton(
+                        selected = selectedOption == "Option 1",
+                        onClick = { selectedOption = "Option 1" }
+                    )
+                    Text("Post Inappropriate Feeds", modifier = Modifier.padding(start = 8.dp))
+                }
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    modifier = Modifier.padding(vertical = 8.dp)
+                ) {
+                    RadioButton(
+                        selected = selectedOption == "Option 2",
+                        onClick = { selectedOption = "Option 2" }
+                    )
+                    Text("Offend Others", modifier = Modifier.padding(start = 8.dp))
+                }
+            }
+        },
+        confirmButton = {
+            TextButton(
+                onClick = {
+                    onConfirm.invoke()
+                    if (selectedOption == "Option 1") {
+                        viewmodel.reportUser(UserSession.signInToken!!, userId, 0)
+                    } else if (selectedOption == "Option 2") {
+                        viewmodel.reportUser(UserSession.signInToken!!, userId, 1)
+                    }
+                }
+            ) {
+                Text("OK")
+            }
+        },
+        dismissButton = {
+            TextButton(onClick = onCancel) {
+                Text("Cancel")
+            }
+        }
+    )
+}
+
+@Composable
+fun ReportFeedDialog(
+    onDismissRequest: () -> Unit,
+    onConfirm: () -> Unit,
+    onCancel: () -> Unit,
+    viewmodel: FeedViewModel,
+    feedId: String,
+) {
+    var selectedOption by remember { mutableStateOf("Option 1") }
+
+    AlertDialog(
+        onDismissRequest = onDismissRequest,
+        title = { Text(text = "Report Feed") },
+        text = {
+            Column {
+                Text("Please choose a reason:")
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    modifier = Modifier.padding(vertical = 8.dp)
+                ) {
+                    RadioButton(
+                        selected = selectedOption == "Option 1",
+                        onClick = { selectedOption = "Option 1" }
+                    )
+                    Text("Sensitive Image", modifier = Modifier.padding(start = 8.dp))
+                }
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    modifier = Modifier.padding(vertical = 8.dp)
+                ) {
+                    RadioButton(
+                        selected = selectedOption == "Option 2",
+                        onClick = { selectedOption = "Option 2" }
+                    )
+                    Text("Inappropriate Words", modifier = Modifier.padding(start = 8.dp))
+                }
+            }
+        },
+        confirmButton = {
+            TextButton(
+                onClick = {
+                    onConfirm.invoke()
+                    if (selectedOption == "Option 1") {
+                        viewmodel.reportFeed(UserSession.signInToken!!, feedId, 0)
+                    } else if (selectedOption == "Option 2") {
+                        viewmodel.reportFeed(UserSession.signInToken!!, feedId, 1)
+                    }
+                }
+            ) {
+                Text("OK")
+            }
+        },
+        dismissButton = {
+            TextButton(onClick = onCancel) {
+                Text("Cancel")
+            }
+        }
+    )
 }
 
 @Composable
@@ -862,7 +1146,7 @@ fun ActivityPopup(
     onDismiss: () -> Unit,
     reaction: List<GetEveryoneFeedsResponse.Feed.Reaction>,
     friendList: List<SignInUserResponse.Metadata.Friend>,
-    viewModel: FeedViewModel
+    viewModel: FeedViewModel,
 ) {
     Column(
         modifier = Modifier.fillMaxSize(),
@@ -936,30 +1220,35 @@ fun ActivityPopup(
                                                 tint = AppTheme.appButtonStyle.backgroundColor,
                                                 modifier = Modifier.size(15.dp)
                                             )
+
                                             "haha" -> Icon(
                                                 painter = painterResource(id = R.drawable.ic_haha),
                                                 contentDescription = null,
                                                 tint = Color.Yellow,
                                                 modifier = Modifier.size(15.dp)
                                             )
+
                                             "love" -> Icon(
                                                 painter = painterResource(id = R.drawable.ic_heart),
                                                 contentDescription = null,
                                                 tint = Color.Unspecified,
                                                 modifier = Modifier.size(15.dp)
                                             )
+
                                             "wow" -> Icon(
                                                 painter = painterResource(id = R.drawable.ic_wow),
                                                 contentDescription = null,
                                                 tint = Color.Yellow,
                                                 modifier = Modifier.size(15.dp)
                                             )
+
                                             "sad" -> Icon(
                                                 painter = painterResource(id = R.drawable.ic_sad),
                                                 contentDescription = null,
                                                 tint = Color.Yellow,
                                                 modifier = Modifier.size(15.dp)
                                             )
+
                                             "angry" -> Icon(
                                                 painter = painterResource(id = R.drawable.ic_angry),
                                                 contentDescription = null,
