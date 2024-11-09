@@ -11,6 +11,7 @@ import thanhnhan.myproject.socialmedia.data.network.Api
 import thanhnhan.myproject.socialmedia.data.Result
 import thanhnhan.myproject.socialmedia.data.model.CommentRequest
 import thanhnhan.myproject.socialmedia.data.model.CommentResponse
+import thanhnhan.myproject.socialmedia.data.model.DeleteFeedResponse
 import thanhnhan.myproject.socialmedia.data.model.EditFeedRequest
 import thanhnhan.myproject.socialmedia.data.model.GetEveryoneFeedsResponse
 import thanhnhan.myproject.socialmedia.data.model.GetUserInfoResponse
@@ -169,6 +170,22 @@ class FeedRepository(private val api: Api) {
             try {
                 val request = ReportFeedRequest(reason)
                 val response = api.reportFeed(authToken, feedId, request)
+                emit(Result.Success(response))
+            } catch (e: HttpException) {
+                val errorMessage = e.response()?.errorBody()?.string()
+                emit(Result.Error(message = errorMessage ?: "Error occurred"))
+            } catch (e: IOException) {
+                emit(Result.Error(message = "Network error: ${e.message}"))
+            } catch (e: Exception) {
+                emit(Result.Error(message = "Unexpected error: ${e.message}"))
+            }
+        }
+    }
+
+    suspend fun deleteFeed(authToken: String, feedId: String): Flow<Result<DeleteFeedResponse>> {
+        return flow {
+            try {
+                val response = api.deleteFeed(authToken, feedId)
                 emit(Result.Success(response))
             } catch (e: HttpException) {
                 val errorMessage = e.response()?.errorBody()?.string()

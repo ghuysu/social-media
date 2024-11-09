@@ -11,6 +11,7 @@ import thanhnhan.myproject.socialmedia.data.repository.FeedRepository
 import thanhnhan.myproject.socialmedia.data.Result
 import thanhnhan.myproject.socialmedia.data.model.Activity
 import thanhnhan.myproject.socialmedia.data.model.CommentResponse
+import thanhnhan.myproject.socialmedia.data.model.DeleteFeedResponse
 import thanhnhan.myproject.socialmedia.data.model.GetEveryoneFeedsResponse
 import thanhnhan.myproject.socialmedia.data.model.GetUserInfoResponse
 import thanhnhan.myproject.socialmedia.data.model.ReactFeedResponse
@@ -132,6 +133,17 @@ class FeedViewModel(private val repository: FeedRepository) : ViewModel() {
         viewModelScope.launch {
             repository.reportFeed(authToken, feedId, reason).collect {
                 _reportFeedResult.value = it
+            }
+        }
+    }
+
+    private val _deleteFeedResult = MutableStateFlow<Result<DeleteFeedResponse>?>(null)
+    val deleteFeedResult: MutableStateFlow<Result<DeleteFeedResponse>?> = _deleteFeedResult
+
+    fun deleteFeed(authToken: String, feedId: String) {
+        viewModelScope.launch {
+            repository.deleteFeed(authToken, feedId).collect {
+                _deleteFeedResult.value = it
             }
         }
     }

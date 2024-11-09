@@ -39,6 +39,7 @@ import thanhnhan.myproject.socialmedia.data.model.RemoveFriendInviteResponse
 import thanhnhan.myproject.socialmedia.data.model.CreateFeedResponse
 import thanhnhan.myproject.socialmedia.data.model.DeleteAccountRequest
 import thanhnhan.myproject.socialmedia.data.model.DeleteAccountResponse
+import thanhnhan.myproject.socialmedia.data.model.DeleteFeedResponse
 import thanhnhan.myproject.socialmedia.data.model.SendCodeDeleteAccountResponse
 import thanhnhan.myproject.socialmedia.data.model.EditFeedRequest
 import thanhnhan.myproject.socialmedia.data.model.GetEveryoneFeedsResponse
@@ -224,5 +225,11 @@ interface Api {
         @Path("feedId") feedId: String,
         @Body request: ReportFeedRequest
     ): ReportFeedResponse
+
+    @DELETE("api/feed/{feedId}")
+    suspend fun deleteFeed(
+        @Header("authorization") authToken: String,
+        @Path("feedId") feedId: String
+    ): DeleteFeedResponse
 }
 

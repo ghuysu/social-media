@@ -540,6 +540,9 @@ fun MainApp(socketManager: SocketManager) {
                     },
                     openHome = {
                         navController.navigate("homeScreen")
+                    },
+                    openChat = {
+                        navController.navigate("ChatScreen")
                     }
                 )
             }

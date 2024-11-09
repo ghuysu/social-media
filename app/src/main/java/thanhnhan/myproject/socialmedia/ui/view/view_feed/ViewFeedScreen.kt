@@ -93,6 +93,7 @@ fun ViewFeed(
     openEditFeed: (String, String, String, String) -> Unit,
     openProfile: () -> Unit,
     openHome: () -> Unit,
+    openChat: () -> Unit
 ) {
 
     val api = RetrofitInstance.api
@@ -104,6 +105,7 @@ fun ViewFeed(
     val getUserInfoResult by viewModel.getUserResult.collectAsState()
     val reportUserResult by viewModel.reportUserResult.collectAsState()
     val reportFeedResult by viewModel.reportFeedResult.collectAsState()
+    val deleteFeedResult by viewModel.deleteFeedResult.collectAsState()
 
     var friendList by remember { mutableStateOf<List<SignInUserResponse.Metadata.Friend>>(emptyList()) }
 
@@ -232,6 +234,29 @@ fun ViewFeed(
         }
     }
 
+    LaunchedEffect(deleteFeedResult) {
+        deleteFeedResult?.let { result ->
+            when (result) {
+                is Result.Success -> {
+                    Toast.makeText(
+                        context,
+                        result.data?.message,
+                        Toast.LENGTH_LONG
+                    ).show()
+                }
+
+                is Result.Error -> {
+                    Toast.makeText(
+                        context,
+                        result.message ?: "Error occurred",
+                        Toast.LENGTH_LONG
+                    ).show()
+                    Log.d("DEBUG", result.message ?: "Error occurred")
+                }
+            }
+        }
+    }
+
     Column(
         modifier = Modifier
             .fillMaxSize()
@@ -294,6 +319,7 @@ fun ViewFeed(
             IconButton(
                 onClick = {
                     // TODO: Open Chat
+                    openChat()
                 },
                 modifier = Modifier
                     .size(55.dp)
@@ -558,8 +584,22 @@ fun UserFeedItem(
                         }
                     }
 
-                    DropdownMenuItem(onClick = {
+                    var showDeleteFeedDialog by remember { mutableStateOf(false) }
 
+                    if (showDeleteFeedDialog) {
+                        ConfirmDeleteFeedDialog(
+                            onDismissRequest = { showDialog = false },
+                            onDelete = {
+                                showDialog = false
+                            },
+                            onCancel = { showDialog = false },
+                            viewmodel = viewModel,
+                            feedId = feed._id
+                        )
+                    }
+
+                    DropdownMenuItem(onClick = {
+                        showDeleteFeedDialog = true
                     }) {
                         Box(
                             modifier = Modifier
@@ -568,7 +608,9 @@ fun UserFeedItem(
                                     MaterialTheme.colors.surface,
                                     shape = RoundedCornerShape(8.dp)
                                 ) // Nền với góc bo
-                                .clickable { }, // Thêm sự kiện nhấp
+                                .clickable {
+                                    showDeleteFeedDialog = true
+                                }, // Thêm sự kiện nhấp
                             contentAlignment = Alignment.Center // Căn giữa nội dung
                         ) {
                             Row(
@@ -911,6 +953,35 @@ fun FriendFeedItem(
             }
         }
     }
+}
+
+@Composable
+fun ConfirmDeleteFeedDialog(
+    onDismissRequest: () -> Unit,
+    onDelete: () -> Unit,
+    onCancel: () -> Unit,
+    viewmodel: FeedViewModel,
+    feedId: String,
+) {
+    AlertDialog(
+        onDismissRequest = onDismissRequest,
+        title = { Text(text = "Confirm Delete") },
+        text = { Text("Are you sure you want to delete this feed?") },
+        confirmButton = {
+            TextButton(onClick = {
+                onDelete.invoke()
+                viewmodel.deleteFeed(UserSession.signInToken!!, feedId)
+                viewmodel.getEveryoneFeeds(UserSession.signInToken!!, 0)
+            }) {
+                Text("Delete")
+            }
+        },
+        dismissButton = {
+            TextButton(onClick = onCancel) {
+                Text("Cancel")
+            }
+        }
+    )
 }
 
 @Composable
@@ -1296,7 +1367,8 @@ fun ViewFeedPreview() {
     ViewFeed(
         openEditFeed = { _, _, _, _ -> },
         openHome = {},
-        openProfile = {}
+        openProfile = {},
+        openChat = {}
     )
 }
 
