@@ -12,7 +12,6 @@ import {
   DeleteAccountDto,
   DeleteFriendDto,
   FEED_SERVICE,
-  GoogleSignInDto,
   MESSAGE_SERVICE,
   ReadMessageDto,
   RemoveInviteDto,
@@ -216,9 +215,9 @@ export class ApiGatewayService {
   }
 
   //google authentication
-  async handleGoogleRedirect(user: GoogleSignInDto) {
+  async signInGoogle(token: string) {
     const result = await lastValueFrom(
-      this.authService.send('google_redirect', user).pipe(
+      this.authService.send('sign_in_google', { token }).pipe(
         map((response) => {
           if (response.error) {
             this.throwErrorBasedOnStatusCode(

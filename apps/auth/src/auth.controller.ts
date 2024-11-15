@@ -7,6 +7,7 @@ import {
   ConflictException,
   UnauthorizedException,
   BadRequestException,
+  ForbiddenException,
 } from '@nestjs/common';
 import { AuthService } from './auth.service';
 import {
@@ -18,7 +19,7 @@ import { CreateNormalUserDto } from '@app/common';
 import { SignInDto } from '@app/common';
 import { MessagePattern, Payload } from '@nestjs/microservices';
 import { CheckCodeDto } from '@app/common';
-import { GoogleSignInDto } from '@app/common';
+import { SignInGoogleDto } from './dto/sign-in-google.dto';
 
 @Controller()
 export class AuthController {
@@ -123,11 +124,15 @@ export class AuthController {
   }
 
   //Google authentication
-  @MessagePattern('google_redirect')
-  async handleRedirect(user: GoogleSignInDto) {
+  @MessagePattern('sign_in_google')
+  async signInGoogle(@Payload() dto: SignInGoogleDto) {
     try {
-      const result = await this.authService.googleSignIn(user);
-      return result;
+      const account = await this.authService.signInGoogle(dto);
+      return {
+        status: HttpStatus.OK,
+        message: 'Sign in google successfully.',
+        metadata: account,
+      };
     } catch (error) {
       return this.handleError(error);
     }
@@ -170,6 +175,14 @@ export class AuthController {
         statusCode: HttpStatus.BAD_REQUEST,
         message: error.message,
         error: 'Bad Request',
+      };
+    }
+
+    if (error instanceof ForbiddenException) {
+      return {
+        statusCode: HttpStatus.FORBIDDEN,
+        message: error.message,
+        error: 'Forbidden',
       };
     }
 

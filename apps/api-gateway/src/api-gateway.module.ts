@@ -13,7 +13,6 @@ import {
   REPORTING_SERVICE,
 } from '@app/common';
 import { ApiGatewayService } from './api-gateway.service';
-import { GoogleStrategy } from './strategies/google.strategy';
 import { JwtStrategy } from './strategies/jwt.strategy';
 import { CacheModule } from '@nestjs/cache-manager';
 import * as redisStore from 'cache-manager-redis-store';
@@ -38,13 +37,10 @@ import * as redisStore from 'cache-manager-redis-store';
         REPORTING_HOST: joi.string().required(),
         REPORTING_PORT: joi.number().required(),
         API_KEY: joi.string().required(),
-        GOOGLE_CLIENT_ID: joi.string().required(),
-        GOOGLE_SECRET: joi.string().required(),
-        GOOGLE_REDIRECT: joi.string().required(),
-        CLIENT_REDIRECT: joi.string().required(),
         REDIS_PASSWORD: joi.string().required(),
         REDIS_HOST: joi.string().required(),
         REDIS_PORT: joi.number().required(),
+        JWT_SECRET: joi.string().required(),
       }),
     }),
     ClientsModule.registerAsync([
@@ -127,6 +123,6 @@ import * as redisStore from 'cache-manager-redis-store';
     }),
   ],
   controllers: [ApiGatewayController],
-  providers: [ApiGatewayService, GoogleStrategy, JwtStrategy],
+  providers: [ApiGatewayService, JwtStrategy],
 })
 export class ApiGatewayModule {}
