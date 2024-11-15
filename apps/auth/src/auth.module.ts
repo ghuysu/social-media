@@ -18,6 +18,7 @@ import { AWS_S3_SERVICE, NOTIFICATION_SERVICE } from '@app/common';
 import { JwtModule } from '@nestjs/jwt';
 import { CacheModule } from '@nestjs/cache-manager';
 import * as redisStore from 'cache-manager-redis-store';
+import { OAuth2Client } from 'google-auth-library';
 
 @Module({
   imports: [
@@ -42,6 +43,10 @@ import * as redisStore from 'cache-manager-redis-store';
         JWT_SECRET: joi.string().required(),
         JWT_EXPIRATION_USER: joi.string().required(),
         JWT_EXPIRATION_ADMIN: joi.string().required(),
+        GOOGLE_CLIENT_ID: joi.string().required(),
+        FIREBASE_PROJECT_ID: joi.string().required(),
+        FIREBASE_PRIVATE_KEY: joi.string().required(),
+        FIREBASE_CLIENT_EMAIL: joi.string().required(),
       }),
     }),
     JwtModule.register({
@@ -98,6 +103,16 @@ import * as redisStore from 'cache-manager-redis-store';
     }),
   ],
   controllers: [AuthController],
-  providers: [AuthService, AuthRepository],
+  providers: [
+    AuthService,
+    AuthRepository,
+    {
+      provide: OAuth2Client,
+      useFactory: (configService: ConfigService) => {
+        return new OAuth2Client(configService.get('GOOGLE_CLIENT_ID'));
+      },
+      inject: [ConfigService],
+    },
+  ],
 })
 export class AuthModule {}

@@ -1,6 +1,7 @@
 import {
   BadRequestException,
   ConflictException,
+  ForbiddenException,
   Inject,
   Injectable,
   InternalServerErrorException,
@@ -20,7 +21,6 @@ import {
   CheckEmailDto,
   CreateNormalUserDto,
   createTTL,
-  GoogleSignInDto,
   UserDocument,
 } from '@app/common';
 import * as argon2 from 'argon2';
@@ -33,6 +33,8 @@ import { CheckCodeDto } from '@app/common';
 import { CACHE_MANAGER } from '@nestjs/cache-manager';
 import { AdminCodeInterface } from './interfaces/admin-code.interface';
 import { Cache } from 'cache-manager';
+import { SignInGoogleDto } from './dto/sign-in-google.dto';
+import firebase from 'firebase-admin';
 
 @Injectable()
 export class AuthService {
@@ -48,6 +50,14 @@ export class AuthService {
     private readonly jwtService: JwtService,
     @Inject(CACHE_MANAGER) private cacheManager: Cache,
   ) {}
+
+  private firebaseClient = firebase.initializeApp({
+    credential: firebase.credential.cert({
+      projectId: this.configService.get('FIREBASE_PROJECT_ID'),
+      privateKey: this.configService.get<string>('FIREBASE_PRIVATE_KEY'),
+      clientEmail: this.configService.get('FIREBASE_CLIENT_EMAIL'),
+    }),
+  });
 
   private createImageNameFromFullname(fullname: string): string {
     let imageName = fullname.split(' ').join('_');
@@ -93,31 +103,21 @@ export class AuthService {
 
   //sign up
   async checkEmailForSignUp({ email }) {
-    //get from redis
-    let registeredUser: UserDocument = await this.cacheManager.get(
-      `user:${email}`,
-    );
+    //check if email is in banned list or not
+    const bannedList: string[] =
+      await this.cacheManager.get('banned_email_list');
 
-    if (!registeredUser) {
-      registeredUser = await this.authRepository.findOne({
-        email: email,
-        role: 'normal_user',
-      });
+    if (bannedList.includes(email)) {
+      throw new ForbiddenException('Banned resource');
     }
+
+    //check if email is registered or not
+    const registeredUser = await this.authRepository.findOne({
+      email,
+    });
 
     //throw error if existed
     if (registeredUser) {
-      delete registeredUser.password;
-      delete registeredUser.role;
-
-      await this.cacheManager.set(
-        `user:${registeredUser.email}`,
-        registeredUser,
-        {
-          ttl: createTTL(60 * 60 * 24 * 30, 60 * 60 * 24),
-        },
-      );
-
       throw new ConflictException('Existed Resource');
     }
 
@@ -556,53 +556,56 @@ export class AuthService {
     return { admin, signInToken: bearerToken };
   }
 
-  //google authentication
-  async googleSignIn({ email, fullname, profileImageUrl }: GoogleSignInDto) {
-    let needToSaveIntoRedis = false;
-    //get from redis
-    let registeredUser: UserDocument = await this.cacheManager.get(
-      `user:${email}`,
+  private async decodeGoogleAccessToken(token: string) {
+    const response = await fetch(
+      `https://www.googleapis.com/oauth2/v3/userinfo?access_token=${token}`,
     );
 
-    //if redis don't have, check from db
-    if (!registeredUser) {
-      needToSaveIntoRedis = true;
-
-      registeredUser = await this.authRepository.findOne(
-        {
-          email,
-          role: 'normal_user',
-        },
-        [
-          { path: 'friendList', select: '_id fullname profileImageUrl' },
-          {
-            path: 'friendInvites',
-            select: '_id sender receiver createdAt',
-            populate: [
-              {
-                path: 'sender',
-                select: '_id fullname profileImageUrl',
-              },
-              {
-                path: 'receiver',
-                select: '_id fullname profileImageUrl',
-              },
-            ],
-          },
-        ],
-      );
+    if (!response.ok) {
+      console.log(response);
+      throw new BadRequestException('Failed to verify resource');
     }
+
+    const payload = await response.json();
+
+    return payload;
+  }
+
+  private async decodeGoogleIdToken(token: string) {
+    try {
+      const payload = await this.firebaseClient.auth().verifyIdToken(token);
+      console.log(payload);
+      return payload;
+    } catch (error) {
+      console.log(error);
+      throw new BadRequestException('Failed to verify resource');
+    }
+  }
+
+  async signInGoogle({ token }: SignInGoogleDto) {
+    const { email, name, picture } = token.startsWith('ya29.')
+      ? await this.decodeGoogleAccessToken(token)
+      : await this.decodeGoogleIdToken(token);
+
+    //check if email is in banned list or not
+    const bannedList: string[] =
+      await this.cacheManager.get('banned_email_list');
+
+    if (bannedList.includes(email)) {
+      throw new ForbiddenException('Banned resource');
+    }
+
+    //check if email is registered as admin or not
+    let registeredUser = await this.authRepository.findOne({ email });
 
     //if account is not existed, sign up
     if (!registeredUser) {
-      const user: UserDocument = await this.authRepository.create({
+      registeredUser = await this.authRepository.create({
         email,
-        fullname,
-        profileImageUrl,
+        fullname: name,
+        profileImageUrl: picture,
         isSignedInByGoogle: true,
       });
-
-      registeredUser = user;
     }
 
     //create sign-in token
@@ -623,16 +626,10 @@ export class AuthService {
     //delete sensitive information
     delete registeredUser.password;
 
-    //save into redis if needed
-    if (needToSaveIntoRedis) {
-      await this.cacheManager.set(
-        `user:${registeredUser.email}`,
-        registeredUser,
-        {
-          ttl: createTTL(60 * 60 * 24 * 7, 60 * 60 * 24),
-        },
-      );
-    }
+    //save to redis
+    this.cacheManager.set(`user:${email}`, registeredUser, {
+      ttl: createTTL(60 * 60 * 24 * 30, 60 * 60 * 24),
+    });
 
     //return user information and sign in token
     return {

@@ -345,9 +345,9 @@ export class MessageService {
 
       //get 50 messages or less and reverse it
       if (conversation.length < 50) {
-        conversation = conversation.reverse();
+        conversation = conversation;
       } else if (conversation.length >= 50) {
-        conversation = conversation.slice(50).reverse();
+        conversation = conversation.slice(50);
       }
 
       const friendConversation = {
@@ -420,8 +420,6 @@ export class MessageService {
           { path: 'feedId', select: '_id description imageUrl' },
         ],
       );
-
-      conversation.reverse();
     } else {
       let userIdFirst: boolean = true;
 
@@ -478,7 +476,10 @@ export class MessageService {
         }
       }
 
-      conversation = conversation.slice(skip, skip + 50).reverse();
+      conversation = conversation
+        .reverse()
+        .slice(skip, skip + 50)
+        .reverse();
     }
 
     return conversation;

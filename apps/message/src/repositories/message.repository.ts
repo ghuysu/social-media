@@ -26,14 +26,14 @@ export class MessageRepository extends AbstractRepository<MessageDocument> {
       populate?: any;
     }>,
   ): Promise<MessageDocument[]> {
-    const feeds = await this.model
+    const messages = await this.model
       .find(filterQuery)
       .limit(500)
       .sort({ createdAt: -1 })
       .populate(populate)
       .lean<MessageDocument[]>();
 
-    return feeds;
+    return messages.reverse();
   }
 
   async getMessages(

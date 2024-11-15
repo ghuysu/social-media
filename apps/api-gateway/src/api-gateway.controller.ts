@@ -10,7 +10,6 @@ import {
   CreateNormalUserDto,
   DeleteFriendDto,
   GetStrangerInforDto,
-  GoogleSignInDto,
   NORMAL_USER_ROLE,
   RemoveInviteDto,
   SendInviteDto,
@@ -44,17 +43,12 @@ import {
   Patch,
   Post,
   Query,
-  Req,
-  Res,
   UploadedFile,
   UseGuards,
   UseInterceptors,
 } from '@nestjs/common';
 import { ApiGatewayService } from './api-gateway.service';
-import { Request } from 'express';
-import { AuthGuard } from '@nestjs/passport';
 import { ConfigService } from '@nestjs/config';
-import { GoogleSignInInforInterface } from './interfaces/google-sign-in-infor.interface';
 import { ApiKeyGuard } from './guards/api-key.guard';
 import { JwtGuard } from './guards/jwt.guard';
 import { User } from './decorators/user.decorator';
@@ -134,47 +128,11 @@ export class ApiGatewayController {
   }
 
   //google authentication
-  @Get('user/google/sign-in')
-  @UseGuards(AuthGuard('google'))
-  googleSignIn() {}
-
-  @Get('user/google/redirect')
-  @UseGuards(AuthGuard('google'))
+  @Post('sign-in/google')
   @HttpCode(HttpStatus.OK)
-  async handleRedirect(@Req() req: Request, @Res() res) {
-    const signInUser: GoogleSignInDto = req.user as GoogleSignInDto;
-
-    // Lấy thông tin người dùng và token từ dịch vụ
-    const { signInToken, user }: GoogleSignInInforInterface =
-      await this.apiGatewayService.handleGoogleRedirect(signInUser);
-
-    // URL chuyển hướng phía client
-    const url = this.configService.get('CLIENT_REDIRECT_URL');
-
-    // Tạo base URL với các thông tin bắt buộc
-    let redirectUrl =
-      `${url}?sign_in_token=${signInToken}` +
-      `&_id=${user._id}` +
-      `&email=${user.email}` +
-      `&fullname=${encodeURIComponent(user.fullname)}` +
-      `&profile_image_url=${encodeURIComponent(user.profileImageUrl)}` +
-      `&friendList=${JSON.stringify(user.friendList)}` +
-      `&friendInvites=${JSON.stringify(user.friendInvites)}` +
-      `&isSignedInByGoogle=${user.isSignedInByGoogle}` +
-      `&createdAt=${user.createdAt}`;
-
-    // Kiểm tra xem có trường birthday không, nếu có thì thêm vào URL
-    if (user.birthday) {
-      redirectUrl += `&birthday=${user.birthday}`;
-    }
-
-    // Kiểm tra xem có trường country không, nếu có thì thêm vào URL
-    if (user.country) {
-      redirectUrl += `&country=${encodeURIComponent(user.country)}`;
-    }
-
-    // Redirect về URL đã xây dựng
-    res.redirect(redirectUrl);
+  @UseGuards(ApiKeyGuard)
+  async signInGoogle(@Body('token') token: string) {
+    return this.apiGatewayService.signInGoogle(token);
   }
 
   //user
