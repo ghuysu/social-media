@@ -116,7 +116,7 @@ fun ProfileScreen(
         ) {
             // Profile Section
             val linkAddFriend by remember {
-                mutableStateOf("https://selection-page.onrender.com/friend/" + user._id)
+                mutableStateOf("https://selection-page-production.up.railway.app/friend/" + user._id)
             }
             val context = LocalContext.current
             val clipboardManager =
