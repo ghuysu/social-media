@@ -8,6 +8,7 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.text.selection.TextSelectionColors
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -16,6 +17,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.SpanStyle
+import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.text.input.VisualTransformation
@@ -219,6 +221,10 @@ fun SignInContent(
                     onPasswordChange = onPasswordChange,
                     isError = passwordError
                 )
+                Spacer(modifier = Modifier.height(30.dp))
+                SignInButton(onClick = onContinueClick)
+                Spacer(modifier = Modifier.height(5.dp))
+                GoogleSignInButton(onClick = onGoogleSignInClick)
                 TextButton(onClick = {
                     openIntro()
                 }) {
@@ -227,12 +233,7 @@ fun SignInContent(
                     )
                 }
                 SignInReport(text = errorMessage ?: "")
-                SignInButton(onClick = onContinueClick)
-                Spacer(modifier = Modifier.height(50.dp))
                 SignInAgreementText()
-
-                Spacer(modifier = Modifier.height(20.dp))
-                GoogleSignInButton(onClick = onGoogleSignInClick)
             }
         }
     }
@@ -285,19 +286,53 @@ fun SignInPassTitle() {
 
 @Composable
 fun SignInEmailField(email: String, onEmailChange: (String) -> Unit, isError: Boolean) {
-    val containerColor = if (isError) Color.Red else Color.Transparent
+    val containerColor = Color.Transparent
+
     TextField(
         value = email,
         onValueChange = onEmailChange,
-        placeholder = { Text("Enter your email", color = Color.White) },
+        placeholder = {
+            Text(
+                "Enter your email",
+                color = Color.Gray
+            )
+        },
         modifier = Modifier
             .fillMaxWidth()
             .padding(horizontal = 0.dp),
         isError = isError,
+        textStyle = TextStyle(color = Color.White),
         colors = TextFieldDefaults.colors(
+            // Container colors
             focusedContainerColor = containerColor,
             unfocusedContainerColor = containerColor,
             disabledContainerColor = containerColor,
+            errorContainerColor = containerColor,
+
+            // Text colors
+            focusedTextColor = Color.White,
+            unfocusedTextColor = Color.White,
+
+            // Cursor and indicator colors
+            cursorColor = Color.White,
+            focusedIndicatorColor = Color.White,
+            unfocusedIndicatorColor = Color.Gray,
+
+            // Background colors
+            focusedPlaceholderColor = Color.Gray,
+            unfocusedPlaceholderColor = Color.Gray,
+
+            // Prevent white background when focused
+            focusedLeadingIconColor = Color.Transparent,
+            unfocusedLeadingIconColor = Color.Transparent,
+            focusedTrailingIconColor = Color.White,
+            unfocusedTrailingIconColor = Color.White,
+
+            // Disable selection colors
+            selectionColors = TextSelectionColors(
+                handleColor = Color.White,
+                backgroundColor = Color(0x40FFFFFF) // Semi-transparent white for selection
+            )
         )
     )
 }
@@ -305,16 +340,24 @@ fun SignInEmailField(email: String, onEmailChange: (String) -> Unit, isError: Bo
 @Composable
 fun SignInPasswordField(password: String, onPasswordChange: (String) -> Unit, isError: Boolean) {
     var passwordVisible by remember { mutableStateOf(false) }
+    val containerColor = Color.Transparent
 
-    val containerColor = if (isError) Color.Red else Color.Transparent
     TextField(
         value = password,
         onValueChange = onPasswordChange,
-        placeholder = { Text("Enter your password", color = Color.White) },
+        placeholder = {
+            Text(
+                "Enter your password",
+                color = Color.Gray // Màu chữ placeholder
+            )
+        },
         modifier = Modifier
             .fillMaxWidth()
             .padding(horizontal = 0.dp),
-        visualTransformation = if (passwordVisible) VisualTransformation.None else PasswordVisualTransformation(),
+        visualTransformation = if (passwordVisible)
+            VisualTransformation.None
+        else
+            PasswordVisualTransformation(),
         trailingIcon = {
             val image = if (passwordVisible)
                 painterResource(id = R.drawable.visibility)
@@ -322,14 +365,46 @@ fun SignInPasswordField(password: String, onPasswordChange: (String) -> Unit, is
                 painterResource(id = R.drawable.visible)
 
             IconButton(onClick = { passwordVisible = !passwordVisible }) {
-                Icon(painter = image, contentDescription = null)
+                Icon(
+                    painter = image,
+                    contentDescription = null,
+                    tint = Color.White // Màu icon
+                )
             }
         },
         isError = isError,
+        textStyle = TextStyle(color = Color.White),
         colors = TextFieldDefaults.colors(
+            // Container colors
             focusedContainerColor = containerColor,
             unfocusedContainerColor = containerColor,
             disabledContainerColor = containerColor,
+            errorContainerColor = containerColor,
+
+            // Text colors
+            focusedTextColor = Color.White,
+            unfocusedTextColor = Color.White,
+
+            // Cursor and indicator colors
+            cursorColor = Color.White,
+            focusedIndicatorColor = Color.White,
+            unfocusedIndicatorColor = Color.Gray,
+
+            // Background colors
+            focusedPlaceholderColor = Color.Gray,
+            unfocusedPlaceholderColor = Color.Gray,
+
+            // Prevent white background when focused
+            focusedLeadingIconColor = Color.Transparent,
+            unfocusedLeadingIconColor = Color.Transparent,
+            focusedTrailingIconColor = Color.White,
+            unfocusedTrailingIconColor = Color.White,
+
+            // Disable selection colors
+            selectionColors = TextSelectionColors(
+                handleColor = Color.White,
+                backgroundColor = Color(0x40FFFFFF) // Semi-transparent white for selection
+            )
         )
     )
 }
