@@ -2,6 +2,7 @@ package thanhnhan.myproject.socialmedia.ui.view.Login
 
 import android.content.Context
 import android.util.Log
+import androidx.activity.ComponentActivity
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
@@ -31,6 +32,16 @@ import thanhnhan.myproject.socialmedia.viewmodel.SignInUserViewModelFactory
 import thanhnhan.myproject.socialmedia.data.Result
 import thanhnhan.myproject.socialmedia.data.network.RetrofitInstance
 import thanhnhan.myproject.socialmedia.data.repository.SignInUserRepository
+import com.google.android.gms.auth.api.signin.GoogleSignIn
+import com.google.android.gms.auth.api.signin.GoogleSignInOptions
+import com.google.firebase.auth.ktx.auth
+import com.google.firebase.ktx.Firebase
+
+class SignIn {
+    companion object {
+        const val RC_SIGN_IN = 9001
+    }
+}
 
 @Composable
 fun SignInScreen(
@@ -46,12 +57,31 @@ fun SignInScreen(
     val emailValidationResult by viewModel.emailValidationResult.collectAsState()
     val passwordValidationResult by viewModel.passwordValidationResult.collectAsState()
     val signInResult by viewModel.signInResult.collectAsState()
+    val googleSignInResult by viewModel.googleSignInResult.collectAsState()
 
     var email by remember { mutableStateOf("") }
     var password by remember { mutableStateOf("") }
     var errorMessage by remember { mutableStateOf<String?>(null) }
     var manualLoginAttempted by remember { mutableStateOf(false) }  // Biến trạng thái để theo dõi xem đăng nhập thủ công hay không
     val scope = rememberCoroutineScope()
+    var isLoading by remember { mutableStateOf(false) }
+
+    val gso = remember {
+        GoogleSignInOptions.Builder(GoogleSignInOptions.DEFAULT_SIGN_IN)
+            .requestIdToken(context.getString(R.string.default_web_client_id))
+            .requestEmail()
+            .build()
+    }
+    val googleSignInClient = remember {
+        GoogleSignIn.getClient(context, gso)
+    }
+
+    // Thêm hàm signOut để xóa tài khoản đã lưu
+    fun signOutGoogle() {
+        googleSignInClient.signOut().addOnCompleteListener {
+            Log.d("SignInScreen", "Google Sign Out completed")
+        }
+    }
 
     // Gọi autoSignIn khi SignInScreen được khởi tạo
     LaunchedEffect(Unit) {
@@ -86,6 +116,17 @@ fun SignInScreen(
                 errorMessage = "Incorrect username or password"
             }
         },
+        onGoogleSignInClick = {
+            // Sign out trước khi hiển thị dialog chọn tài khoản
+            signOutGoogle()
+            googleSignInClient.signOut().addOnCompleteListener {
+                val signInIntent = googleSignInClient.signInIntent
+                (context as ComponentActivity).startActivityForResult(
+                    signInIntent,
+                    SignIn.RC_SIGN_IN
+                )
+            }
+        },
         emailError = emailValidationResult == false,
         passwordError = passwordValidationResult == false,
         errorMessage = if (manualLoginAttempted) errorMessage else null,  // Chỉ hiển thị lỗi khi đã thử đăng nhập thủ công
@@ -109,6 +150,34 @@ fun SignInScreen(
             }
         }
     }
+
+    // Theo dõi kết quả Google Sign In
+    LaunchedEffect(googleSignInResult) {
+        Log.d("SignInScreen", "Google Sign In state changed: $googleSignInResult")
+
+        googleSignInResult?.let { result ->
+            when (result) {
+                is Result.Success -> {
+                    Log.d("SignInScreen", "Google Sign In Success")
+                    result.data?.metadata?.let { metadata ->
+                        if (metadata.user != null && metadata.signInToken != null) {
+                            Log.d("SignInScreen", "Valid user data received, navigating...")
+                            isLoading = false
+                            scope.launch {
+                                viewModel.resetGoogleSignInState()
+                                onLoginSuccess()
+                            }
+                        }
+                    }
+                }
+                is Result.Error -> {
+                    Log.e("SignInScreen", "Google Sign In Error: ${result.message}")
+                    isLoading = false
+                    errorMessage = result.message
+                }
+            }
+        }
+    }
 }
 
 @Composable
@@ -118,6 +187,7 @@ fun SignInContent(
     onEmailChange: (String) -> Unit,
     onPasswordChange: (String) -> Unit,
     onContinueClick: () -> Unit,
+    onGoogleSignInClick: () -> Unit,
     emailError: Boolean,
     passwordError: Boolean,
     errorMessage: String?,
@@ -162,6 +232,7 @@ fun SignInContent(
                 SignInAgreementText()
 
                 Spacer(modifier = Modifier.height(20.dp))
+                GoogleSignInButton(onClick = onGoogleSignInClick)
             }
         }
     }
@@ -300,6 +371,38 @@ fun SignInButton(onClick: () -> Unit) {
         )
     }
 }
+
+@Composable
+fun GoogleSignInButton(onClick: () -> Unit) {
+    Button(
+        onClick = onClick,
+        colors = ButtonDefaults.buttonColors(
+            containerColor = Color.White,
+            contentColor = Color.Black
+        ),
+        shape = RoundedCornerShape(AppTheme.appButtonStyle.cornerRadius.dp),
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(AppTheme.appButtonStyle.padding.dp)
+    ) {
+        Row(
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.Center
+        ) {
+            Image(
+                painter = painterResource(id = R.drawable.google),
+                contentDescription = "Google Icon",
+                modifier = Modifier.size(24.dp)
+            )
+            Spacer(modifier = Modifier.width(8.dp))
+            Text(
+                text = "Sign in with Google",
+                style = AppTheme.appTypography.buttonText.copy(color = Color.Black)
+            )
+        }
+    }
+}
+
 @Preview(showBackground = true)
 @Composable
 fun SignInScreenPreview() {
@@ -309,6 +412,7 @@ fun SignInScreenPreview() {
         onEmailChange = {},
         onPasswordChange = {},
         onContinueClick = {},
+        onGoogleSignInClick = {},
         emailError = false,
         passwordError = false,
         errorMessage = null,

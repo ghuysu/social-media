@@ -41,6 +41,7 @@ import thanhnhan.myproject.socialmedia.data.model.CreateFeedResponse
 import thanhnhan.myproject.socialmedia.data.model.EditFeedRequest
 import thanhnhan.myproject.socialmedia.data.model.GetEveryoneFeedsResponse
 import thanhnhan.myproject.socialmedia.data.model.GetUserInfoResponse
+import thanhnhan.myproject.socialmedia.data.model.GoogleSignInRequest
 import thanhnhan.myproject.socialmedia.data.model.IconRequest
 import thanhnhan.myproject.socialmedia.data.model.ReactFeedResponse
 import thanhnhan.myproject.socialmedia.data.model.SendInviteRequest
@@ -193,5 +194,9 @@ interface Api {
         @Header("authorization") authToken: String,
         @Body messageRequest: CommentRequest
     ): CommentResponse
+    @POST("api/sign-in/google")
+    suspend fun signInWithGoogle(
+        @Body request: GoogleSignInRequest
+    ):SignInUserResponse
 }
 

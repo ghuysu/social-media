@@ -9,6 +9,9 @@ data class SignInUserRequest(
     val email: String,
     val password: String
 )
+data class GoogleSignInRequest(
+    val token: String
+)
 
 // Response model for handling the sign-in response
 data class SignInUserResponse(

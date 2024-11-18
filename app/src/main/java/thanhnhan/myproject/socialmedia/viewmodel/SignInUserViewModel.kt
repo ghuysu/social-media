@@ -13,6 +13,8 @@ import thanhnhan.myproject.socialmedia.data.model.SignInUserResponse
 import thanhnhan.myproject.socialmedia.data.model.UserSession
 import thanhnhan.myproject.socialmedia.data.repository.SignInUserRepository
 import java.util.regex.Pattern
+import android.util.Log
+import thanhnhan.myproject.socialmedia.data.Result.Error
 
 class SignInUserViewModel(
     private val signInUserRepository: SignInUserRepository,
@@ -88,10 +90,10 @@ class SignInUserViewModel(
                                 id = user._id,
                                 email = user.email,
                                 fullname = user.fullname,
-                                birthday = user.birthday,
+                                birthday = user.birthday ?: "",
                                 token = token,
                                 profileImageUrl = user.profileImageUrl,
-                                country = user.country
+                                country = user.country?: ""
                             )
 
                             // Lưu thông tin người dùng vào UserSession
@@ -112,14 +114,14 @@ class SignInUserViewModel(
                             // Cập nhật trạng thái đăng nhập thành công
                             _signInResult.value = result
                         }
-                    } else if (result is Result.Error) {
+                    } else if (result is Error) {
                         // Cập nhật kết quả đăng nhập thất bại
                         _signInResult.value = result
                     }
                 }
             } catch (e: Exception) {
                 // Cập nhật trạng thái lỗi
-                _signInResult.value = Result.Error(message = e.message)
+                _signInResult.value = Error(message = e.message)
             } finally {
                 _isLoading.value = false // Tắt loading state
             }
@@ -136,11 +138,11 @@ class SignInUserViewModel(
                     _id = savedUser.id,
                     email = savedUser.email,
                     fullname = savedUser.fullname,
-                    birthday = savedUser.birthday,
-                    profileImageUrl = savedUser.profileImageUrl,
+                    birthday = savedUser.birthday?:"",
+                    profileImageUrl = savedUser.profileImageUrl?:"",
                     friendList = listOf(),
                     friendInvites = listOf(),
-                    country = savedUser.country
+                    country = savedUser.country?:""
                 ),
                 token = savedUser.token
             )
@@ -148,8 +150,94 @@ class SignInUserViewModel(
             _signInResult.value = Result.Success(SignInUserResponse(status = 200, message = "Auto sign-in success", metadata = null))
         } else {
             // Không có dữ liệu để tự động đăng nhập, cập nhật trạng thái thất bại
-            _signInResult.value = Result.Error(message = "No saved user data for auto login")
+            _signInResult.value = Error(message = "No saved user data for auto login")
         }
+    }
+    // State cho Google Sign In
+    private val _googleSignInResult = MutableStateFlow<Result<SignInUserResponse>?>(null)
+    val googleSignInResult: StateFlow<Result<SignInUserResponse>?> = _googleSignInResult
+
+    fun handleGoogleSignIn(firebaseToken: String) {
+        viewModelScope.launch {
+            try {
+                _isLoading.value = true
+                Log.d("SignInViewModel", "Starting Google sign in process")
+
+                signInUserRepository.signInWithGoogle(firebaseToken).collect { result ->
+                    Log.d("SignInViewModel", "Received result from repository: $result")
+                    _googleSignInResult.value = result  // Cập nhật state ngay lập tức
+                    when (result) {
+                        is Result.Success -> {
+                            Log.d("SignInViewModel", "API call successful")
+
+                            result.data?.metadata?.let { metadata ->
+                                val user = metadata.user
+                                val signInToken = metadata.signInToken
+
+                                if (user != null && signInToken != null) {
+                                    try {
+                                        // Lưu data
+                                        val dbHelper = UserDatabaseHelper(context)
+                                        dbHelper.insertUserData(
+                                            id = user._id,
+                                            email = user.email,
+                                            fullname = user.fullname,
+                                            birthday = user.birthday ?:"",
+                                            token = signInToken,  // Sử dụng token gốc
+                                            profileImageUrl = user.profileImageUrl ?:"",
+                                            country = user.country ?:""
+                                        )
+                                        UserSession.setUserData(
+                                            user = SignInUserResponse.Metadata.User(
+                                                _id = user._id,
+                                                email = user.email,
+                                                fullname = user.fullname,
+                                                birthday = user.birthday,
+                                                profileImageUrl = user.profileImageUrl,
+                                                friendList = listOf(),
+                                                friendInvites = listOf(),
+                                                country = user.country
+                                            ),
+                                            token = signInToken  // Sử dụng token gốc
+                                        )
+
+                                        // Emit state mới
+                                        Log.d("SignInViewModel", "About to update googleSignInResult")
+                                        _googleSignInResult.value = result
+                                        Log.d("SignInViewModel", "State updated successfully to: ${_googleSignInResult.value}")
+
+                                    } catch (e: Exception) {
+                                        Log.e("SignInViewModel", "Error saving user data", e)
+                                        _googleSignInResult.value = Result.Error(data = null,"Failed to save user data")
+                                    }
+                                } else {
+                                    Log.e("SignInViewModel", "Missing user data or token")
+                                    _googleSignInResult.value = Result.Error(data = null,"Invalid response data")
+                                }
+                            } ?: run {
+                                Log.e("SignInViewModel", "Metadata is null")
+                                _googleSignInResult.value = Result.Error(data = null,"Invalid response format")
+                            }
+                        }
+                        is Error -> {
+                            Log.e("SignInViewModel", "API call failed: ${result.message}")
+                            _googleSignInResult.value = result
+                        }
+                    }
+                }
+            } catch (e: Exception) {
+                Log.e("SignInViewModel", "Exception in handleGoogleSignIn", e)
+                _googleSignInResult.value = Result.Error(data = null,e.message ?: "Unknown error")
+            } finally {
+                _isLoading.value = false
+                Log.d("SignInViewModel", "Google Sign In process completed")
+            }
+        }
+    }
+
+    // Reset state sau khi xử lý xong
+    fun resetGoogleSignInState() {
+        _googleSignInResult.value = null
     }
 
     //Chức năng cho Sign out :

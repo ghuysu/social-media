@@ -2,6 +2,7 @@ plugins {
     id("com.android.application")
     id("org.jetbrains.kotlin.android")
     id ("kotlin-kapt")
+    id("com.google.gms.google-services")
 }
 
 android {
@@ -60,6 +61,7 @@ dependencies {
     implementation("androidx.compose.ui:ui-tooling-preview")
     implementation("androidx.compose.material3:material3")
     implementation("com.google.android.gms:play-services-base:18.5.0")
+    implementation("com.google.firebase:firebase-auth:23.1.0")
 
     // Navigation
     val nav_version = "2.7.7"
@@ -87,8 +89,10 @@ dependencies {
     implementation ("androidx.camera:camera-lifecycle:1.3.4")
     // CameraX View class
     implementation ("androidx.camera:camera-view:1.3.4")
-
-
+    //Sign in with google
+    implementation ("com.google.android.gms:play-services-auth:20.7.0")
+    // Also add the dependency for the Google Play services library and specify its version
+    implementation("com.google.android.gms:play-services-auth:21.2.0")
     // Hieu ung luot khi show feed
     implementation("com.google.accompanist:accompanist-pager:0.25.1")
     implementation("com.google.accompanist:accompanist-pager-indicators:0.25.1")

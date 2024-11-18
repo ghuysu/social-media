@@ -57,9 +57,13 @@ import thanhnhan.myproject.socialmedia.viewmodel.FriendViewModel
 import thanhnhan.myproject.socialmedia.viewmodel.UserViewModel
 import thanhnhan.myproject.socialmedia.ui.view.view_feed.EditFeed
 import thanhnhan.myproject.socialmedia.ui.view.view_feed.ViewFeed
+import com.google.firebase.auth.FirebaseAuth
+import com.google.firebase.auth.ktx.auth
+import com.google.firebase.ktx.Firebase
 
 class MainActivity : ComponentActivity() {
 
+    private lateinit var auth: FirebaseAuth
     private lateinit var socketManager: SocketManager
     // Sử dụng ActivityResultContracts để yêu cầu quyền camera
     private val requestPermissionLauncher =
@@ -78,12 +82,38 @@ class MainActivity : ComponentActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        // Initialize SocketManager
+        auth = Firebase.auth
+
+        // Kiểm tra authentication
+        val dbHelper = UserDatabaseHelper(this)
+        val savedUser = dbHelper.getUserData()
+
+        // Log để debug
+        Log.d("MainActivity", "Firebase user: ${auth.currentUser}")
+        Log.d("MainActivity", "Local user: $savedUser")
+        checkCameraPermission()
+
+        if (savedUser == null) {
+            Log.d("MainActivity", "No user found, navigating to Auth")
+            navigateToAuth()
+            return
+        }
+
+        // Nếu có user, tiếp tục khởi tạo MainActivity
+        Log.d("MainActivity", "User found, initializing MainActivity")
         socketManager = SocketManager()
         socketManager.initSocket()
 
-        // Kiểm tra quyền camera trước khi hiển thị giao diện
-        checkCameraPermission()
+        setContent {
+            MainApp(socketManager)
+        }
+    }
+
+    private fun navigateToAuth() {
+        val intent = Intent(this, AuthActivity::class.java)
+        intent.flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
+        startActivity(intent)
+        finish()
     }
 
     // Hàm kiểm tra và yêu cầu quyền truy cập camera
@@ -114,6 +144,13 @@ class MainActivity : ComponentActivity() {
                 }
             }
         }
+    }
+
+    // Add sign out functionality if needed
+    private fun signOut() {
+        auth.signOut()
+        startActivity(Intent(this, AuthActivity::class.java))
+        finish()
     }
 }
 

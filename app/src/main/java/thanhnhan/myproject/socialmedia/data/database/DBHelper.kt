@@ -40,7 +40,7 @@ class UserDatabaseHelper(context: Context) : SQLiteOpenHelper(context, DATABASE_
         onCreate(db)
     }
 
-    fun insertUserData(id: String, email: String, fullname: String, birthday: String, token: String, profileImageUrl: String, country: String) {
+    fun insertUserData(id: String, email: String, fullname: String, birthday: String?, token: String, profileImageUrl: String?, country: String?) {
         val db = this.writableDatabase
         val insertQuery = "INSERT OR REPLACE INTO $TABLE_NAME (id, email, fullname, birthday, token, profile_image_url, country) VALUES (?, ?, ?, ?, ?, ?, ?)"
         db.execSQL(insertQuery, arrayOf(id, email, fullname, birthday, token, profileImageUrl, country))
