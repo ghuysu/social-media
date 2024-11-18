@@ -38,12 +38,20 @@ import thanhnhan.myproject.socialmedia.data.model.ReadMessagesRequest
 import thanhnhan.myproject.socialmedia.data.model.ReadMessagesResponse
 import thanhnhan.myproject.socialmedia.data.model.RemoveFriendInviteResponse
 import thanhnhan.myproject.socialmedia.data.model.CreateFeedResponse
+import thanhnhan.myproject.socialmedia.data.model.DeleteAccountRequest
+import thanhnhan.myproject.socialmedia.data.model.DeleteAccountResponse
+import thanhnhan.myproject.socialmedia.data.model.DeleteFeedResponse
+import thanhnhan.myproject.socialmedia.data.model.SendCodeDeleteAccountResponse
 import thanhnhan.myproject.socialmedia.data.model.EditFeedRequest
 import thanhnhan.myproject.socialmedia.data.model.GetEveryoneFeedsResponse
 import thanhnhan.myproject.socialmedia.data.model.GetUserInfoResponse
 import thanhnhan.myproject.socialmedia.data.model.GoogleSignInRequest
 import thanhnhan.myproject.socialmedia.data.model.IconRequest
 import thanhnhan.myproject.socialmedia.data.model.ReactFeedResponse
+import thanhnhan.myproject.socialmedia.data.model.ReportFeedRequest
+import thanhnhan.myproject.socialmedia.data.model.ReportFeedResponse
+import thanhnhan.myproject.socialmedia.data.model.ReportUserRequest
+import thanhnhan.myproject.socialmedia.data.model.ReportUserResponse
 import thanhnhan.myproject.socialmedia.data.model.SendInviteRequest
 import thanhnhan.myproject.socialmedia.data.model.SendInviteResponse
 import thanhnhan.myproject.socialmedia.data.model.SendMessageRequest
@@ -194,6 +202,37 @@ interface Api {
         @Header("authorization") authToken: String,
         @Body messageRequest: CommentRequest
     ): CommentResponse
+
+    @POST("api/user/delete/check")
+    suspend fun sendDeleteAccountCode(
+        @Header("authorization") authToken: String
+    ): SendCodeDeleteAccountResponse
+
+    @DELETE("api/user")
+    suspend fun deleteAccount(
+        @Header("authorization") authToken: String,
+        @Query("code") request: Int
+    ): DeleteAccountResponse
+
+    @POST("api/report/user/{userId}")
+    suspend fun reportUser(
+        @Header("authorization") authToken: String,
+        @Path("userId") userId: String,
+        @Body request: ReportUserRequest
+    ): ReportUserResponse
+
+    @POST("api/report/feed/{feedId}")
+    suspend fun reportFeed(
+        @Header("authorization") authToken: String,
+        @Path("feedId") feedId: String,
+        @Body request: ReportFeedRequest
+    ): ReportFeedResponse
+
+    @DELETE("api/feed/{feedId}")
+    suspend fun deleteFeed(
+        @Header("authorization") authToken: String,
+        @Path("feedId") feedId: String
+    ): DeleteFeedResponse
     @POST("api/sign-in/google")
     suspend fun signInWithGoogle(
         @Body request: GoogleSignInRequest

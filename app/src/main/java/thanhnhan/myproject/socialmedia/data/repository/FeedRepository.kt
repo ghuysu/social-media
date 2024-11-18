@@ -11,11 +11,16 @@ import thanhnhan.myproject.socialmedia.data.network.Api
 import thanhnhan.myproject.socialmedia.data.Result
 import thanhnhan.myproject.socialmedia.data.model.CommentRequest
 import thanhnhan.myproject.socialmedia.data.model.CommentResponse
+import thanhnhan.myproject.socialmedia.data.model.DeleteFeedResponse
 import thanhnhan.myproject.socialmedia.data.model.EditFeedRequest
 import thanhnhan.myproject.socialmedia.data.model.GetEveryoneFeedsResponse
 import thanhnhan.myproject.socialmedia.data.model.GetUserInfoResponse
 import thanhnhan.myproject.socialmedia.data.model.IconRequest
 import thanhnhan.myproject.socialmedia.data.model.ReactFeedResponse
+import thanhnhan.myproject.socialmedia.data.model.ReportFeedRequest
+import thanhnhan.myproject.socialmedia.data.model.ReportFeedResponse
+import thanhnhan.myproject.socialmedia.data.model.ReportUserRequest
+import thanhnhan.myproject.socialmedia.data.model.ReportUserResponse
 import thanhnhan.myproject.socialmedia.data.model.UpdateFeedResponse
 import java.io.File
 import java.io.IOException
@@ -131,6 +136,56 @@ class FeedRepository(private val api: Api) {
         return flow {
             try {
                 val response = api.sendMessage(authToken, CommentRequest(receiverId, content, feedId))
+                emit(Result.Success(response))
+            } catch (e: HttpException) {
+                val errorMessage = e.response()?.errorBody()?.string()
+                emit(Result.Error(message = errorMessage ?: "Error occurred"))
+            } catch (e: IOException) {
+                emit(Result.Error(message = "Network error: ${e.message}"))
+            } catch (e: Exception) {
+                emit(Result.Error(message = "Unexpected error: ${e.message}"))
+            }
+        }
+    }
+
+    suspend fun reportUser(authToken: String, userId: String, reason: Int): Flow<Result<ReportUserResponse>> {
+        return flow {
+            try {
+                val request = ReportUserRequest(reason)
+                val response = api.reportUser(authToken, userId, request)
+                emit(Result.Success(response))
+            } catch (e: HttpException) {
+                val errorMessage = e.response()?.errorBody()?.string()
+                emit(Result.Error(message = errorMessage ?: "Error occurred"))
+            } catch (e: IOException) {
+                emit(Result.Error(message = "Network error: ${e.message}"))
+            } catch (e: Exception) {
+                emit(Result.Error(message = "Unexpected error: ${e.message}"))
+            }
+        }
+    }
+
+    suspend fun reportFeed(authToken: String, feedId: String, reason: Int): Flow<Result<ReportFeedResponse>> {
+        return flow {
+            try {
+                val request = ReportFeedRequest(reason)
+                val response = api.reportFeed(authToken, feedId, request)
+                emit(Result.Success(response))
+            } catch (e: HttpException) {
+                val errorMessage = e.response()?.errorBody()?.string()
+                emit(Result.Error(message = errorMessage ?: "Error occurred"))
+            } catch (e: IOException) {
+                emit(Result.Error(message = "Network error: ${e.message}"))
+            } catch (e: Exception) {
+                emit(Result.Error(message = "Unexpected error: ${e.message}"))
+            }
+        }
+    }
+
+    suspend fun deleteFeed(authToken: String, feedId: String): Flow<Result<DeleteFeedResponse>> {
+        return flow {
+            try {
+                val response = api.deleteFeed(authToken, feedId)
                 emit(Result.Success(response))
             } catch (e: HttpException) {
                 val errorMessage = e.response()?.errorBody()?.string()

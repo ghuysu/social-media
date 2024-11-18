@@ -369,7 +369,7 @@ fun MainApp(socketManager: SocketManager) {
                         birthday = birthday,
                         country = country,
                         openSignin = { email ->
-                            navController.navigate("signIn/$email")
+                            navController.navigate("signInScreen")
                         },
                         backAction = {
                             navController.popBackStack()
@@ -577,6 +577,9 @@ fun MainApp(socketManager: SocketManager) {
                     },
                     openHome = {
                         navController.navigate("homeScreen")
+                    },
+                    openChat = {
+                        navController.navigate("ChatScreen")
                     }
                 )
             }
