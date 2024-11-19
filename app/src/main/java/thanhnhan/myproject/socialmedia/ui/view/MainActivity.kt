@@ -160,7 +160,7 @@ fun MainApp(socketManager: SocketManager) {
     val context = LocalContext.current
     val dbHelper = UserDatabaseHelper(context)
     val savedUser = dbHelper.getUserData()
-    val friendViewModel = FriendViewModel(repository = FriendRepository(RetrofitInstance.api))
+    val friendViewModel = FriendViewModel(repository = FriendRepository(RetrofitInstance.api), socketManager)
     val userViewModel = UserViewModel(repository = UserRepository(RetrofitInstance.api))
     val chatViewModel = ChatViewModel(repository = MessageRepository(RetrofitInstance.api), socketManager)
 

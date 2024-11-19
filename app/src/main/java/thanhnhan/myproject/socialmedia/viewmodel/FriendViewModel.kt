@@ -12,9 +12,13 @@ import thanhnhan.myproject.socialmedia.data.model.DeleteFriendResponse
 import thanhnhan.myproject.socialmedia.data.model.RemoveFriendInviteResponse
 import thanhnhan.myproject.socialmedia.data.model.SendInviteResponse
 import thanhnhan.myproject.socialmedia.data.model.UserSession
+import thanhnhan.myproject.socialmedia.data.network.SocketManager
+import thanhnhan.myproject.socialmedia.data.model.GetUserResponse
+import thanhnhan.myproject.socialmedia.data.model.SignInUserResponse
 
 class FriendViewModel(
-    private val repository: FriendRepository
+    private val repository: FriendRepository,
+    private val socketManager: SocketManager
 ) : ViewModel() {
     private val _sendInviteResult = MutableStateFlow<Result<SendInviteResponse>?>(null)
     val sendInviteResult: MutableStateFlow<Result<SendInviteResponse>?> = _sendInviteResult
@@ -87,5 +91,54 @@ class FriendViewModel(
                 }
             }
         }
+    }
+
+    private val _friendInvites = MutableStateFlow<List<SignInUserResponse.Metadata.FriendInvite>>(emptyList())
+    val friendInvites: StateFlow<List<SignInUserResponse.Metadata.FriendInvite>> = _friendInvites
+
+    private val _friendList = MutableStateFlow<List<SignInUserResponse.Metadata.Friend>>(emptyList())
+    val friendList: StateFlow<List<SignInUserResponse.Metadata.Friend>> = _friendList
+
+    init {
+        setupSocketListeners()
+        UserSession.user?.let { user ->
+            _friendInvites.value = user.friendInvites
+            _friendList.value = user.friendList
+        }
+    }
+
+    private fun setupSocketListeners() {
+        socketManager.listenForAcceptInvite { userId, friendInviteId, newFriend ->
+            viewModelScope.launch {
+                updateAfterAcceptInvite(userId, friendInviteId, newFriend)
+            }
+        }
+    }
+
+    private fun updateAfterAcceptInvite(userId: String, friendInviteId: String, newFriend: GetUserResponse.Friend) {
+        val convertedFriend = SignInUserResponse.Metadata.Friend(
+            _id = newFriend._id,
+            fullname = newFriend.fullname,
+            profileImageUrl = newFriend.profileImageUrl ?: ""
+        )
+
+        val currentInvites = UserSession.user?.friendInvites?.toMutableList() ?: mutableListOf()
+        currentInvites.removeAll { it._id == friendInviteId }
+
+        val currentFriends = UserSession.user?.friendList?.toMutableList() ?: mutableListOf()
+        currentFriends.add(convertedFriend)
+
+        UserSession.user = UserSession.user?.copy(
+            friendInvites = currentInvites,
+            friendList = currentFriends
+        )
+
+        _friendInvites.value = currentInvites
+        _friendList.value = currentFriends
+    }
+
+    override fun onCleared() {
+        super.onCleared()
+        socketManager.stopListeningForEvent("accpet_invite")
     }
 }

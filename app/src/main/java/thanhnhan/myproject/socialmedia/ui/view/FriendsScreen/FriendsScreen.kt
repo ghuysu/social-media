@@ -294,23 +294,23 @@ fun FriendList(name: String, profileImageUrl: String?, friendId: String, friendV
         }
     }
 }
-@Preview(showBackground = true)
-@Composable
-fun FriendsScreenPreview() {
-    // Tạo một mock FriendViewModel
-    val mockRepository = FriendRepository(RetrofitInstance.api)
-    val mockUserRepository = UserRepository(RetrofitInstance.api)
-    val mockGetUserViewModel = UserViewModel(repository = mockUserRepository)
-    val mockFriendViewModel = FriendViewModel(repository = mockRepository)
-    val mockAuthToken = "mockAuthToken" // Token giả
-    val mockSocketManager = SocketManager() // Tạo một mock SocketManager
-
-    AppTheme { // Sử dụng AppTheme thay vì MaterialTheme
-        Surface(
-            modifier = Modifier.fillMaxSize(),
-            color = Color(0xFF22272E)
-        ) {
-            FriendsScreen(userViewModel = mockGetUserViewModel, friendViewModel = mockFriendViewModel, authToken = mockAuthToken, mockSocketManager)
-        }
-    }
-}
+//@Preview(showBackground = true)
+//@Composable
+//fun FriendsScreenPreview() {
+//    // Tạo một mock FriendViewModel
+//    val mockRepository = FriendRepository(RetrofitInstance.api)
+//    val mockUserRepository = UserRepository(RetrofitInstance.api)
+//    val mockGetUserViewModel = UserViewModel(repository = mockUserRepository)
+//    val mockFriendViewModel = FriendViewModel(repository = mockRepository)
+//    val mockAuthToken = "mockAuthToken" // Token giả
+//    val mockSocketManager = SocketManager() // Tạo một mock SocketManager
+//
+//    AppTheme { // Sử dụng AppTheme thay vì MaterialTheme
+//        Surface(
+//            modifier = Modifier.fillMaxSize(),
+//            color = Color(0xFF22272E)
+//        ) {
+//            FriendsScreen(userViewModel = mockGetUserViewModel, friendViewModel = mockFriendViewModel, authToken = mockAuthToken, mockSocketManager)
+//        }
+//    }
+//}
