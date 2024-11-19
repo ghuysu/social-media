@@ -131,5 +131,30 @@ class SocketManager {
             }
         }
     }
+    fun listenForAcceptInvite(onAcceptInvite: (String, String, GetUserResponse.Friend) -> Unit) {
+        socket.on("accpet_invite") { args ->
+            if (args.isNotEmpty()) {
+                try {
+                    val data = args[0] as JSONObject
+                    val userId = data.getString("userId")
+                    val metadata = data.getJSONObject("metadata")
+                    val friendInviteId = metadata.getString("friendInviteId")
+
+                    // Parse friend object
+                    val friendJson = metadata.getJSONObject("friend")
+                    val friend = GetUserResponse.Friend(
+                        _id = friendJson.getString("_id"),
+                        fullname = friendJson.getString("fullname"),
+                        profileImageUrl = friendJson.optString("profileImageUrl")
+                    )
+
+                    onAcceptInvite(userId, friendInviteId, friend)
+                    println("Received accept invite: User $userId accepted invite $friendInviteId")
+                } catch (e: Exception) {
+                    println("Error parsing accept invite: ${e.message}")
+                }
+            }
+        }
+    }
 }
 
