@@ -162,7 +162,7 @@ fun MainApp(socketManager: SocketManager) {
     val savedUser = dbHelper.getUserData()
     val friendViewModel = FriendViewModel(repository = FriendRepository(RetrofitInstance.api), socketManager)
     val userViewModel = UserViewModel(repository = UserRepository(RetrofitInstance.api))
-    val chatViewModel = ChatViewModel(repository = MessageRepository(RetrofitInstance.api), socketManager)
+    val chatViewModel = ChatViewModel(userViewModel,repository = MessageRepository(RetrofitInstance.api), socketManager)
 
     var authToken: String = savedUser?.token ?: "defaultToken"
     Log.d("MainApp", "AuthToken: $authToken") // Log token trước khi sử dụng

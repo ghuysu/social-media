@@ -5,10 +5,14 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
+import org.json.JSONObject
 import thanhnhan.myproject.socialmedia.data.model.ConversationResponse
 import thanhnhan.myproject.socialmedia.data.model.Friend
 import thanhnhan.myproject.socialmedia.data.model.GetCertainConversationResponse
+import thanhnhan.myproject.socialmedia.data.model.GetUserResponse
+import thanhnhan.myproject.socialmedia.data.model.GetUserResponse.Metadata
 import thanhnhan.myproject.socialmedia.data.model.Message
 import thanhnhan.myproject.socialmedia.data.model.ReadMessagesRequest
 import thanhnhan.myproject.socialmedia.data.model.ReadMessagesResponse
@@ -16,8 +20,8 @@ import thanhnhan.myproject.socialmedia.data.model.SendMessageRequest
 import thanhnhan.myproject.socialmedia.data.model.SendMessageResponse
 import thanhnhan.myproject.socialmedia.data.network.SocketManager
 import thanhnhan.myproject.socialmedia.data.repository.MessageRepository
-
 class ChatViewModel(
+    private val userViewModel: UserViewModel,
     private val repository: MessageRepository,
     private val socketManager: SocketManager
 ) : ViewModel() {
@@ -38,21 +42,18 @@ class ChatViewModel(
     private val _localMessages = MutableStateFlow<List<Message>>(emptyList())
     val localMessages: StateFlow<List<Message>> = _localMessages
 
-    // Thêm property để lưu ID người dùng thực
     private var currentUserId: String = ""
-
-    // Thêm function để set currentUserId
-    fun setCurrentUserId(userId: String) {
-        currentUserId = userId
-    }
 
     init {
         socketManager.initSocket()
+        println("Socket initialized in ChatViewModel: $currentUserId")
+
         // Lắng nghe tin nhắn mới
-        socketManager.listenForNewMessages { message ->
+        socketManager.listenForNewMessages(currentUserId) { message ->
+            println("New message received from socket: ${message._id}")
             viewModelScope.launch {
                 _newMessage.value = message
-                // Cập nhật danh s��ch tin nhắn
+                println("Setting newMessage value in StateFlow")
                 updateConversationWithNewMessage(message)
             }
         }
@@ -80,7 +81,8 @@ class ChatViewModel(
     fun sendMessage(authToken: String, sendMessageRequest: SendMessageRequest) {
         viewModelScope.launch {
             // Tạo và thêm tin nhắn local
-            val localMessage = sendLocalMessage(sendMessageRequest.content, sendMessageRequest.receiverId)
+            val localMessage =
+                sendLocalMessage(sendMessageRequest.content, sendMessageRequest.receiverId)
             _pendingMessageId.value = localMessage._id
 
             repository.sendMessage(authToken, sendMessageRequest).collect { result ->
@@ -92,10 +94,37 @@ class ChatViewModel(
                             removeLocalMessage(localMessage._id)
                             // Sau đó mới thêm tin nhắn từ server
                             updateConversationWithNewMessage(serverMessage)
-                            socketManager.sendMessage(serverMessage)
+                            // Sửa lại cấu trúc gửi socket theo đúng format
+                            val socketMessage = JSONObject().apply {
+                                put("userId", serverMessage.receiverId._id)
+                                put("metadata", JSONObject().apply {
+                                    put("_id", serverMessage._id)
+                                    put("senderId", JSONObject().apply {
+                                        put("_id", serverMessage.senderId._id)
+                                        put("fullname", serverMessage.senderId.fullname)
+                                        put(
+                                            "profileImageUrl",
+                                            serverMessage.senderId.profileImageUrl
+                                        )
+                                    })
+                                    put("receiverId", JSONObject().apply {
+                                        put("_id", serverMessage.receiverId._id)
+                                        put("fullname", serverMessage.receiverId.fullname)
+                                        put(
+                                            "profileImageUrl",
+                                            serverMessage.receiverId.profileImageUrl
+                                        )
+                                    })
+                                    put("content", serverMessage.content)
+                                    put("isRead", serverMessage.isRead)
+                                    put("createdAt", serverMessage.createdAt)
+                                })
+                            }
+                            socketManager.sendMessage(socketMessage)
                         }
                         _pendingMessageId.value = null
                     }
+
                     is Result.Error -> {
                         _pendingMessageId.value = null
                     }
@@ -121,7 +150,9 @@ class ChatViewModel(
                         )
                     }
                 }
-                else -> { /* handle other cases */ }
+
+                else -> { /* handle other cases */
+                }
             }
         }
     }
@@ -140,6 +171,7 @@ class ChatViewModel(
                         // Cập nhật trạng thái đã đọc trong conversation
                         updateConversationReadStatus(friendId, messageIds)
                     }
+
                     is Result.Error -> {
                         println("readMessages error: ${result.message}")
                     }
@@ -174,14 +206,11 @@ class ChatViewModel(
                         )
                     }
                 }
+
                 else -> {}
             }
         }
     }
-
-    // StateFlow để lưu trữ kết quả của getAllConversations
-    private val _conversationsResult = MutableStateFlow<Result<ConversationResponse>?>(null)
-    val conversationsResult: StateFlow<Result<ConversationResponse>?> get() = _conversationsResult
 
     // Hàm để gọi API getAllConversations
     fun getAllConversations(authToken: String) {
@@ -192,6 +221,7 @@ class ChatViewModel(
                     is Result.Success -> {
                         println("getAllConversations success: ${result.data}")
                     }
+
                     is Result.Error -> {
                         println("getAllConversations error: ${result.message}")
                     }
@@ -199,32 +229,48 @@ class ChatViewModel(
             }
         }
     }
+
+    private val _conversationsResult = MutableStateFlow<Result<ConversationResponse>?>(null)
+    val conversationsResult: StateFlow<Result<ConversationResponse>?> = _conversationsResult
+
     fun updateConversationWithNewMessage(newMessage: Message) {
-        _conversationsResult.value?.let { currentResult ->
-            when (currentResult) {
-                is Result.Success -> {
-                    currentResult.data?.metadata?.let { metadata ->
-                        val updatedMetadata = metadata.map { conversationMetadata ->
-                            // Kiểm tra xem tin nhắn đã tồn tại chưa
-                            val existingMessage = conversationMetadata.conversation.find {
-                                it._id == newMessage._id
-                            }
-                            if (existingMessage != null) {
-                                // Nếu tin nhắn đã tồn tại, không thêm vào nữa
-                                conversationMetadata
-                            } else {
-                                // Thêm tin nhắn mới
-                                conversationMetadata.copy(
-                                    conversation = conversationMetadata.conversation + newMessage
+        println("updateConversationWithNewMessage called with message ID: ${newMessage._id}")
+        viewModelScope.launch {
+            println("Starting update with new message: ${newMessage._id}")
+
+            _conversationsResult.update { currentResult ->
+                when (currentResult) {
+                    is Result.Success -> {
+                        println("Current conversation data: ${currentResult.data?.metadata?.size} conversations")
+
+                        val updatedMetadata = currentResult.data?.metadata?.map { metadata ->
+                            println("Checking conversation with friendId: ${metadata.friendId}")
+                            println("New message senderId: ${newMessage.senderId._id}")
+                            println("New message receiverId: ${newMessage.receiverId._id}")
+
+                            if (metadata.friendId == newMessage.senderId._id ||
+                                metadata.friendId == newMessage.receiverId._id
+                            ) {
+                                println("Found matching conversation. Current messages: ${metadata.conversation.size}")
+                                val updatedConversation = metadata.copy(
+                                    conversation = metadata.conversation + newMessage
                                 )
+                                println("Updated conversation messages: ${updatedConversation.conversation.size}")
+                                updatedConversation
+                            } else {
+                                metadata
                             }
                         }
-                        _conversationsResult.value = Result.Success(
-                            currentResult.data.copy(metadata = updatedMetadata)
-                        )
+
+                        println("Final update - Number of conversations: ${updatedMetadata?.size}")
+                        Result.Success(updatedMetadata?.let { currentResult.data?.copy(metadata = it) })
+                    }
+
+                    else -> {
+                        println("Current result is not Success")
+                        currentResult
                     }
                 }
-                else -> { /* handle other cases */ }
             }
         }
     }
