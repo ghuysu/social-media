@@ -19,6 +19,7 @@ import thanhnhan.myproject.socialmedia.data.model.ReportFeedResponse
 import thanhnhan.myproject.socialmedia.data.model.ReportUserResponse
 import thanhnhan.myproject.socialmedia.data.model.SignInUserResponse
 import thanhnhan.myproject.socialmedia.data.model.UpdateFeedResponse
+import thanhnhan.myproject.socialmedia.data.network.SocketManager
 import thanhnhan.myproject.socialmedia.utils.FileUtils.uriToFile
 import java.io.File
 
@@ -146,5 +147,25 @@ class FeedViewModel(private val repository: FeedRepository) : ViewModel() {
                 _deleteFeedResult.value = it
             }
         }
+    }
+
+    // Socket
+    private val socketManager = SocketManager()
+
+    init {
+        socketManager.initSocket()
+    }
+
+    fun connectSocket() {
+        socketManager.connect()
+    }
+
+    fun disconnectSocket() {
+        socketManager.disconnect()
+    }
+
+    override fun onCleared() {
+        super.onCleared()
+        socketManager.disconnect()
     }
 }

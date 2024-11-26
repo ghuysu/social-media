@@ -6,6 +6,7 @@ import io.socket.client.IO
 import io.socket.client.Socket
 import org.json.JSONObject
 import thanhnhan.myproject.socialmedia.data.model.Friend
+import thanhnhan.myproject.socialmedia.data.model.GetEveryoneFeedsResponse
 import thanhnhan.myproject.socialmedia.data.model.GetUserResponse
 import thanhnhan.myproject.socialmedia.data.model.Message
 import thanhnhan.myproject.socialmedia.data.model.User
@@ -189,6 +190,65 @@ class SocketManager {
                     println("Received accept invite: User $userId accepted invite $friendInviteId")
                 } catch (e: Exception) {
                     println("Error parsing accept invite: ${e.message}")
+                }
+            }
+        }
+    }
+
+    fun listenForCreateFeed(onCreateFeed: (GetEveryoneFeedsResponse.Feed) -> Unit) {
+        socket.on("create_feed") { args ->
+            if (args.isNotEmpty()) {
+                try {
+                    val feedJson = args[0] as JSONObject
+                    val feed = Gson().fromJson(feedJson.toString(), GetEveryoneFeedsResponse.Feed::class.java)
+                    onCreateFeed(feed)
+                    println("Received new feed: $feed")
+                } catch (e: Exception) {
+                    println("Error parsing feed: ${e.message}")
+                }
+            }
+        }
+    }
+
+    fun listenForUpdateFeed(onUpdateFeed: (GetEveryoneFeedsResponse.Feed) -> Unit) {
+        socket.on("update_feed") { args ->
+            if (args.isNotEmpty()) {
+                try {
+                    val feedJson = args[0] as JSONObject
+                    val feed = Gson().fromJson(feedJson.toString(), GetEveryoneFeedsResponse.Feed::class.java)
+                    onUpdateFeed(feed)
+                    println("Received updated feed: $feed")
+                } catch (e: Exception) {
+                    println("Error parsing feed: ${e.message}")
+                }
+            }
+        }
+    }
+
+    fun listenForDeleteFeed(onDeleteFeed: (String) -> Unit) {
+        socket.on("delete_feed") { args ->
+            if (args.isNotEmpty()) {
+                try {
+                    val feedId = args[0] as String
+                    onDeleteFeed(feedId)
+                    println("Received delete feed: $feedId")
+                } catch (e: Exception) {
+                    println("Error parsing delete feed: ${e.message}")
+                }
+            }
+        }
+    }
+
+    fun listenForReactFeed(onReactFeed: (GetEveryoneFeedsResponse.Feed) -> Unit) {
+        socket.on("react_feed") { args ->
+            if (args.isNotEmpty()) {
+                try {
+                    val feedJson = args[0] as JSONObject
+                    val feed = Gson().fromJson(feedJson.toString(), GetEveryoneFeedsResponse.Feed::class.java)
+                    onReactFeed(feed)
+                    println("Received react feed: $feed")
+                } catch (e: Exception) {
+                    println("Error parsing feed: ${e.message}")
                 }
             }
         }

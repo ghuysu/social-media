@@ -79,6 +79,7 @@ import thanhnhan.myproject.socialmedia.data.model.GetEveryoneFeedsResponse
 import thanhnhan.myproject.socialmedia.data.model.SignInUserResponse
 import thanhnhan.myproject.socialmedia.data.model.UserSession
 import thanhnhan.myproject.socialmedia.data.network.RetrofitInstance
+import thanhnhan.myproject.socialmedia.data.network.SocketManager
 import thanhnhan.myproject.socialmedia.data.repository.FeedRepository
 import thanhnhan.myproject.socialmedia.ui.theme.AppTheme
 import thanhnhan.myproject.socialmedia.viewmodel.FeedViewModel
@@ -255,6 +256,27 @@ fun ViewFeed(
                 }
             }
         }
+    }
+
+    // Socket
+    val socketManager = SocketManager()
+    socketManager.initSocket()
+    socketManager.connect()
+
+    socketManager.listenForCreateFeed { feed ->
+        viewModel.getEveryoneFeeds(UserSession.signInToken!!, 0)
+    }
+
+    socketManager.listenForUpdateFeed { feed ->
+        viewModel.getEveryoneFeeds(UserSession.signInToken!!, 0)
+    }
+
+    socketManager.listenForDeleteFeed { feedId ->
+        viewModel.getEveryoneFeeds(UserSession.signInToken!!, 0)
+    }
+
+    socketManager.listenForReactFeed { feed ->
+        viewModel.getEveryoneFeeds(UserSession.signInToken!!, 0)
     }
 
     Column(
