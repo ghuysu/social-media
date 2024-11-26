@@ -42,19 +42,28 @@ class ChatViewModel(
     private val _localMessages = MutableStateFlow<List<Message>>(emptyList())
     val localMessages: StateFlow<List<Message>> = _localMessages
 
-    private var currentUserId: String = ""
+    private var currentUserId: String = "default kjfsakgnsak"
 
     init {
-        socketManager.initSocket()
-        println("Socket initialized in ChatViewModel: $currentUserId")
+        viewModelScope.launch {
+            userViewModel.user.collect { metadata ->
+                val userId = metadata?._id
+                println("User ID from UserViewModel: $userId")
+                currentUserId = userId ?: "default kjfsakgnsak"
+                println("Initialized currentUserId: $currentUserId")
 
-        // Lắng nghe tin nhắn mới
-        socketManager.listenForNewMessages(currentUserId) { message ->
-            println("New message received from socket: ${message._id}")
-            viewModelScope.launch {
-                _newMessage.value = message
-                println("Setting newMessage value in StateFlow")
-                updateConversationWithNewMessage(message)
+                socketManager.initSocket()
+                println("Socket initialized in ChatViewModel: $currentUserId")
+
+                // Lắng nghe tin nhắn mới
+                socketManager.listenForNewMessages(currentUserId) { message ->
+                    println("New message received from socket: ${message._id}")
+                    viewModelScope.launch {
+                        _newMessage.value = message
+                        println("Setting newMessage value in StateFlow")
+                        updateConversationWithNewMessage(message)
+                    }
+                }
             }
         }
     }
@@ -236,40 +245,29 @@ class ChatViewModel(
     fun updateConversationWithNewMessage(newMessage: Message) {
         println("updateConversationWithNewMessage called with message ID: ${newMessage._id}")
         viewModelScope.launch {
-            println("Starting update with new message: ${newMessage._id}")
-
             _conversationsResult.update { currentResult ->
                 when (currentResult) {
                     is Result.Success -> {
-                        println("Current conversation data: ${currentResult.data?.metadata?.size} conversations")
-
                         val updatedMetadata = currentResult.data?.metadata?.map { metadata ->
-                            println("Checking conversation with friendId: ${metadata.friendId}")
-                            println("New message senderId: ${newMessage.senderId._id}")
-                            println("New message receiverId: ${newMessage.receiverId._id}")
-
                             if (metadata.friendId == newMessage.senderId._id ||
                                 metadata.friendId == newMessage.receiverId._id
                             ) {
-                                println("Found matching conversation. Current messages: ${metadata.conversation.size}")
-                                val updatedConversation = metadata.copy(
-                                    conversation = metadata.conversation + newMessage
-                                )
-                                println("Updated conversation messages: ${updatedConversation.conversation.size}")
-                                updatedConversation
+                                // Kiểm tra xem tin nhắn đã tồn tại chưa
+                                if (metadata.conversation.none { it._id == newMessage._id }) {
+                                    metadata.copy(
+                                        conversation = metadata.conversation + newMessage
+                                    )
+                                } else {
+                                    println("Message already exists in conversation")
+                                    metadata
+                                }
                             } else {
                                 metadata
                             }
                         }
-
-                        println("Final update - Number of conversations: ${updatedMetadata?.size}")
                         Result.Success(updatedMetadata?.let { currentResult.data?.copy(metadata = it) })
                     }
-
-                    else -> {
-                        println("Current result is not Success")
-                        currentResult
-                    }
+                    else -> currentResult
                 }
             }
         }

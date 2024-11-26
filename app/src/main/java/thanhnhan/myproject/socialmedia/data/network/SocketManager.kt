@@ -98,9 +98,10 @@ class SocketManager {
     }
 
     fun listenForNewMessages(currentUserId: String, onNewMessage: (Message) -> Unit) {
-        socket?.on("send_message") { args ->
+        socket.on("send_message") { args ->
             if (args.isNotEmpty()) {
                 try {
+                    print("6677currentUserId: $currentUserId")
                     val data = args[0] as JSONObject
                     println("Payload received: $data")
                     val userId = data.getString("userId")

@@ -25,11 +25,17 @@ open class UserViewModel(private val repository: UserRepository) : ViewModel() {
             if (result is Result.Success) {
                 Log.d("UserViewModel", "API Response: ${result.data}") // Log API response
                 _user.value = result.data?.metadata
-                Log.d("UserViewModel", "Updated User Metadata: ${_user.value}") // Log updated metadata
+                Log.d("UserViewModel", "Updated User Metadata: ${_user.value}")
+            Log.d("UserViewModel", "laad current id: $currentUserId")// Log updated metadata
             } else if (result is Result.Error) {
                 Log.e("UserViewModel", "API Error: ${result.message}") // Log API error
             }
         }
+    }
+    fun getCurrentId(): String? {
+        val userId = currentUserId
+        Log.d("UserViewModel", "Current user ID: $userId")
+        return userId
     }
 
     // Hàm trả về danh sách bạn bè

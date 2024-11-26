@@ -53,7 +53,7 @@ fun ChatDetailScreen(
 
     // Thêm LazyListState
     val listState = rememberLazyListState()
-
+    print("3377 Curren ID ChatDetail: $currentUserId")
     // Tự động cuộn xuống khi có tin nhắn mới
     LaunchedEffect(conversationResult) {
         conversationResult?.let { result ->
@@ -147,7 +147,7 @@ fun ChatDetailScreen(
                                 ) {
                                     items(
                                         items = conversation.conversation,
-                                        key = { message -> message._id }
+                                        key = { message -> "${message._id}_${message.createdAt}" }
                                     ) { message ->
                                         val previousMessage = conversation.conversation.getOrNull(
                                             conversation.conversation.indexOf(message) - 1
