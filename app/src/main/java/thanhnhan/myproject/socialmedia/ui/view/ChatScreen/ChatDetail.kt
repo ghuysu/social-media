@@ -39,10 +39,7 @@ fun ChatDetailScreen(
     authToken: String,
     currentUserId: String
 ) {
-    // Set currentUserId cho ViewModel khi màn hình được tạo
-    LaunchedEffect(Unit) {
-        chatViewModel.setCurrentUserId(currentUserId)
-    }
+
 
     val conversationResult by chatViewModel.conversationsResult.collectAsState()
     val sendMessageResult by chatViewModel.sendMessageResult.collectAsState()
@@ -56,7 +53,7 @@ fun ChatDetailScreen(
 
     // Thêm LazyListState
     val listState = rememberLazyListState()
-
+    print("3377 Curren ID ChatDetail: $currentUserId")
     // Tự động cuộn xuống khi có tin nhắn mới
     LaunchedEffect(conversationResult) {
         conversationResult?.let { result ->
@@ -80,17 +77,6 @@ fun ChatDetailScreen(
     LaunchedEffect(friendId) {
         chatViewModel.getCertainConversation(authToken, friendId, skip = 0)
     }
-
-    // Lắng nghe tin nhắn mới và cập nhật cuộc trò chuyện
-    LaunchedEffect(newMessage) {
-        newMessage?.let { message ->
-            // Kiểm tra xem tin nhắn có phải từ cuộc trò chuyện hiện tại không
-            if (message.senderId._id == friendId || message.receiverId._id == friendId) {
-                chatViewModel.updateConversationWithNewMessage(message)
-            }
-        }
-    }
-
     LaunchedEffect(Unit) {
         // Lấy danh sách ID tin nhắn chưa đọc
         conversationResult?.let { result ->
@@ -130,9 +116,11 @@ fun ChatDetailScreen(
                         val conversation = result.data?.metadata?.find { it.friendId == friendId }
                         ChatHeader(
                             profileImageUrl = conversation?.conversation?.firstOrNull()?.receiverId?.profileImageUrl,
-                            fullname = conversation?.conversation?.firstOrNull()?.receiverId?.fullname ?: "Unknown"
+                            fullname = conversation?.conversation?.firstOrNull()?.receiverId?.fullname
+                                ?: "Unknown"
                         )
                     }
+
                     else -> {
                         ChatHeader(
                             profileImageUrl = null,
@@ -149,7 +137,8 @@ fun ChatDetailScreen(
                 ) {
                     when (val result = conversationResult) {
                         is Result.Success -> {
-                            val conversation = result.data?.metadata?.find { it.friendId == friendId }
+                            val conversation =
+                                result.data?.metadata?.find { it.friendId == friendId }
                             if (conversation != null) {
                                 LazyColumn(
                                     state = listState,
@@ -161,29 +150,38 @@ fun ChatDetailScreen(
                                 ) {
                                     items(
                                         items = conversation.conversation,
-                                        key = { message -> message._id }
+                                        key = { message -> "${message._id}_${message.createdAt}" }
                                     ) { message ->
                                         val previousMessage = conversation.conversation.getOrNull(
                                             conversation.conversation.indexOf(message) - 1
                                         )
 
+                                        // Xác định xem đây có phải tin nhắn cuối cùng của người dùng hiện tại
+                                        val isLastMessage = conversation.conversation.lastOrNull {
+                                            it.senderId._id == currentUserId
+                                        }?._id == message._id
+                                        val isCurrentUserMessage =
+                                            message.senderId._id == currentUserId
+
                                         // Hiển thị timestamp nếu cần
-                                        if (DateTimeUtils.shouldShowTimestamp(message, previousMessage)) {
+                                        if (DateTimeUtils.shouldShowTimestamp(
+                                                message,
+                                                previousMessage
+                                            )
+                                        ) {
                                             MessageTimestamp(message.createdAt)
                                         }
-
-                                        val isLastMessage = message == conversation.conversation.lastOrNull()
-                                        val isCurrentUserMessage = message.senderId._id == currentUserId
 
                                         Column {
                                             MessageItem(
                                                 message = message,
                                                 currentUserId = currentUserId,
                                                 isPending = message._id == pendingMessageId,
-                                                isError = sendMessageResult is Result.Error && message._id == pendingMessageId,
+                                                isError = sendMessageResult is Result.Error &&
+                                                        message._id == pendingMessageId
                                             )
 
-                                            // Hiển thị trạng thái seen/unseen cho tin nhắn cuối cùng của người dùng hiện tại
+                                            // Hiển thị trạng thái seen/unseen
                                             if (isLastMessage && isCurrentUserMessage) {
                                                 Text(
                                                     text = if (message.isRead) "Seen" else "Unseen",
@@ -197,11 +195,57 @@ fun ChatDetailScreen(
                                         }
                                     }
                                 }
+
+                                // LaunchedEffect để xử lý tin nhắn mới
+                                LaunchedEffect(newMessage) {
+                                    newMessage?.let { message ->
+                                        // Kiểm tra xem tin nhắn có thuộc về cuộc trò chuyện hiện tại không
+                                        if (message.senderId._id == friendId || message.receiverId._id == friendId) {
+                                            // Cập nhật conversation với tin nhắn mới
+                                            chatViewModel.updateConversationWithNewMessage(message)
+
+                                            // Đợi một chút để đảm bảo tin nhắn đã được thêm vào danh sách
+                                            delay(100)
+
+                                            // Cuộn xuống tin nhắn mới
+                                            scope.launch {
+                                                conversationResult?.let { result ->
+                                                    when (result) {
+                                                        is Result.Success -> {
+                                                            val conversation =
+                                                                result.data?.metadata?.find { it.friendId == friendId }
+                                                            conversation?.conversation?.size?.let { size ->
+                                                                if (size > 0) {
+                                                                    listState.animateScrollToItem(
+                                                                        size - 1
+                                                                    )
+                                                                }
+                                                            }
+                                                        }
+
+                                                        else -> {}
+                                                    }
+                                                }
+                                            }
+
+                                            // Nếu tin nhắn từ friend, đánh dấu đã đọc
+                                            if (message.senderId._id == friendId) {
+                                                chatViewModel.readMessages(
+                                                    authToken = authToken,
+                                                    friendId = friendId,
+                                                    messageIds = listOf(message._id)
+                                                )
+                                            }
+                                        }
+                                    }
+                                }
                             }
                         }
+
                         is Result.Error -> {
                             Text("Lỗi: ${result.message}", color = Color.Red)
                         }
+
                         null -> {
                             Text("Đang tải...", color = Color.Gray)
                         }
@@ -218,7 +262,10 @@ fun ChatDetailScreen(
                     Box(
                         modifier = Modifier
                             .weight(1f)
-                            .background(Color(0xFF333333), RoundedCornerShape(40.dp))  // Màu nền bên ngoài của TextField
+                            .background(
+                                Color(0xFF333333),
+                                RoundedCornerShape(40.dp)
+                            )  // Màu nền bên ngoài của TextField
                             .padding(2.dp)  // Khoảng cách giữa Box và TextField
                     ) {
                         TextField(
@@ -258,7 +305,8 @@ fun ChatDetailScreen(
                                         delay(50)
 
                                         // Tạo request và gửi tin nhắn
-                                        val sendMessageRequest = SendMessageRequest(friendId, messageText)
+                                        val sendMessageRequest =
+                                            SendMessageRequest(friendId, messageText)
                                         chatViewModel.sendMessage(authToken, sendMessageRequest)
 
                                         // Cuộn xuống sau khi gửi tin nhắn
@@ -271,12 +319,12 @@ fun ChatDetailScreen(
                                                             ?.find { it.friendId == friendId }
                                                             ?.conversation?.size?.minus(1) ?: 0
                                                     }
+
                                                     else -> 0
                                                 }
                                             } ?: 0
                                         )
-                                    }
-                                    finally {
+                                    } finally {
                                         // Đảm bảo reset trạng thái submitting
                                         isSubmitting = false
                                     }
@@ -297,9 +345,9 @@ fun ChatDetailScreen(
                     }
                 }
             }
+            }
         }
     }
-}
 
 @Composable
 fun ChatHeader(

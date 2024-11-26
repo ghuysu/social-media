@@ -7,13 +7,14 @@ import thanhnhan.myproject.socialmedia.data.repository.FriendRepository
 import thanhnhan.myproject.socialmedia.data.repository.MessageRepository
 
 class ChatViewModelFactory(
+    private val userViewModel: UserViewModel,
     private val repository: MessageRepository,
     private val socketManager: SocketManager // Thêm socketManager vào constructor
 ) : ViewModelProvider.Factory {
     override fun <T : ViewModel> create(modelClass: Class<T>): T {
         if (modelClass.isAssignableFrom(ChatViewModel::class.java)) {
             @Suppress("UNCHECKED_CAST")
-            return ChatViewModel(repository, socketManager) as T
+            return ChatViewModel(userViewModel,repository, socketManager) as T
         }
         throw IllegalArgumentException("Unknown ViewModel class")
     }

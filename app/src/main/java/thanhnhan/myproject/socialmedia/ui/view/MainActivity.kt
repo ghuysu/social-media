@@ -14,6 +14,9 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.tooling.preview.Preview
@@ -98,6 +101,7 @@ class MainActivity : ComponentActivity() {
             navigateToAuth()
             return
         }
+        
 
         // Nếu có user, tiếp tục khởi tạo MainActivity
         Log.d("MainActivity", "User found, initializing MainActivity")
@@ -146,6 +150,7 @@ class MainActivity : ComponentActivity() {
         }
     }
 
+
     // Add sign out functionality if needed
     private fun signOut() {
         auth.signOut()
@@ -162,17 +167,19 @@ fun MainApp(socketManager: SocketManager) {
     val savedUser = dbHelper.getUserData()
     val friendViewModel = FriendViewModel(repository = FriendRepository(RetrofitInstance.api), socketManager)
     val userViewModel = UserViewModel(repository = UserRepository(RetrofitInstance.api))
-    val chatViewModel = ChatViewModel(repository = MessageRepository(RetrofitInstance.api), socketManager)
-
+    val chatViewModel = remember { ChatViewModel(userViewModel, repository = MessageRepository(RetrofitInstance.api), socketManager) }
     var authToken: String = savedUser?.token ?: "defaultToken"
+    var currentUserId: String = savedUser?.id ?: "default ID"
     Log.d("MainApp", "AuthToken: $authToken") // Log token trước khi sử dụng
-
+    Log.d("MainApp", "Current ID: $currentUserId") // Log token trước khi sử dụng
     // Gọi hàm getUser của UserViewModel với token
     userViewModel.getUser(authToken)
 
     if (savedUser != null) {
-        authToken = savedUser.token // Gán giá trị cho authToken
+        authToken = savedUser.token
+        currentUserId = savedUser.id// Gán giá trị cho authToken
     }
+
     SocialMediaTheme {
         NavHost(navController = navController, startDestination = "signInScreen") {
             composable(route = "intro") {
@@ -547,15 +554,14 @@ fun MainApp(socketManager: SocketManager) {
                 val friendId = backStackEntry.arguments?.getString("friendId")
                 requireNotNull(friendId) { "friendId parameter wasn't found. Please make sure it's set!" }
 
-                // Lấy currentUserId từ UserViewModel
-                val currentUserId = userViewModel.currentUserId ?: "default_user_id"
-
-                ChatDetailScreen(
-                    chatViewModel = chatViewModel,
-                    friendId = friendId,
-                    authToken = authToken,
-                    currentUserId = currentUserId
-                )
+                currentUserId?.let {
+                    ChatDetailScreen(
+                        chatViewModel = chatViewModel,
+                        friendId = friendId,
+                        authToken = authToken,
+                        currentUserId = it
+                    )
+                }
             }
             // Thêm route cho FriendsScreen
             composable(route = "friendsScreen") {

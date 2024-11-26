@@ -5,9 +5,11 @@ import com.google.gson.reflect.TypeToken
 import io.socket.client.IO
 import io.socket.client.Socket
 import org.json.JSONObject
+import thanhnhan.myproject.socialmedia.data.model.Friend
 import thanhnhan.myproject.socialmedia.data.model.GetEveryoneFeedsResponse
 import thanhnhan.myproject.socialmedia.data.model.GetUserResponse
 import thanhnhan.myproject.socialmedia.data.model.Message
+import thanhnhan.myproject.socialmedia.data.model.User
 import java.net.URISyntaxException
 
 class SocketManager {
@@ -96,23 +98,58 @@ class SocketManager {
         socket.emit(event, data)
     }
 
-    fun listenForNewMessages(onNewMessage: (Message) -> Unit) {
-        socket.on("newMessage") { args ->
+    fun listenForNewMessages(currentUserId: String, onNewMessage: (Message) -> Unit) {
+        socket.on("send_message") { args ->
             if (args.isNotEmpty()) {
                 try {
-                    val messageJson = args[0] as JSONObject
-                    val message = Gson().fromJson(messageJson.toString(), Message::class.java)
-                    onNewMessage(message)
+                    print("6677currentUserId: $currentUserId")
+                    val data = args[0] as JSONObject
+                    println("Payload received: $data")
+                    val userId = data.getString("userId")
+
+                    // Kiểm tra xem tin nhắn có phải gửi cho mình không
+                    println("Checking userId: $userId against currentUserId: $currentUserId")
+                    if (userId == currentUserId) {
+                        val metadata = data.getJSONObject("metadata")
+                        val message = Message(
+                            _id = metadata.getString("_id"),
+                            senderId = parseSender(metadata.getJSONObject("senderId")),
+                            receiverId = parseReceiver(metadata.getJSONObject("receiverId")),
+                            content = metadata.getString("content"),
+                            isRead = metadata.getBoolean("isRead"),
+                            createdAt = metadata.getString("createdAt")
+                        )
+                        println("New message received via socket: ${message.content}")
+                        onNewMessage(message)
+                    }
                 } catch (e: Exception) {
                     println("Error parsing message: ${e.message}")
                 }
             }
         }
     }
+    private fun parseSender(json: JSONObject): Friend {
+        return Friend(
+            _id = json.getString("_id"),
+            fullname = json.getString("fullname"),
+            profileImageUrl = json.optString("profileImageUrl")
+        )
+    }
 
-    fun sendMessage(message: Message) {
-        val messageJson = JSONObject(Gson().toJson(message))
-        socket.emit("sendMessage", messageJson)
+    private fun parseReceiver(json: JSONObject): Friend {
+        return Friend(
+            _id = json.getString("_id"),
+            fullname = json.getString("fullname"),
+            profileImageUrl = json.optString("profileImageUrl")
+        )
+    }
+    fun sendMessage(messagePayload: JSONObject) {
+        try {
+            socket?.emit("send_message", messagePayload)
+            println("Message sent via socket")
+        } catch (e: Exception) {
+            println("Error sending message via socket: ${e.message}")
+        }
     }
     fun listenForFullnameChanges(onFullnameChanged: (String, String, String) -> Unit) {
         socket.on("change_fullname") { args ->
