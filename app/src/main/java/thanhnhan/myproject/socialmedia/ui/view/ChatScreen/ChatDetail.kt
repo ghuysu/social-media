@@ -116,9 +116,11 @@ fun ChatDetailScreen(
                         val conversation = result.data?.metadata?.find { it.friendId == friendId }
                         ChatHeader(
                             profileImageUrl = conversation?.conversation?.firstOrNull()?.receiverId?.profileImageUrl,
-                            fullname = conversation?.conversation?.firstOrNull()?.receiverId?.fullname ?: "Unknown"
+                            fullname = conversation?.conversation?.firstOrNull()?.receiverId?.fullname
+                                ?: "Unknown"
                         )
                     }
+
                     else -> {
                         ChatHeader(
                             profileImageUrl = null,
@@ -135,7 +137,8 @@ fun ChatDetailScreen(
                 ) {
                     when (val result = conversationResult) {
                         is Result.Success -> {
-                            val conversation = result.data?.metadata?.find { it.friendId == friendId }
+                            val conversation =
+                                result.data?.metadata?.find { it.friendId == friendId }
                             if (conversation != null) {
                                 LazyColumn(
                                     state = listState,
@@ -157,10 +160,15 @@ fun ChatDetailScreen(
                                         val isLastMessage = conversation.conversation.lastOrNull {
                                             it.senderId._id == currentUserId
                                         }?._id == message._id
-                                        val isCurrentUserMessage = message.senderId._id == currentUserId
+                                        val isCurrentUserMessage =
+                                            message.senderId._id == currentUserId
 
                                         // Hiển thị timestamp nếu cần
-                                        if (DateTimeUtils.shouldShowTimestamp(message, previousMessage)) {
+                                        if (DateTimeUtils.shouldShowTimestamp(
+                                                message,
+                                                previousMessage
+                                            )
+                                        ) {
                                             MessageTimestamp(message.createdAt)
                                         }
 
@@ -204,13 +212,17 @@ fun ChatDetailScreen(
                                                 conversationResult?.let { result ->
                                                     when (result) {
                                                         is Result.Success -> {
-                                                            val conversation = result.data?.metadata?.find { it.friendId == friendId }
+                                                            val conversation =
+                                                                result.data?.metadata?.find { it.friendId == friendId }
                                                             conversation?.conversation?.size?.let { size ->
                                                                 if (size > 0) {
-                                                                    listState.animateScrollToItem(size - 1)
+                                                                    listState.animateScrollToItem(
+                                                                        size - 1
+                                                                    )
                                                                 }
                                                             }
                                                         }
+
                                                         else -> {}
                                                     }
                                                 }
@@ -229,14 +241,15 @@ fun ChatDetailScreen(
                                 }
                             }
                         }
+
                         is Result.Error -> {
                             Text("Lỗi: ${result.message}", color = Color.Red)
                         }
+
                         null -> {
                             Text("Đang tải...", color = Color.Gray)
                         }
                     }
-                }
                 }
 
                 // Input field ở dưới cùng
@@ -249,7 +262,10 @@ fun ChatDetailScreen(
                     Box(
                         modifier = Modifier
                             .weight(1f)
-                            .background(Color(0xFF333333), RoundedCornerShape(40.dp))  // Màu nền bên ngoài của TextField
+                            .background(
+                                Color(0xFF333333),
+                                RoundedCornerShape(40.dp)
+                            )  // Màu nền bên ngoài của TextField
                             .padding(2.dp)  // Khoảng cách giữa Box và TextField
                     ) {
                         TextField(
@@ -289,7 +305,8 @@ fun ChatDetailScreen(
                                         delay(50)
 
                                         // Tạo request và gửi tin nhắn
-                                        val sendMessageRequest = SendMessageRequest(friendId, messageText)
+                                        val sendMessageRequest =
+                                            SendMessageRequest(friendId, messageText)
                                         chatViewModel.sendMessage(authToken, sendMessageRequest)
 
                                         // Cuộn xuống sau khi gửi tin nhắn
@@ -302,12 +319,12 @@ fun ChatDetailScreen(
                                                             ?.find { it.friendId == friendId }
                                                             ?.conversation?.size?.minus(1) ?: 0
                                                     }
+
                                                     else -> 0
                                                 }
                                             } ?: 0
                                         )
-                                    }
-                                    finally {
+                                    } finally {
                                         // Đảm bảo reset trạng thái submitting
                                         isSubmitting = false
                                     }
@@ -327,6 +344,7 @@ fun ChatDetailScreen(
                         )
                     }
                 }
+            }
             }
         }
     }
