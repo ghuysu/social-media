@@ -165,8 +165,8 @@ fun MainApp(socketManager: SocketManager) {
     val context = LocalContext.current
     val dbHelper = UserDatabaseHelper(context)
     val savedUser = dbHelper.getUserData()
-    val friendViewModel = FriendViewModel(repository = FriendRepository(RetrofitInstance.api), socketManager)
     val userViewModel = UserViewModel(repository = UserRepository(RetrofitInstance.api))
+    val friendViewModel = FriendViewModel(repository = FriendRepository(RetrofitInstance.api), socketManager, userViewModel)
     val chatViewModel = remember { ChatViewModel(userViewModel, repository = MessageRepository(RetrofitInstance.api), socketManager) }
     var authToken: String = savedUser?.token ?: "defaultToken"
     var currentUserId: String = savedUser?.id ?: "default ID"

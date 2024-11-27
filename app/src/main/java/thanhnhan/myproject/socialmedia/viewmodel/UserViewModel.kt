@@ -70,4 +70,36 @@ open class UserViewModel(private val repository: UserRepository) : ViewModel() {
             _user.value = metadata.copy(friendInvites = updatedInvites)
         }
     }
+
+    // Thêm phương thức để cập nhật danh sách sau khi accept friend
+    fun updateAfterAcceptInvite(friendInviteId: String, newFriend: GetUserResponse.Friend) {
+        _user.value?.let { currentUser ->
+            // Xóa friend invite
+            val updatedInvites = currentUser.friendInvites.filterNot { it._id == friendInviteId }
+            
+            // Thêm friend mới
+            val updatedFriends = currentUser.friendList.toMutableList().apply {
+                add(newFriend)
+            }
+            
+            // Cập nhật state
+            _user.value = currentUser.copy(
+                friendInvites = updatedInvites,
+                friendList = updatedFriends
+            )
+        }
+    }
+
+    // Thêm phương thức để xóa friend khỏi danh sách
+    fun updateAfterDeleteFriend(friendId: String) {
+        _user.value?.let { currentUser ->
+            // Lọc ra danh sách bạn bè mới, loại bỏ friend vừa xóa
+            val updatedFriends = currentUser.friendList.filterNot { it._id == friendId }
+            
+            // Cập nhật state
+            _user.value = currentUser.copy(
+                friendList = updatedFriends
+            )
+        }
+    }
 }

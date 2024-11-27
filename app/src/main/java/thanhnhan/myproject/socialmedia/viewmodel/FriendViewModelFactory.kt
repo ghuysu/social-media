@@ -7,12 +7,13 @@ import thanhnhan.myproject.socialmedia.data.repository.FriendRepository
 
 class FriendViewModelFactory(
     private val repository: FriendRepository,
-    private val socketManager: SocketManager
+    private val socketManager: SocketManager,
+    private val userViewModel: UserViewModel
 ) : ViewModelProvider.Factory {
     override fun <T : ViewModel> create(modelClass: Class<T>): T {
         if (modelClass.isAssignableFrom(FriendViewModel::class.java)) {
             @Suppress("UNCHECKED_CAST")
-            return FriendViewModel(repository, socketManager) as T
+            return FriendViewModel(repository, socketManager, userViewModel) as T
         }
         throw IllegalArgumentException("Unknown ViewModel class")
     }

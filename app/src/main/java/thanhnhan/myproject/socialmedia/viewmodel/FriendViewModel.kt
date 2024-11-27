@@ -18,7 +18,8 @@ import thanhnhan.myproject.socialmedia.data.model.SignInUserResponse
 
 class FriendViewModel(
     private val repository: FriendRepository,
-    private val socketManager: SocketManager
+    private val socketManager: SocketManager,
+    private val userViewModel: UserViewModel
 ) : ViewModel() {
     private val _sendInviteResult = MutableStateFlow<Result<SendInviteResponse>?>(null)
     val sendInviteResult: MutableStateFlow<Result<SendInviteResponse>?> = _sendInviteResult
@@ -47,6 +48,7 @@ class FriendViewModel(
                 when (result) {
                     is Result.Success -> {
                         println("acceptFriendInvite success: ${result.data}")
+                        setupAcceptInviteListener()
                     }
                     is Result.Error -> {
                         println("acceptFriendInvite error: ${result.message}")
@@ -55,6 +57,15 @@ class FriendViewModel(
             }
         }
     }
+
+    private fun setupAcceptInviteListener() {
+        socketManager.listenForAcceptInvite { userId, friendInviteId, newFriend ->
+            viewModelScope.launch {
+                userViewModel.updateAfterAcceptInvite(friendInviteId, newFriend)
+            }
+        }
+    }
+
     private val _removeFriendRequestResult = MutableStateFlow<Result<RemoveFriendInviteResponse>?>(null)
     val removeFriendRequestResult: StateFlow<Result<RemoveFriendInviteResponse>?> get() = _removeFriendRequestResult
 
@@ -84,11 +95,21 @@ class FriendViewModel(
                 when (result) {
                     is Result.Success -> {
                         println("RemoveFriend success: ${result.data}")
+                        userViewModel.updateAfterDeleteFriend(friendId)
+                        setupDeleteFriendListener()
                     }
                     is Result.Error -> {
                         println("RemoveFriend error: ${result.message}")
                     }
                 }
+            }
+        }
+    }
+
+    private fun setupDeleteFriendListener() {
+        socketManager.listenForDeleteFriend { userId, friendId ->
+            viewModelScope.launch {
+                userViewModel.updateAfterDeleteFriend(friendId)
             }
         }
     }
@@ -111,6 +132,11 @@ class FriendViewModel(
         socketManager.listenForAcceptInvite { userId, friendInviteId, newFriend ->
             viewModelScope.launch {
                 updateAfterAcceptInvite(userId, friendInviteId, newFriend)
+            }
+        }
+        socketManager.listenForDeleteFriend { userId, friendId ->
+            viewModelScope.launch {
+                userViewModel.updateAfterDeleteFriend(friendId)
             }
         }
     }
@@ -139,6 +165,7 @@ class FriendViewModel(
 
     override fun onCleared() {
         super.onCleared()
-        socketManager.stopListeningForEvent("accpet_invite")
+        socketManager.stopListeningForEvent("accept_invite")
+        socketManager.stopListeningForEvent("delete_friend")
     }
 }

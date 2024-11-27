@@ -44,35 +44,33 @@ import thanhnhan.myproject.socialmedia.data.repository.UserRepository
 import thanhnhan.myproject.socialmedia.ui.theme.AppTheme
 import thanhnhan.myproject.socialmedia.viewmodel.FriendViewModel
 import thanhnhan.myproject.socialmedia.viewmodel.UserViewModel
+import thanhnhan.myproject.socialmedia.data.Result
+import thanhnhan.myproject.socialmedia.data.model.GetUserResponse
 
 @Composable
 fun FriendsScreen(
     userViewModel: UserViewModel,
     friendViewModel: FriendViewModel,
     authToken: String,
-    socketManager: SocketManager // Thêm socketManager để quản lý socket
+    socketManager: SocketManager
 ) {
-    // Khởi tạo socket và lắng nghe sự kiện từ socket
+    // Collect state từ UserViewModel
+    val user by userViewModel.user.collectAsState()
+    
     LaunchedEffect(Unit) {
-        // Khởi tạo và kết nối socket
         socketManager.initSocket()
-
-        // Gọi API Get User để lấy danh sách bạn bè và lời mời kết bạn ban đầu
         userViewModel.getUser(authToken)
-
-        // Lắng nghe sự kiện lời mời kết bạn mới từ Socket.IO
+        
+        // Lắng nghe sự kiện từ socket
         socketManager.listenForFriendInviteUpdates { newInvite ->
-            userViewModel.addFriendInvite(newInvite) // Cập nhật danh sách lời mời
+            userViewModel.addFriendInvite(newInvite)
         }
-
-        // Lắng nghe sự kiện bạn mới được thêm từ Socket.IO
+        
         socketManager.listenForNewFriendUpdates { newFriend ->
-            userViewModel.addFriend(newFriend) // Cập nhật danh sách bạn bè
+            userViewModel.addFriend(newFriend)
         }
     }
 
-    // Giao diện hiển thị bạn bè và lời mời kết bạn
-    val user by userViewModel.user.collectAsState()
     AppTheme {
         Column(
             modifier = Modifier
@@ -81,14 +79,28 @@ fun FriendsScreen(
                 .padding(16.dp)
         ) {
             Header()
-
+            
             Spacer(modifier = Modifier.height(16.dp))
-
-            YourFriendsList(userViewModel, friendViewModel, authToken)
-
+            
+            // Đảm bảo sử dụng user.friendList trực tiếp
+            user?.let { currentUser ->
+                YourFriendsList(
+                    friends = currentUser.friendList,
+                    friendViewModel = friendViewModel,
+                    authToken = authToken
+                )
+            }
+            
             Spacer(modifier = Modifier.height(16.dp))
-
-            FriendsRequestList(userViewModel, friendViewModel, authToken)
+            
+            // Sử dụng user.friendInvites trực tiếp
+            user?.let { currentUser ->
+                FriendsRequestList(
+                    friendInvites = currentUser.friendInvites,
+                    friendViewModel = friendViewModel,
+                    authToken = authToken
+                )
+            }
         }
     }
 }
@@ -109,9 +121,11 @@ fun Header() {
 }
 
 @Composable
-fun YourFriendsList(userViewModel: UserViewModel, friendViewModel: FriendViewModel, authToken: String) {
-    val friends = userViewModel.getFriends()
-
+fun YourFriendsList(
+    friends: List<GetUserResponse.Friend>,
+    friendViewModel: FriendViewModel,
+    authToken: String
+) {
     Text(
         text = "✨ Your Friends",
         style = AppTheme.appTypography.title,
@@ -119,8 +133,14 @@ fun YourFriendsList(userViewModel: UserViewModel, friendViewModel: FriendViewMod
     )
     if (friends.isNotEmpty()) {
         friends.forEach { friend ->
-            val name = friend.fullname ?: "Unknown" // Kiểm tra giá trị null và gán giá trị mặc định
-            FriendList(name = name, profileImageUrl = friend.profileImageUrl, friendId = friend._id, friendViewModel = friendViewModel, authToken = authToken)
+            val name = friend.fullname ?: "Unknown"
+            FriendList(
+                name = name,
+                profileImageUrl = friend.profileImageUrl,
+                friendId = friend._id,
+                friendViewModel = friendViewModel,
+                authToken = authToken
+            )
         }
     } else {
         Text(
@@ -137,13 +157,28 @@ fun YourFriendsList(userViewModel: UserViewModel, friendViewModel: FriendViewMod
         Text("Xem thêm", color = Color.Gray)
     }
 }
+
 @Composable
-fun FriendsRequestList(userViewModel: UserViewModel, friendViewModel: FriendViewModel, authToken: String) {
-    val friendInvites = userViewModel.getFriendInvites()
+fun FriendsRequestList(
+    friendInvites: List<GetUserResponse.FriendInvite>,
+    friendViewModel: FriendViewModel,
+    authToken: String
+) {
     val acceptFriendResult by friendViewModel.acceptFriendResult.collectAsState()
+    
     LaunchedEffect(acceptFriendResult) {
-        println("acceptFriendResult changed: $acceptFriendResult") // Log để kiểm tra thay đổi
+        when (acceptFriendResult) {
+            is Result.Success -> {
+                println("Friend request accepted successfully")
+                // UserViewModel sẽ tự động cập nhật thông qua socket listener
+            }
+            is Result.Error -> {
+                println("Error accepting friend request: ${(acceptFriendResult as Result.Error).message}")
+            }
+            null -> { /* Initial state */ }
+        }
     }
+
     Text(
         text = "✨ Friend Requests",
         style = AppTheme.appTypography.title,
@@ -151,10 +186,9 @@ fun FriendsRequestList(userViewModel: UserViewModel, friendViewModel: FriendView
     )
     if (friendInvites.isNotEmpty()) {
         friendInvites.forEach { invite ->
-            // Kiểm tra để chắc chắn rằng bạn không hiển thị chính mình trong danh sách yêu cầu kết bạn
             if (invite.sender._id != UserSession.user?._id) {
                 FriendInviteItem(
-                    name = invite.sender.fullname ?: "Unknown", // Sử dụng thông tin người gửi
+                    name = invite.sender.fullname ?: "Unknown",
                     profileImageUrl = invite.sender.profileImageUrl,
                     inviteId = invite._id,
                     friendViewModel = friendViewModel,
