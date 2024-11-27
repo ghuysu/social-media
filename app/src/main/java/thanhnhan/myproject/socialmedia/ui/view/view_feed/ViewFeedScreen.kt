@@ -73,12 +73,18 @@ import coil.compose.rememberAsyncImagePainter
 import com.google.accompanist.pager.ExperimentalPagerApi
 import com.google.accompanist.pager.VerticalPager
 import com.google.accompanist.pager.rememberPagerState
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
+import org.json.JSONException
+import org.json.JSONObject
 import thanhnhan.myproject.socialmedia.R
 import thanhnhan.myproject.socialmedia.data.Result
 import thanhnhan.myproject.socialmedia.data.model.GetEveryoneFeedsResponse
 import thanhnhan.myproject.socialmedia.data.model.SignInUserResponse
 import thanhnhan.myproject.socialmedia.data.model.UserSession
 import thanhnhan.myproject.socialmedia.data.network.RetrofitInstance
+import thanhnhan.myproject.socialmedia.data.network.SocketHandler
 import thanhnhan.myproject.socialmedia.data.network.SocketManager
 import thanhnhan.myproject.socialmedia.data.repository.FeedRepository
 import thanhnhan.myproject.socialmedia.ui.theme.AppTheme
@@ -86,6 +92,7 @@ import thanhnhan.myproject.socialmedia.viewmodel.FeedViewModel
 import thanhnhan.myproject.socialmedia.viewmodel.FeedViewModelFactory
 import java.text.SimpleDateFormat
 import java.util.Date
+import java.util.Locale
 import java.util.TimeZone
 
 @OptIn(ExperimentalPagerApi::class)
@@ -94,7 +101,7 @@ fun ViewFeed(
     openEditFeed: (String, String, String, String) -> Unit,
     openProfile: () -> Unit,
     openHome: () -> Unit,
-    openChat: () -> Unit
+    openChat: () -> Unit,
 ) {
 
     val api = RetrofitInstance.api
@@ -258,26 +265,54 @@ fun ViewFeed(
         }
     }
 
-    // Socket
-    val socketManager = SocketManager()
-    socketManager.initSocket()
-    socketManager.connect()
+//    SocketHandler.setSocket()
+    val mSocket = SocketHandler.getSocket()
+    mSocket.connect()
 
-    socketManager.listenForCreateFeed { feed ->
-        viewModel.getEveryoneFeeds(UserSession.signInToken!!, 0)
+    mSocket.on("create_feed") { args ->
+        if (args.isNotEmpty() && args[0] is JSONObject) {
+            try {
+                val result = args[0] as JSONObject
+                Log.d("DEBUG", "Received data: $result") // Thêm log để kiểm tra toàn bộ JSON
+
+                // Kiểm tra có trường 'payload' hay không
+                if (result.has("payload") && !result.isNull("payload")) {
+                    val payload = result.getJSONObject("payload")
+
+                    // Lấy thông tin từ payload
+                    val feed = GetEveryoneFeedsResponse.Feed(
+                        _id = payload.getString("_id"),
+                        description = payload.getString("description"),
+                        imageUrl = payload.getString("imageUrl"),
+                        visibility = payload.getJSONArray("visibility").let { visibility ->
+                            List(visibility.length()) { visibility.getString(it) }
+                        },
+                        userId = GetEveryoneFeedsResponse.Feed.User(
+                            _id = payload.getJSONObject("userId").getString("_id"),
+                            fullname = payload.getJSONObject("userId").getString("fullname"),
+                            profileImageUrl = payload.getJSONObject("userId")
+                                .getString("profileImageUrl")
+                        ),
+                        reactions = listOf(),
+                        createdAt = payload.getString("createdAt")
+                    )
+
+                    // Thêm feed vào danh sách
+                    everyoneFeed = everyoneFeed + feed // Thêm feed vào đầu danh sách
+                    Log.d("DEBUGH", feed.toString())
+                    viewModel.getEveryoneFeeds(UserSession.signInToken!!, 0)
+                } else {
+                    Log.e("SocketError", "No 'payload' field in response")
+                }
+            } catch (e: JSONException) {
+                Log.e("SocketError", "Failed to parse JSON", e)
+            }
+        } else {
+            Log.e("SocketError", "Invalid response: $args")
+        }
     }
 
-    socketManager.listenForUpdateFeed { feed ->
-        viewModel.getEveryoneFeeds(UserSession.signInToken!!, 0)
-    }
 
-    socketManager.listenForDeleteFeed { feedId ->
-        viewModel.getEveryoneFeeds(UserSession.signInToken!!, 0)
-    }
-
-    socketManager.listenForReactFeed { feed ->
-        viewModel.getEveryoneFeeds(UserSession.signInToken!!, 0)
-    }
 
     Column(
         modifier = Modifier
@@ -610,11 +645,12 @@ fun UserFeedItem(
 
                     if (showDeleteFeedDialog) {
                         ConfirmDeleteFeedDialog(
-                            onDismissRequest = { showDialog = false },
+                            onDismissRequest = { showDeleteFeedDialog = false },
                             onDelete = {
-                                showDialog = false
+                                showDeleteFeedDialog = false
+                                expanded = false
                             },
-                            onCancel = { showDialog = false },
+                            onCancel = { showDeleteFeedDialog = false },
                             viewmodel = viewModel,
                             feedId = feed._id
                         )
