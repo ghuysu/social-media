@@ -35,12 +35,15 @@ import thanhnhan.myproject.socialmedia.data.repository.FriendRepository
 import thanhnhan.myproject.socialmedia.data.Result
 import thanhnhan.myproject.socialmedia.data.network.SocketManager
 import thanhnhan.myproject.socialmedia.data.repository.SignInUserRepository
+import thanhnhan.myproject.socialmedia.data.repository.UserRepository
 import thanhnhan.myproject.socialmedia.ui.theme.AppTheme
 import thanhnhan.myproject.socialmedia.ui.view.user_profile.CircularImageView
 import thanhnhan.myproject.socialmedia.viewmodel.FriendViewModel
 import thanhnhan.myproject.socialmedia.viewmodel.FriendViewModelFactory
 import thanhnhan.myproject.socialmedia.viewmodel.SignInUserViewModel
 import thanhnhan.myproject.socialmedia.viewmodel.SignInUserViewModelFactory
+import thanhnhan.myproject.socialmedia.viewmodel.UserViewModel
+import thanhnhan.myproject.socialmedia.viewmodel.UserViewModelFactory
 
 @Composable
 fun AddFriendScreen(
@@ -53,6 +56,9 @@ fun AddFriendScreen(
     val context = LocalContext.current
     val viewModelFactory = SignInUserViewModelFactory(SignInUserRepository(RetrofitInstance.api), context)
     val signInViewModel: SignInUserViewModel = viewModel(factory = viewModelFactory)
+    // Khởi tạo UserViewModel
+    val userRepository = UserRepository(RetrofitInstance.api)
+    val userViewModel: UserViewModel = viewModel(factory = UserViewModelFactory(userRepository))
     if (LocalInspectionMode.current) {
         // Chế độ preview không chạy logic phức tạp
         Column(
@@ -98,7 +104,7 @@ fun AddFriendScreen(
             socketManager.initSocket()
 
             val repository = FriendRepository(api)
-            val viewModel: FriendViewModel = viewModel(factory = FriendViewModelFactory(repository, socketManager ))
+            val viewModel: FriendViewModel = viewModel(factory = FriendViewModelFactory(repository, socketManager, userViewModel ))
 
             val sendInviteResult by viewModel.sendInviteResult.collectAsState()
 

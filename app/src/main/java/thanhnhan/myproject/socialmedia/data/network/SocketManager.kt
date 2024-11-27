@@ -170,26 +170,30 @@ class SocketManager {
         }
     }
     fun listenForAcceptInvite(onAcceptInvite: (String, String, GetUserResponse.Friend) -> Unit) {
-        socket.on("accpet_invite") { args ->
+        socket.on("accept_invite") { args ->
             if (args.isNotEmpty()) {
                 try {
                     val data = args[0] as JSONObject
                     val userId = data.getString("userId")
                     val metadata = data.getJSONObject("metadata")
                     val friendInviteId = metadata.getString("friendInviteId")
-
-                    // Parse friend object
+                    
                     val friendJson = metadata.getJSONObject("friend")
+                    // Lấy object fullname và trích xuất trường fullname từ nó
+                    val fullnameObject = friendJson.getJSONObject("fullname")
+                    val actualFullname = fullnameObject.getString("fullname")
+                    
                     val friend = GetUserResponse.Friend(
                         _id = friendJson.getString("_id"),
-                        fullname = friendJson.getString("fullname"),
+                        fullname = actualFullname,  // Sử dụng fullname đã trích xuất
                         profileImageUrl = friendJson.optString("profileImageUrl")
                     )
+                    println("Parsed friend object with correct fullname: $friend")
 
                     onAcceptInvite(userId, friendInviteId, friend)
-                    println("Received accept invite: User $userId accepted invite $friendInviteId")
                 } catch (e: Exception) {
                     println("Error parsing accept invite: ${e.message}")
+                    e.printStackTrace()
                 }
             }
         }
@@ -249,6 +253,24 @@ class SocketManager {
                     println("Received react feed: $feed")
                 } catch (e: Exception) {
                     println("Error parsing feed: ${e.message}")
+                }
+            }
+        }
+    }
+
+    fun listenForDeleteFriend(onDeleteFriend: (String, String) -> Unit) {
+        socket.on("delete_friend") { args ->
+            if (args.isNotEmpty()) {
+                try {
+                    val data = args[0] as JSONObject
+                    val userId = data.getString("userId")
+                    val metadata = data.getJSONObject("metadata")
+                    val friendId = metadata.getString("_id")
+
+                    onDeleteFriend(userId, friendId)
+                    println("Received delete friend: User $userId deleted friend $friendId")
+                } catch (e: Exception) {
+                    println("Error parsing delete friend: ${e.message}")
                 }
             }
         }
