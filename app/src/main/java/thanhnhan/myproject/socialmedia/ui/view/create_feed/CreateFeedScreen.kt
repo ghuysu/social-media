@@ -1,5 +1,6 @@
 package thanhnhan.myproject.socialmedia.ui.view.create_feed
 
+import android.content.Context
 import android.net.Uri
 import android.util.Log
 import android.widget.Toast
@@ -135,7 +136,8 @@ fun CreateFeed(
             photoFile = photoFile,
             visibleFriendIds = selectedFriendIds.value,
             description = desc,
-            viewModel = viewModel
+            viewModel = viewModel,
+            context = context
         )
 
         Spacer(modifier = Modifier.height(20.dp))
@@ -207,7 +209,8 @@ fun ContinueButton(
     visibleFriendIds: List<String>,
     description: String,
     viewModel: FeedViewModel,
-    photoFile: File?
+    photoFile: File?,
+    context: Context
 ) {
     Button(
         modifier = Modifier
@@ -215,7 +218,13 @@ fun ContinueButton(
             .width(100.dp)
             .clip(RoundedCornerShape(AppTheme.appButtonStyle.cornerRadius)),
         onClick = {
-            viewModel.createFeed(UserSession.signInToken!!, photoFile!!, description, visibleFriendIds)
+            if (visibleFriendIds.isEmpty()) {
+                Toast.makeText(context, "Please choose your visible friends!", Toast.LENGTH_SHORT).show()
+            } else if (description.isEmpty()) {
+                Toast.makeText(context, "Please enter your description!", Toast.LENGTH_SHORT).show()
+            } else {
+                viewModel.createFeed(UserSession.signInToken!!, photoFile!!, description, visibleFriendIds)
+            }
         },
         colors = ButtonDefaults.buttonColors(
             containerColor = AppTheme.appButtonStyle.backgroundColor
@@ -239,6 +248,7 @@ fun UserScrollRow(
 
     val scrollState = rememberScrollState()
     var selectedFriends by remember { mutableStateOf<Set<VisibleFriend>>(emptySet()) }
+    val visibleFriendList = convertFriendList(friendList)
 
     Row(
         modifier = Modifier
@@ -255,14 +265,23 @@ fun UserScrollRow(
                 contentDescription = "All",
                 modifier = Modifier
                     .clickable {
-                        selectedFriends = emptySet()
-                        selectedFriendIds.value = emptyList()
+                        if (selectedFriends.isEmpty()) {
+                            selectedFriends = emptySet()
+                            selectedFriendIds.value = emptyList()
+                            visibleFriendList.forEach { user ->
+                                selectedFriends += user
+                            }
+                            selectedFriendIds.value = selectedFriends.map { it._id }
+                        } else {
+                            selectedFriends = emptySet()
+                            selectedFriendIds.value = emptyList()
+                        }
                     }
-                    .border(
-                        width = if (selectedFriends.isEmpty()) 3.dp else 0.dp,
-                        color = AppTheme.appButtonStyle.backgroundColor,
-                        shape = CircleShape
-                    )
+//                    .border(
+//                        width = if (selectedFriends.isEmpty()) 3.dp else 0.dp,
+//                        color = AppTheme.appButtonStyle.backgroundColor,
+//                        shape = CircleShape
+//                    )
                     .size(60.dp)
                     .clip(CircleShape)
                     .background(Color.Gray)
@@ -277,8 +296,6 @@ fun UserScrollRow(
         }
 
         Spacer(modifier = Modifier.width(8.dp))
-
-        val visibleFriendList = convertFriendList(friendList)
 
         visibleFriendList.forEach { user ->
             UserAvatarItem(user, selectedFriends.contains(user)) {
