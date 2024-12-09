@@ -609,32 +609,31 @@ fun UserFeedItem(
                                 .background(
                                     MaterialTheme.colors.surface,
                                     shape = RoundedCornerShape(8.dp)
-                                ) // Nền với góc bo
+                                )
                                 .clickable {
                                     expanded = false
                                     val visibility = feed.visibility.joinToString((", "))
                                     val imageUrl = feed.imageUrl.replace("/", "+")
                                     openEditFeed(visibility, imageUrl, feed.description, feed._id)
-                                }, // Thêm sự kiện nhấp
-                            contentAlignment = Alignment.Center // Căn giữa nội dung
+                                },
+                            contentAlignment = Alignment.Center
                         ) {
                             Row(
-                                verticalAlignment = Alignment.CenterVertically, // Căn giữa theo chiều dọc
-                                modifier = Modifier.padding(16.dp) // Padding cho chữ
+                                verticalAlignment = Alignment.CenterVertically,
+                                modifier = Modifier.padding(16.dp)
                             ) {
-                                // Thêm biểu tượng ở đây
                                 Icon(
-                                    imageVector = Icons.Default.Edit, // Thay đổi thành biểu tượng bạn muốn
+                                    imageVector = Icons.Default.Edit,
                                     contentDescription = "Edit",
-                                    tint = MaterialTheme.colors.primary, // Màu cho biểu tượng
-                                    modifier = Modifier.size(24.dp) // Kích thước biểu tượng
+                                    tint = MaterialTheme.colors.primary,
+                                    modifier = Modifier.size(24.dp)
                                 )
-                                Spacer(modifier = Modifier.width(8.dp)) // Khoảng cách giữa biểu tượng và chữ
+                                Spacer(modifier = Modifier.width(8.dp))
                                 Text(
                                     text = "Edit",
                                     style = MaterialTheme.typography.body1.copy(
-                                        color = MaterialTheme.colors.primary, // Màu chữ
-                                        fontWeight = FontWeight.Bold // Chữ đậm
+                                        color = MaterialTheme.colors.primary,
+                                        fontWeight = FontWeight.Bold
                                     )
                                 )
                             }
@@ -665,29 +664,28 @@ fun UserFeedItem(
                                 .background(
                                     MaterialTheme.colors.surface,
                                     shape = RoundedCornerShape(8.dp)
-                                ) // Nền với góc bo
+                                )
                                 .clickable {
                                     showDeleteFeedDialog = true
-                                }, // Thêm sự kiện nhấp
-                            contentAlignment = Alignment.Center // Căn giữa nội dung
+                                },
+                            contentAlignment = Alignment.Center
                         ) {
                             Row(
-                                verticalAlignment = Alignment.CenterVertically, // Căn giữa theo chiều dọc
-                                modifier = Modifier.padding(16.dp) // Padding cho chữ
+                                verticalAlignment = Alignment.CenterVertically,
+                                modifier = Modifier.padding(16.dp)
                             ) {
-                                // Thêm biểu tượng ở đây
                                 Icon(
-                                    imageVector = Icons.Default.Delete, // Thay đổi thành biểu tượng bạn muốn
+                                    imageVector = Icons.Default.Delete,
                                     contentDescription = "Delete",
-                                    tint = MaterialTheme.colors.error, // Màu cho biểu tượng
-                                    modifier = Modifier.size(24.dp) // Kích thước biểu tượng
+                                    tint = MaterialTheme.colors.error,
+                                    modifier = Modifier.size(24.dp)
                                 )
-                                Spacer(modifier = Modifier.width(8.dp)) // Khoảng cách giữa biểu tượng và chữ
+                                Spacer(modifier = Modifier.width(8.dp))
                                 Text(
                                     text = "Delete",
                                     style = MaterialTheme.typography.body1.copy(
-                                        color = MaterialTheme.colors.error, // Màu chữ
-                                        fontWeight = FontWeight.Bold // Chữ đậm
+                                        color = MaterialTheme.colors.error,
+                                        fontWeight = FontWeight.Bold
                                     )
                                 )
                             }
@@ -727,7 +725,7 @@ fun FriendFeedItem(
                 painter = rememberAsyncImagePainter(
                     model = feed.imageUrl,
                     placeholder = painterResource(id = R.drawable.ic_launcher_background),
-                    error = painterResource(id = R.drawable.ic_launcher_foreground) // Hình ảnh hiển thị khi có lỗi
+                    error = painterResource(id = R.drawable.ic_launcher_foreground)
                 ),
                 contentDescription = null,
                 modifier = Modifier

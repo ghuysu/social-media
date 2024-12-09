@@ -30,6 +30,7 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.material.Surface
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.DateRange
@@ -61,6 +62,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.ImageBitmap
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
@@ -72,10 +74,11 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.compose.ui.window.Dialog
+import androidx.compose.ui.window.DialogProperties
 import androidx.lifecycle.viewmodel.compose.viewModel
 import coil.compose.rememberAsyncImagePainter
 import com.yalantis.ucrop.UCrop
-import kotlinx.coroutines.delay
 import okhttp3.MediaType.Companion.toMediaTypeOrNull
 import okhttp3.MultipartBody
 import okhttp3.RequestBody
@@ -152,7 +155,8 @@ fun ProfileScreen(
                 userAvatar = user.profileImageUrl,
                 linkAddFriend = linkAddFriend,
                 context = context,
-                clipboardManager = clipboardManager
+                clipboardManager = clipboardManager,
+                viewmodel = userProfileViewModel
             )
 
             Spacer(modifier = Modifier.height(16.dp))
@@ -242,6 +246,33 @@ fun ProfileSection(
     }
 }
 
+@Composable
+fun QRCodeDialog(onDismiss: () -> Unit, qrCodeBitmap: ImageBitmap?) {
+    Dialog(
+        onDismissRequest = onDismiss,
+        properties = DialogProperties(dismissOnClickOutside = true)
+    ) {
+        Surface(
+            shape = MaterialTheme.shapes.medium,
+            elevation = 8.dp
+        ) {
+            Column(
+                modifier = Modifier.padding(16.dp),
+                horizontalAlignment = Alignment.CenterHorizontally
+            ) {
+                if (qrCodeBitmap != null) {
+                    Image(bitmap = qrCodeBitmap, contentDescription = "QR Code")
+                } else {
+                    Text(text = "Failed to generate QR code")
+                }
+                Spacer(modifier = Modifier.height(8.dp))
+                Button(onClick = onDismiss) {
+                    Text(text = "Close")
+                }
+            }
+        }
+    }
+}
 
 @Composable
 fun CircularImageView(
@@ -275,6 +306,7 @@ fun InviteSection(
     linkAddFriend: String,
     context: Context,
     clipboardManager: ClipboardManager,
+    viewmodel: UserProfileViewModel,
 ) {
     Column(
         modifier = Modifier
@@ -303,16 +335,24 @@ fun InviteSection(
                 overflow = TextOverflow.Ellipsis
             )
             Spacer(modifier = Modifier.width(8.dp))
+            var showDialog by remember { mutableStateOf(false) }
+            val qrCodeBitmap = viewmodel.generateQRCode(linkAddFriend, 700, 700)
+
             IconButton(onClick = {
                 val clip = ClipData.newPlainText("simple text", linkAddFriend)
                 clipboardManager.setPrimaryClip(clip)
                 Toast.makeText(context, "Link copied to clipboard", Toast.LENGTH_SHORT).show()
+                showDialog = true
             }) {
                 Icon(
                     imageVector = Icons.Default.Share,
                     contentDescription = null,
                     tint = Color.Gray
                 )
+            }
+
+            if (showDialog) {
+                QRCodeDialog(onDismiss = { showDialog = false }, qrCodeBitmap = qrCodeBitmap)
             }
         }
     }
