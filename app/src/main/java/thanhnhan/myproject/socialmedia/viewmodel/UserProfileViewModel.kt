@@ -1,8 +1,15 @@
 package thanhnhan.myproject.socialmedia.viewmodel
 
+import android.graphics.Bitmap
 import android.util.Log
+import androidx.compose.ui.graphics.ImageBitmap
+import androidx.compose.ui.graphics.asImageBitmap
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.google.zxing.BarcodeFormat
+import com.google.zxing.WriterException
+import com.google.zxing.common.BitMatrix
+import com.journeyapps.barcodescanner.BarcodeEncoder
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.launch
@@ -145,6 +152,18 @@ class UserProfileViewModel(
             repository.deleteAccount(authToken, code).collect {
                 _deleteAccountResult.value = it
             }
+        }
+    }
+
+    fun generateQRCode(link: String, width: Int, height: Int): ImageBitmap? {
+        val barcodeEncoder = BarcodeEncoder()
+        return try {
+            val bitMatrix: BitMatrix = barcodeEncoder.encode(link, BarcodeFormat.QR_CODE, width, height)
+            val bitmap: Bitmap = barcodeEncoder.createBitmap(bitMatrix)
+            bitmap.asImageBitmap()
+        } catch (e: WriterException) {
+            e.printStackTrace()
+            null
         }
     }
 }
