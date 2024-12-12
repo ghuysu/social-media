@@ -11,7 +11,7 @@ import { SchemaTypes, Types } from 'mongoose';
 
 @Schema({ versionKey: false, collection: FEED_DOCUMENT })
 export class FeedDocument extends AbstractDocument {
-  @Prop({ required: true, type: String })
+  @Prop({ required: false, type: String, default: '' })
   description: string;
 
   @Prop({ required: true, type: String })

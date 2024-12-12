@@ -83,9 +83,7 @@ export class AuthController {
   @MessagePattern('sign_in_as_user')
   async signinAsUser(@Body() dto: SignInDto) {
     try {
-      console.log(dto);
       const data = await this.authService.signInAsNormalUser(dto);
-      console.log(data);
       return {
         status: HttpStatus.OK,
         message: 'Signed in as normal user successfully.',

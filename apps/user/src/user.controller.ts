@@ -46,6 +46,21 @@ export class UserController {
     }
   }
 
+  @MessagePattern('get_all_users')
+  async getAllUsers(@Payload('page') page: number) {
+    try {
+      const userList = await this.userService.getAllUsers(page);
+      console.log(userList.length);
+      return {
+        status: HttpStatus.OK,
+        message: `Get user list with page #${page} information successfully.`,
+        metadata: userList,
+      };
+    } catch (error) {
+      return this.handleError(error);
+    }
+  }
+
   @MessagePattern('change_birthday')
   async changeBirthday(
     @Payload()
@@ -330,7 +345,6 @@ export class UserController {
   }
 
   private handleError(error: any) {
-    console.log(error);
     if (error instanceof ConflictException) {
       return {
         statusCode: HttpStatus.CONFLICT,

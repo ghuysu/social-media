@@ -22,7 +22,6 @@ export class ReportingController {
   constructor(private readonly reportingService: ReportingService) {}
 
   private handleError(error: any) {
-    console.log({ message: '----------------------------', error });
     if (error instanceof ConflictException) {
       return {
         statusCode: HttpStatus.CONFLICT,

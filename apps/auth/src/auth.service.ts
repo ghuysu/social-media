@@ -401,6 +401,10 @@ export class AuthService {
       throw new UnauthorizedException('Not found credentials');
     }
 
+    if (user.isSignedInByGoogle) {
+      throw new BadRequestException('Please login with Google');
+    }
+
     // check password is correct or not
     const isCorrectPassword = await argon2.verify(user.password, password, {
       secret: Buffer.from(this.configService.get('ARGON2_SERCET')),
@@ -562,7 +566,6 @@ export class AuthService {
     );
 
     if (!response.ok) {
-      console.log(response);
       throw new BadRequestException('Failed to verify resource');
     }
 
@@ -574,10 +577,8 @@ export class AuthService {
   private async decodeGoogleIdToken(token: string) {
     try {
       const payload = await this.firebaseClient.auth().verifyIdToken(token);
-      console.log(payload);
       return payload;
     } catch (error) {
-      console.log(error);
       throw new BadRequestException('Failed to verify resource');
     }
   }
@@ -596,7 +597,23 @@ export class AuthService {
     }
 
     //check if email is registered as admin or not
-    let registeredUser = await this.authRepository.findOne({ email });
+    let registeredUser = await this.authRepository.findOne({ email }, [
+      { path: 'friendList', select: '_id fullname profileImageUrl' },
+      {
+        path: 'friendInvites',
+        select: '_id sender receiver createdAt',
+        populate: [
+          {
+            path: 'sender',
+            select: '_id fullname profileImageUrl',
+          },
+          {
+            path: 'receiver',
+            select: '_id fullname profileImageUrl',
+          },
+        ],
+      },
+    ]);
 
     //if account is not existed, sign up
     if (!registeredUser) {

@@ -57,9 +57,8 @@ export class UserRepository extends AbstractRepository<UserDocument> {
   ) {
     return await this.userModel
       .find(filterQuery)
-      .skip(10 * (page - 1))
-      .sort({ createdAt: 1 })
-      .limit(10)
+      .skip(30 * (page - 1))
+      .limit(30)
       .populate(populate)
       .lean<UserDocument[]>();
   }

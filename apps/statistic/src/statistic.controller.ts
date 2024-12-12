@@ -13,7 +13,6 @@ export class StatisticController {
   async createdUser() {
     //user
     this.statisticService.createdUser();
-    console.log('user');
   }
 
   @EventPattern('deleted_user')
@@ -25,7 +24,6 @@ export class StatisticController {
   @EventPattern('country')
   async country(@Payload('country') country: string) {
     this.statisticService.country(country);
-    console.log('country');
   }
 
   @EventPattern('change_country')
