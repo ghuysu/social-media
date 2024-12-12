@@ -252,6 +252,24 @@ export class ApiGatewayService {
     return result;
   }
 
+  async getAllUsers(page: number) {
+    const result = await lastValueFrom(
+      this.userService.send('get_all_users', { page }).pipe(
+        map((response) => {
+          if (response.error) {
+            this.throwErrorBasedOnStatusCode(
+              response.statusCode,
+              response.message,
+            );
+          }
+          return response;
+        }),
+      ),
+    );
+
+    return result;
+  }
+
   async changeBirthday(
     userPayload: TokenPayloadInterface,
     dto: ChangeBirthdayDto,
@@ -617,12 +635,33 @@ export class ApiGatewayService {
     userPayload: TokenPayloadInterface,
     payload: GetEveryoneFeedsDto,
   ) {
-    console.log(payload);
     const result = await lastValueFrom(
       this.feedService
         .send('get_everyone_feeds', {
           userPayload,
           payload,
+        })
+        .pipe(
+          map((response) => {
+            if (response.error) {
+              this.throwErrorBasedOnStatusCode(
+                response.statusCode,
+                response.message,
+              );
+            }
+            return response;
+          }),
+        ),
+    );
+
+    return result;
+  }
+
+  async getAllFeeds(page: number) {
+    const result = await lastValueFrom(
+      this.feedService
+        .send('get_all_feeds', {
+          page,
         })
         .pipe(
           map((response) => {
@@ -1128,7 +1167,6 @@ export class ApiGatewayService {
     { userId }: TokenPayloadInterface,
     dto: CreateAdminDto,
   ) {
-    console.log({ adminId: userId, ...dto });
     const result = await lastValueFrom(
       this.authService
         .send('create_new_admin_account', { adminId: userId, ...dto })

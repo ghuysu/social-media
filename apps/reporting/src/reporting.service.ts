@@ -100,7 +100,7 @@ export class ReportingService {
 
     //if be reported, update record
     //check if user have 10 users report, update report statistic
-    if (report.reporterId.length === 9) {
+    if (report.reporterId.length === 1) {
       await this.userReportRepository.findOneAndUpdate(
         {
           reportedUserId,
@@ -182,7 +182,7 @@ export class ReportingService {
 
     //if be reported, update record
     //check if user have 10 users report, update report statistic
-    if (report.reporterId.length === 9) {
+    if (report.reporterId.length === 1) {
       await this.feedReportRepository.findOneAndUpdate(
         {
           reportedFeedId,
@@ -336,8 +336,6 @@ export class ReportingService {
           this.getListOfUserInfor([...report.reporterId]),
           this.getUserInforByAdminId(report.reportedUserId),
         ]);
-
-        console.log({ inforList, reportedUser });
 
         report.reporterId = inforList;
         report.reportedUserId = reportedUser;

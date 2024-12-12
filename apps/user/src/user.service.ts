@@ -108,6 +108,22 @@ export class UserService {
     return buffer;
   }
 
+  async getAllUsers(page: number) {
+    const userList = await this.userRepository.getBaseOnPage(
+      {
+        role: 'normal_user',
+      },
+      page ?? 1,
+    );
+
+    userList.forEach((user) => {
+      delete user.password;
+      delete user.role;
+    });
+
+    return userList;
+  }
+
   async getUser({ email, userId, role }: TokenPayloadInterface) {
     let needToSaveIntoRedis = false;
 
@@ -403,7 +419,6 @@ export class UserService {
 
     //delete prev image
     const prevImageName: string = infor.profileImageUrl.split('/').pop();
-    console.log(prevImageName);
 
     this.awss3Client.emit('delete_image', {
       imageName: prevImageName,
@@ -411,7 +426,6 @@ export class UserService {
 
     //upload new image
     const imageName = this.createImageNameFromOriginalname(originalname);
-    console.log(imageName);
 
     this.awss3Client.emit('upload_image', {
       image,
@@ -1349,7 +1363,6 @@ export class UserService {
     );
 
     //update redis friend records
-    console.log(updatedFriends);
     for (const friend of updatedFriends) {
       this.cacheManager.set(`user:${friend.email}`, friend, {
         ttl: createTTL(60 * 60 * 24 * 7, 60 * 60 * 24),
@@ -1472,7 +1485,6 @@ export class UserService {
   }
 
   async getUserInforByAdminWithEmail(email: string) {
-    console.log(email);
     //get user infor
     const user = await this.userRepository.findOne(
       {

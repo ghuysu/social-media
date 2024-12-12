@@ -74,8 +74,6 @@ export class NotificationService {
   }
 
   async sendCodeToSignInAsAdmin({ email, code }: SendCodeDto) {
-    console.log('send email successfully');
-
     const subject = 'Sign In As Admin';
     const html = `
       <div style="font-family: Arial, sans-serif; max-width: 600px; margin: auto; padding: 20px; border: 1px solid #ddd; border-radius: 10px;">

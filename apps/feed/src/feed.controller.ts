@@ -24,7 +24,6 @@ export class FeedController {
   constructor(private readonly feedService: FeedService) {}
 
   private handleError(error: any) {
-    console.log(error);
     if (error instanceof ConflictException) {
       return {
         statusCode: HttpStatus.CONFLICT,
@@ -90,7 +89,6 @@ export class FeedController {
   @MessagePattern('update_feed')
   async updateFeed(@Payload() { userPayload, payload }: UpdateFeedInterface) {
     try {
-      console.log({ here: payload });
       const result = await this.feedService.updateFeed(userPayload, payload);
       return {
         status: HttpStatus.OK,
@@ -134,7 +132,6 @@ export class FeedController {
     @Payload() { userPayload, payload }: GetEveryoneFeedsInterface,
   ) {
     try {
-      console.log(payload);
       const result = await this.feedService.getEveryoneFeeds(
         userPayload,
         payload,
@@ -225,8 +222,20 @@ export class FeedController {
   ) {
     try {
       await this.feedService.deleteFeedForFeedViolating(userPayload, payload);
+    } catch (error) {}
+  }
+
+  @MessagePattern('get_all_feeds')
+  async getAllFeeds(@Payload('page') page: number) {
+    try {
+      const result = await this.feedService.getAllFeeds(page);
+      return {
+        status: HttpStatus.OK,
+        message: `Get feed list with page #${page} information successfully.`,
+        metadata: result,
+      };
     } catch (error) {
-      console.log(error);
+      return this.handleError(error);
     }
   }
 }

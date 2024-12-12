@@ -96,4 +96,23 @@ export class FeedRepository extends AbstractRepository<FeedDocument> {
 
     return updatedDocuments;
   }
+
+  async getBaseOnPage(
+    filterQuery: FilterQuery<FeedDocument>,
+    page: number,
+    populate?: Array<{
+      path: string;
+      select?: string;
+      populate?: any;
+    }>,
+  ): Promise<FeedDocument[]> {
+    const result = await this.model
+      .find(filterQuery)
+      .skip((page - 1) * 30)
+      .limit(30)
+      .populate(populate)
+      .lean<FeedDocument[]>();
+
+    return result;
+  }
 }

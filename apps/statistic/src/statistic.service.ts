@@ -62,8 +62,6 @@ export class StatisticService {
 
     statisticRecord['user'] += 1;
 
-    console.log(statisticRecord);
-
     this.cacheManager.set('user_feed_statistic', statisticRecord, { ttl: 0 });
   }
 
@@ -233,17 +231,12 @@ export class StatisticService {
     //get country redis
     const countryRecord = await this.cacheManager.get('country_statistic');
 
-    console.log({ content: countryRecord, type: typeof countryRecord });
-    // countryRecord = JSON.parse(countryRecord);
-
-    console.log({ country, countryRecord });
     //check country is exiting or not
     if (!countryRecord[country]) {
       countryRecord[country] = 1;
     } else {
       countryRecord[country] += 1;
     }
-    console.log(countryRecord);
 
     //save again to redis
     this.cacheManager.set('country_statistic', countryRecord, {
@@ -306,7 +299,6 @@ export class StatisticService {
     const userFeedStatistic = await this.cacheManager.get(
       'user_feed_statistic',
     );
-    console.log(userFeedStatistic);
 
     //get number of user, feed reports
     const reportStatistic = await this.cacheManager.get('report_statistics');
@@ -325,7 +317,6 @@ export class StatisticService {
       countryStatistic: countryStatistic,
       monthlyRecords: monthlyRecords,
     };
-    console.log(statistic);
 
     return statistic;
   }

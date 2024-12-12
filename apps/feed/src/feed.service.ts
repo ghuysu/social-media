@@ -211,8 +211,6 @@ export class FeedService {
       metadata: updatedFeed,
     };
 
-    console.log(emitPayload);
-
     this.notificationClient.emit('emit_message', {
       name: 'update_feed',
       payload: emitPayload,
@@ -298,71 +296,75 @@ export class FeedService {
     { userId, email, role }: TokenPayloadInterface,
     { skip }: GetEveryoneFeedsDto,
   ) {
-    console.log(skip);
-    //get friend list
-    let user: UserDocument = await this.cacheManager.get(`user:${email}`);
+    try {
+      //get friend list
+      let user: UserDocument = await this.cacheManager.get(`user:${email}`);
 
-    if (!user) {
-      user = await lastValueFrom(
-        this.userClient.send('get_user', { userId, email, role }).pipe(
-          map((response) => {
-            if (response.error) {
-              throw new NotFoundException('Resource not found');
-            }
-            return response.metadata;
-          }),
-        ),
-      );
-    }
+      if (!user) {
+        user = await lastValueFrom(
+          this.userClient.send('get_user', { userId, email, role }).pipe(
+            map((response) => {
+              if (response.error) {
+                throw new NotFoundException('Resource not found');
+              }
+              return response.metadata;
+            }),
+          ),
+        );
+      }
 
-    const friendList: string[] = user.friendList.map((f) => f._id.toString());
+      const friendList: string[] = user.friendList.map((f) => f._id.toString());
 
-    //get friend feeds
-    const feeds = await this.feedRepository.searchFeeds(
-      {
-        $or: [
-          {
-            userId: { $in: friendList },
-            visibility: { $elemMatch: { $eq: userId } },
-          },
-          { userId: userId },
-        ],
-      },
-      skip,
-      [
-        { path: 'userId', select: '_id profileImageUrl fullname' },
+      //get friend feeds
+      const feeds = await this.feedRepository.searchFeeds(
         {
-          path: 'reactions',
-          populate: [
-            { path: 'userId', select: '_id profileImageUrl fullname' },
+          $or: [
+            {
+              userId: { $in: friendList },
+              visibility: { $elemMatch: { $eq: userId } },
+            },
+            { userId: userId },
           ],
         },
-      ],
-    );
+        skip,
+        [
+          { path: 'userId', select: '_id profileImageUrl fullname' },
+          {
+            path: 'reactions',
+            populate: [
+              { path: 'userId', select: '_id profileImageUrl fullname' },
+            ],
+          },
+        ],
+      );
 
-    const filteredFeeds = feeds.map((f) => {
-      if (f.userId._id.toString() !== userId.toString()) {
-        const feed = {
-          _id: f._id,
-          description: f.description,
-          imageUrl: f.imageUrl,
-          userId: f.userId,
-          createdAt: f.createdAt,
-          reactions: [],
-        };
+      const filteredFeeds = feeds.map((f) => {
+        if (f.userId._id.toString() !== userId.toString()) {
+          const feed = {
+            _id: f._id,
+            description: f.description,
+            imageUrl: f.imageUrl,
+            userId: f.userId,
+            createdAt: f.createdAt,
+            reactions: [],
+          };
 
-        f.reactions.forEach((r) => {
-          if (r.userId._id.toString() === userId.toString()) {
-            feed.reactions.push(r);
-          }
-        });
+          f.reactions.forEach((r) => {
+            if (r.userId._id.toString() === userId.toString()) {
+              feed.reactions.push(r);
+            }
+          });
 
-        return feed;
-      }
-      return f;
-    });
+          return feed;
+        }
+        return f;
+      });
 
-    return filteredFeeds;
+      return filteredFeeds;
+    } catch (error) {
+      console.log(error);
+      throw new NotFoundException(error);
+    }
   }
 
   async getCertainUserFeeds(
@@ -582,8 +584,6 @@ export class FeedService {
       metadata: feed,
     };
 
-    console.log(emitPayload);
-
     this.notificationClient.emit('emit_message', {
       name: 'react_feed',
       payload: emitPayload,
@@ -781,5 +781,10 @@ export class FeedService {
 
     //update feed statistic
     this.statisticClient.emit('deleted_feed', {});
+  }
+
+  async getAllFeeds(page: number) {
+    const feedList = await this.feedRepository.getBaseOnPage({}, page ?? 1);
+    return feedList;
   }
 }

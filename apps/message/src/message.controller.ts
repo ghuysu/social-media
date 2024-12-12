@@ -120,7 +120,6 @@ export class MessageController {
   }
 
   private handleError(error: any) {
-    console.log(error);
     if (error instanceof ConflictException) {
       return {
         statusCode: HttpStatus.CONFLICT,

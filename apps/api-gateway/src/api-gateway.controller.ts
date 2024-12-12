@@ -66,6 +66,7 @@ import { ReportIdDto } from './dto/reportId.dto';
 import { ProcessReportDto } from './dto/processReport.dto';
 import { GetAdminListDto } from './dto/get-admin-list.dto';
 import { CreateAdminDto } from './dto/create-admin.dto';
+import { PageDto } from './dto/page.dto';
 
 @Controller('api')
 export class ApiGatewayController {
@@ -86,7 +87,6 @@ export class ApiGatewayController {
   @Post('user/sign-up')
   @HttpCode(HttpStatus.CREATED)
   async checkCodeForSignUp(@Body() dto: CreateNormalUserDto) {
-    console.log(dto);
     return this.apiGatewayService.checkCodeForSignUp(dto);
   }
 
@@ -143,6 +143,15 @@ export class ApiGatewayController {
   @Get('user')
   async getUser(@User() userPayload: TokenPayloadInterface) {
     return this.apiGatewayService.getUser(userPayload);
+  }
+
+  @UseGuards(RoleGuard)
+  @UseGuards(JwtGuard)
+  @UseGuards(ApiKeyGuard)
+  @Roles(...ADMIN_ROLE)
+  @Get('admin/user')
+  async getAllUsers(@Query() { page }: PageDto) {
+    return this.apiGatewayService.getAllUsers(page);
   }
 
   @UseGuards(RoleGuard)
@@ -398,6 +407,15 @@ export class ApiGatewayController {
     return this.apiGatewayService.getCertainUserFeeds(userPayload, dto, userId);
   }
 
+  @UseGuards(RoleGuard)
+  @UseGuards(JwtGuard)
+  @UseGuards(ApiKeyGuard)
+  @Roles(...ADMIN_ROLE)
+  @Get('admin/feed')
+  async getAllFeeds(@Query() { page }: PageDto) {
+    return this.apiGatewayService.getAllFeeds(page);
+  }
+
   //message
   @UseGuards(RoleGuard)
   @UseGuards(JwtGuard)
@@ -457,7 +475,6 @@ export class ApiGatewayController {
   @Roles(...ADMIN_ROLE)
   @Get('statistic')
   async getStatisticInfor() {
-    console.log('here');
     return this.apiGatewayService.getStatisticInfor();
   }
 
