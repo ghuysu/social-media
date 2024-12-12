@@ -1,0 +1,156 @@
+services:
+  mongodb:
+    image: mongo
+    ports:
+      - '27017:27017'
+    volumes:
+      - mongo_data:/data/db
+
+  admin_mongodb:
+    image: mongo
+    container_name: admin_mongodb
+    ports:
+      - '27018:27017'
+    volumes:
+      - admin_mongo_data:/data/db
+
+  redis:
+    image: redis:latest
+    ports:
+      - '6379:6379'
+    volumes:
+      - redis_data:/data
+    command: redis-server --requirepass Huy-1011
+
+  # rabbitmq:
+  #   image: rabbitmq
+  #   container_name: rabbitmq
+  #   ports:
+  #     - "5672:5672"
+  #     - "15672:15672"
+  #   volumes:
+  #     - rabbitmq_data:/var/lib/rabbitmq
+
+  user:
+    build:
+      context: .
+      dockerfile: ./apps/user/Dockerfile
+      target: development
+    command: npm run start:dev user
+    env_file:
+      - ./apps/user/.env
+    ports:
+      - '10001:10001'
+    volumes:
+      - .:/usr/src/app
+
+  auth:
+    build:
+      context: .
+      dockerfile: ./apps/auth/Dockerfile
+      target: development
+    command: npm run start:dev auth
+    env_file:
+      - ./apps/auth/.env
+    ports:
+      - '10002:10002'
+    volumes:
+      - .:/usr/src/app
+
+  notification:
+    build:
+      context: .
+      dockerfile: ./apps/notification/Dockerfile
+      target: development
+    command: npm run start:dev notification
+    env_file:
+      - ./apps/notification/.env
+    ports:
+      - '10003:10003'
+      - '10005:10005'
+    volumes:
+      - .:/usr/src/app
+
+  feed:
+    build:
+      context: .
+      dockerfile: ./apps/feed/Dockerfile
+      target: development
+    command: npm run start:dev feed
+    env_file:
+      - ./apps/feed/.env
+    ports:
+      - '10006:10006'
+    volumes:
+      - .:/usr/src/app
+
+  message:
+    build:
+      context: .
+      dockerfile: ./apps/message/Dockerfile
+      target: development
+    command: npm run start:dev message
+    env_file:
+      - ./apps/message/.env
+    ports:
+      - '10007:10007'
+    volumes:
+      - .:/usr/src/app
+
+  statistic:
+    build:
+      context: .
+      dockerfile: ./apps/statistic/Dockerfile
+      target: development
+    command: npm run start:dev statistic
+    env_file:
+      - ./apps/statistic/.env
+    ports:
+      - '10008:10008'
+    volumes:
+      - .:/usr/src/app
+
+  reporting:
+    build:
+      context: .
+      dockerfile: ./apps/reporting/Dockerfile
+      target: development
+    command: npm run start:dev reporting
+    env_file:
+      - ./apps/reporting/.env
+    ports:
+      - '10009:10009'
+    volumes:
+      - .:/usr/src/app
+
+  aws-s3:
+    build:
+      context: .
+      dockerfile: ./apps/aws-s3/Dockerfile
+      target: development
+    command: npm run start:dev aws-s3
+    env_file:
+      - ./apps/aws-s3/.env
+    ports:
+      - '10004:10004'
+    volumes:
+      - .:/usr/src/app
+
+  api-gateway:
+    build:
+      context: .
+      dockerfile: ./apps/api-gateway/Dockerfile
+      target: development
+    command: npm run start:dev api-gateway
+    env_file:
+      - ./apps/api-gateway/.env
+    ports:
+      - '10000:10000'
+    volumes:
+      - .:/usr/src/app
+
+volumes:
+  redis_data:
+  mongo_data:
+  admin_mongo_data:
+  # rabbitmq_data:
