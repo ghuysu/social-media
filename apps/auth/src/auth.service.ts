@@ -101,6 +101,62 @@ export class AuthService {
     return buffer;
   }
 
+  private async generateUserAccessToken(
+    payload: TokenPayloadInterface,
+  ): Promise<string> {
+    const token = await this.jwtService.signAsync(payload, {
+      secret: this.configService.get('JWT_SECRET'),
+      expiresIn: `${this.configService.get('JWT_EXPIRATION_ACCESS_TOKEN_USER')}s`,
+    });
+    return `Bearer ${token}`;
+  }
+
+  private async generateUserRefreshToken(
+    payload: TokenPayloadInterface,
+  ): Promise<string> {
+    const token = await this.jwtService.signAsync(payload, {
+      secret: this.configService.get('JWT_SECRET'),
+      expiresIn: `${this.configService.get('JWT_EXPIRATION_REFRESH_TOKEN_USER')}s`,
+    });
+
+    //save refreshToken into redis
+    this.cacheManager.set(`refresh-token:${payload.email}`, token, {
+      ttl:
+        this.configService.get<number>('JWT_EXPIRATION_REFRESH_TOKEN_USER') +
+        1000,
+    });
+
+    return `Bearer ${token}`;
+  }
+
+  private async generateAdminAccessToken(
+    payload: TokenPayloadInterface,
+  ): Promise<string> {
+    const token = await this.jwtService.signAsync(payload, {
+      secret: this.configService.get('JWT_SECRET'),
+      expiresIn: `${this.configService.get('JWT_EXPIRATION_ACCESS_TOKEN_ADMIN')}s`,
+    });
+    return `Bearer ${token}`;
+  }
+
+  private async generateAdminRefreshToken(
+    payload: TokenPayloadInterface,
+  ): Promise<string> {
+    const token = await this.jwtService.signAsync(payload, {
+      secret: this.configService.get('JWT_SECRET'),
+      expiresIn: `${this.configService.get('JWT_EXPIRATION_REFRESH_TOKEN_ADMIN')}s`,
+    });
+
+    //save refreshToken into redis
+    this.cacheManager.set(`refresh-token:${payload.email}`, token, {
+      ttl:
+        this.configService.get<number>('JWT_EXPIRATION_ACCESS_TOKEN_ADMIN') +
+        1000,
+    });
+
+    return `Bearer ${token}`;
+  }
+
   //sign up
   async checkEmailForSignUp({ email }) {
     //check if email is in banned list or not
@@ -122,7 +178,7 @@ export class AuthService {
     }
 
     //create a 6-digit validation code
-    const code = Math.floor(100000 + Math.random() * 900000);
+    const code = Math.floor(100000 + Math.random() * 900000 - 1);
 
     //hash code
     const hashedCode = await argon2.hash(code.toString(), {
@@ -215,11 +271,26 @@ export class AuthService {
       ttl: createTTL(60 * 60 * 24 * 30, 60 * 60 * 24),
     });
 
+    //generate accesstoken and refreshtoken
+    const payload: TokenPayloadInterface = {
+      userId: user._id,
+      email: user.email,
+      role: user.role,
+    };
+    const accessToken = await this.generateUserAccessToken(payload);
+    const refreshToken = await this.generateUserRefreshToken(payload);
+
     //update user statistic
     this.statisticService.emit('created_user', {});
 
     //update country statistic
     this.statisticService.emit('country', { country: country });
+
+    return {
+      user,
+      accessToken,
+      refreshToken,
+    };
   }
 
   //change password
@@ -424,13 +495,8 @@ export class AuthService {
       role: user.role,
     };
 
-    const signInToken = await this.jwtService.signAsync(tokenPayload, {
-      secret: this.configService.get('JWT_SECRET'),
-      expiresIn: `${this.configService.get('JWT_EXPIRATION_USER')}s`,
-    });
-
-    // Prepend 'Bearer ' to the token
-    const bearerToken = `Bearer ${signInToken}`;
+    const accessToken = await this.generateUserAccessToken(tokenPayload);
+    const refreshToken = await this.generateUserRefreshToken(tokenPayload);
 
     await this.cacheManager.set(`user:${user.email}`, user, {
       ttl: createTTL(60 * 60 * 24 * 30, 60 * 60 * 24),
@@ -438,7 +504,8 @@ export class AuthService {
 
     return {
       user,
-      signInToken: bearerToken,
+      accessToken,
+      refreshToken,
     };
   }
 
@@ -549,15 +616,10 @@ export class AuthService {
       role: admin.role,
     };
 
-    const signInToken = await this.jwtService.signAsync(tokenPayload, {
-      secret: this.configService.get('JWT_SECRET'),
-      expiresIn: `${this.configService.get('JWT_EXPIRATION_ADMIN')}s`,
-    });
+    const accessToken = await this.generateAdminAccessToken(tokenPayload);
+    const refreshToken = await this.generateAdminRefreshToken(tokenPayload);
 
-    // Prepend 'Bearer ' to the token
-    const bearerToken = `Bearer ${signInToken}`;
-
-    return { admin, signInToken: bearerToken };
+    return { admin, accessToken, refreshToken };
   }
 
   private async decodeGoogleAccessToken(token: string) {
@@ -632,13 +694,17 @@ export class AuthService {
       role: registeredUser.role,
     };
 
-    const signInToken = await this.jwtService.signAsync(tokenPayload, {
-      secret: this.configService.get('JWT_SECRET'),
-      expiresIn: `${this.configService.get('JWT_EXPIRATION_USER')}s`,
-    });
+    //generate accessToken and refreshToken
+    let accessToken;
+    let refreshToken;
 
-    // Prepend 'Bearer ' to the token
-    const bearerToken = `Bearer ${signInToken}`;
+    if (registeredUser.role === 'normal_user') {
+      accessToken = await this.generateUserAccessToken(tokenPayload);
+      refreshToken = await this.generateUserRefreshToken(tokenPayload);
+    } else {
+      accessToken = await this.generateAdminAccessToken(tokenPayload);
+      refreshToken = await this.generateAdminRefreshToken(tokenPayload);
+    }
 
     //delete sensitive information
     delete registeredUser.password;
@@ -651,7 +717,8 @@ export class AuthService {
     //return user information and sign in token
     return {
       user: registeredUser,
-      signInToken: bearerToken,
+      accessToken,
+      refreshToken,
     };
   }
 

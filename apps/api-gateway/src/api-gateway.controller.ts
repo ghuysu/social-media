@@ -48,7 +48,6 @@ import {
   UseInterceptors,
 } from '@nestjs/common';
 import { ApiGatewayService } from './api-gateway.service';
-import { ConfigService } from '@nestjs/config';
 import { ApiKeyGuard } from './guards/api-key.guard';
 import { JwtGuard } from './guards/jwt.guard';
 import { User } from './decorators/user.decorator';
@@ -70,21 +69,18 @@ import { PageDto } from './dto/page.dto';
 
 @Controller('api')
 export class ApiGatewayController {
-  constructor(
-    private readonly apiGatewayService: ApiGatewayService,
-    private readonly configService: ConfigService,
-  ) {}
+  constructor(private readonly apiGatewayService: ApiGatewayService) {}
 
   //sign up
   @UseGuards(ApiKeyGuard)
-  @Post('user/check')
+  @Post('auth/users/checking')
   @HttpCode(HttpStatus.OK)
   async checkEmail(@Body() dto: CheckEmailDto) {
     return this.apiGatewayService.checkEmail(dto);
   }
 
   @UseGuards(ApiKeyGuard)
-  @Post('user/sign-up')
+  @Post('auth/users/sign-up')
   @HttpCode(HttpStatus.CREATED)
   async checkCodeForSignUp(@Body() dto: CreateNormalUserDto) {
     return this.apiGatewayService.checkCodeForSignUp(dto);
@@ -92,14 +88,14 @@ export class ApiGatewayController {
 
   //change password
   @UseGuards(ApiKeyGuard)
-  @Post('password/check')
+  @Post('auth/password')
   @HttpCode(HttpStatus.OK)
   async checkEmailForChangePassword(@Body() dto: CheckEmailDto) {
     return this.apiGatewayService.checkEmailForChangePassword(dto);
   }
 
   @UseGuards(ApiKeyGuard)
-  @Patch('password')
+  @Patch('auth/password')
   @HttpCode(HttpStatus.OK)
   async checkCodeForChangePassword(@Body() dto: ChangePasswordDto) {
     return this.apiGatewayService.checkCodeForChangePassword(dto);
@@ -107,28 +103,28 @@ export class ApiGatewayController {
 
   //sign in
   @UseGuards(ApiKeyGuard)
-  @Post('user/sign-in')
+  @Post('auth/users/sign-in')
   @HttpCode(HttpStatus.OK)
   async signinAsUser(@Body() dto: SignInDto) {
     return this.apiGatewayService.signinAsUser(dto);
   }
 
   @UseGuards(ApiKeyGuard)
-  @Post('admin/sign-in')
+  @Post('auth/admins/sign-in')
   @HttpCode(HttpStatus.OK)
   async signinAsAdmin(@Body() dto: SignInDto) {
     return this.apiGatewayService.signinAsAdmin(dto);
   }
 
   @UseGuards(ApiKeyGuard)
-  @Post('admin/check')
+  @Post('auth/admins/checking')
   @HttpCode(HttpStatus.OK)
   async checkCodeToSignInAsAdmin(@Body() dto: CheckCodeDto) {
     return this.apiGatewayService.checkCodeToSignInAsAdmin(dto);
   }
 
   //google authentication
-  @Post('sign-in/google')
+  @Post('auth/sign-in/google')
   @HttpCode(HttpStatus.OK)
   @UseGuards(ApiKeyGuard)
   async signInGoogle(@Body('token') token: string) {
@@ -140,7 +136,7 @@ export class ApiGatewayController {
   @UseGuards(JwtGuard)
   @UseGuards(ApiKeyGuard)
   @Roles(NORMAL_USER_ROLE)
-  @Get('user')
+  @Get('users')
   async getUser(@User() userPayload: TokenPayloadInterface) {
     return this.apiGatewayService.getUser(userPayload);
   }
@@ -149,7 +145,7 @@ export class ApiGatewayController {
   @UseGuards(JwtGuard)
   @UseGuards(ApiKeyGuard)
   @Roles(...ADMIN_ROLE)
-  @Get('admin/user')
+  @Get('admins/users')
   async getAllUsers(@Query() { page }: PageDto) {
     return this.apiGatewayService.getAllUsers(page);
   }
@@ -158,7 +154,7 @@ export class ApiGatewayController {
   @UseGuards(JwtGuard)
   @UseGuards(ApiKeyGuard)
   @Roles(NORMAL_USER_ROLE)
-  @Patch('user/birthday')
+  @Patch('users/birthday')
   async changeBirthday(
     @User() userPayload: TokenPayloadInterface,
     @Body() dto: ChangeBirthdayDto,
@@ -170,7 +166,7 @@ export class ApiGatewayController {
   @UseGuards(JwtGuard)
   @UseGuards(ApiKeyGuard)
   @Roles(NORMAL_USER_ROLE)
-  @Patch('user/fullname')
+  @Patch('users/fullname')
   async changeFullname(
     @User() userPayload: TokenPayloadInterface,
     @Body() dto: ChangeFullnameDto,
@@ -182,7 +178,7 @@ export class ApiGatewayController {
   @UseGuards(JwtGuard)
   @UseGuards(ApiKeyGuard)
   @Roles(NORMAL_USER_ROLE)
-  @Patch('user/country')
+  @Patch('users/country')
   async changeCountry(
     @User() userPayload: TokenPayloadInterface,
     @Body() dto: ChangeCountryDto,
@@ -194,7 +190,7 @@ export class ApiGatewayController {
   @UseGuards(JwtGuard)
   @UseGuards(ApiKeyGuard)
   @Roles(NORMAL_USER_ROLE)
-  @Post('user/email')
+  @Post('users/email')
   async changeEmail(
     @User() userPayload: TokenPayloadInterface,
     @Body() dto: ChangeEmailDto,
@@ -206,7 +202,7 @@ export class ApiGatewayController {
   @UseGuards(JwtGuard)
   @UseGuards(ApiKeyGuard)
   @Roles(NORMAL_USER_ROLE)
-  @Patch('user/email/check')
+  @Patch('users/email/checking')
   async checkCodeToChangeEmail(
     @User() userPayload: TokenPayloadInterface,
     @Body() dto: CheckCodeToChangeEmailDto,
@@ -218,7 +214,7 @@ export class ApiGatewayController {
   @UseGuards(JwtGuard)
   @UseGuards(ApiKeyGuard)
   @Roles(...ALL_ROLE)
-  @Patch('user/profile-image')
+  @Patch('users/profile-image')
   @UseInterceptors(FileInterceptor('file'))
   async changeProfileImage(
     @User() userPayload: TokenPayloadInterface,
@@ -240,7 +236,7 @@ export class ApiGatewayController {
   }
 
   @UseGuards(ApiKeyGuard)
-  @Get('user/:userId')
+  @Get('users/:userId')
   async getStrangerInfor(@Param() { userId }: GetStrangerInforDto) {
     return this.apiGatewayService.getStrangerInfor(userId);
   }
@@ -249,7 +245,7 @@ export class ApiGatewayController {
   @UseGuards(JwtGuard)
   @UseGuards(ApiKeyGuard)
   @Roles(NORMAL_USER_ROLE)
-  @Patch('user/invite/add')
+  @Patch('users/invite/add')
   @HttpCode(HttpStatus.OK)
   async sendInvite(
     @User() userPayload: TokenPayloadInterface,
@@ -262,8 +258,8 @@ export class ApiGatewayController {
   @UseGuards(JwtGuard)
   @UseGuards(ApiKeyGuard)
   @Roles(NORMAL_USER_ROLE)
-  @Delete('user/invite/remove/:inviteId')
-  async sentInvite(
+  @Delete('users/invite/remove/:inviteId')
+  async removeInvite(
     @User() userPayload: TokenPayloadInterface,
     @Param() dto: RemoveInviteDto,
   ) {
@@ -274,7 +270,7 @@ export class ApiGatewayController {
   @UseGuards(JwtGuard)
   @UseGuards(ApiKeyGuard)
   @Roles(NORMAL_USER_ROLE)
-  @Patch('user/invite/accept/:inviteId')
+  @Patch('users/invite/accept/:inviteId')
   async acceptInvite(
     @User() userPayload: TokenPayloadInterface,
     @Param() dto: AcceptInviteDto,
@@ -286,7 +282,7 @@ export class ApiGatewayController {
   @UseGuards(JwtGuard)
   @UseGuards(ApiKeyGuard)
   @Roles(NORMAL_USER_ROLE)
-  @Delete('user/friend/delete/:friendId')
+  @Delete('users/friend/:friendId')
   async deleteFriend(
     @User() userPayload: TokenPayloadInterface,
     @Param() dto: DeleteFriendDto,
@@ -298,7 +294,7 @@ export class ApiGatewayController {
   @UseGuards(JwtGuard)
   @UseGuards(ApiKeyGuard)
   @Roles(NORMAL_USER_ROLE)
-  @Post('user/delete/check')
+  @Post('users/deleting/checking')
   async checkDeleteAccount(@User() userPayload: TokenPayloadInterface) {
     return this.apiGatewayService.checkDeleteAccount(userPayload);
   }
@@ -307,7 +303,7 @@ export class ApiGatewayController {
   @UseGuards(JwtGuard)
   @UseGuards(ApiKeyGuard)
   @Roles(NORMAL_USER_ROLE)
-  @Delete('user')
+  @Delete('users/deleting')
   async deleteAccount(
     @User() userPayload: TokenPayloadInterface,
     @Query() dto: DeleteAccountDto,
@@ -320,7 +316,7 @@ export class ApiGatewayController {
   @UseGuards(JwtGuard)
   @UseGuards(ApiKeyGuard)
   @Roles(NORMAL_USER_ROLE)
-  @Post('feed')
+  @Post('feeds')
   @UseInterceptors(FileInterceptor('image'))
   @HttpCode(HttpStatus.CREATED)
   async createFeed(
@@ -347,7 +343,7 @@ export class ApiGatewayController {
   @UseGuards(JwtGuard)
   @UseGuards(ApiKeyGuard)
   @Roles(NORMAL_USER_ROLE)
-  @Patch('feed/:feedId')
+  @Patch('feeds/:feedId')
   async updateFeed(
     @User() userPayload: TokenPayloadInterface,
     @Param('feedId') feedId: string,
@@ -360,7 +356,7 @@ export class ApiGatewayController {
   @UseGuards(JwtGuard)
   @UseGuards(ApiKeyGuard)
   @Roles(NORMAL_USER_ROLE)
-  @Delete('feed/:feedId')
+  @Delete('feeds/:feedId')
   async deleteFeed(
     @User() userPayload: TokenPayloadInterface,
     @Param('feedId') feedId: string,
@@ -372,7 +368,7 @@ export class ApiGatewayController {
   @UseGuards(JwtGuard)
   @UseGuards(ApiKeyGuard)
   @Roles(NORMAL_USER_ROLE)
-  @Post('feed/reaction/:feedId')
+  @Post('feeds/reaction/:feedId')
   @HttpCode(HttpStatus.OK)
   async reactFeed(
     @User() userPayload: TokenPayloadInterface,
@@ -386,7 +382,7 @@ export class ApiGatewayController {
   @UseGuards(JwtGuard)
   @UseGuards(ApiKeyGuard)
   @Roles(NORMAL_USER_ROLE)
-  @Get('feed/everyone')
+  @Get('feeds/everyone')
   async getEveryoneFeeds(
     @User() userPayload: TokenPayloadInterface,
     @Query() dto: GetEveryoneFeedsDto,
@@ -398,7 +394,7 @@ export class ApiGatewayController {
   @UseGuards(JwtGuard)
   @UseGuards(ApiKeyGuard)
   @Roles(NORMAL_USER_ROLE)
-  @Get('feed/certain/:userId')
+  @Get('feeds/certain/:userId')
   async getCertainUserFeeds(
     @User() userPayload: TokenPayloadInterface,
     @Query() dto: GetCertainUserFeedsDto,
@@ -411,7 +407,7 @@ export class ApiGatewayController {
   @UseGuards(JwtGuard)
   @UseGuards(ApiKeyGuard)
   @Roles(...ADMIN_ROLE)
-  @Get('admin/feed')
+  @Get('admins/feed')
   async getAllFeeds(@Query() { page }: PageDto) {
     return this.apiGatewayService.getAllFeeds(page);
   }
@@ -421,7 +417,7 @@ export class ApiGatewayController {
   @UseGuards(JwtGuard)
   @UseGuards(ApiKeyGuard)
   @Roles(NORMAL_USER_ROLE)
-  @Post('message')
+  @Post('messages')
   @HttpCode(HttpStatus.CREATED)
   async createMessage(
     @User() userPayload: TokenPayloadInterface,
@@ -434,7 +430,7 @@ export class ApiGatewayController {
   @UseGuards(JwtGuard)
   @UseGuards(ApiKeyGuard)
   @Roles(NORMAL_USER_ROLE)
-  @Patch('message/read')
+  @Patch('messages/reading')
   async readMessages(
     @User() userPayload: TokenPayloadInterface,
     @Body() dto: ReadMessageDto,
@@ -446,7 +442,7 @@ export class ApiGatewayController {
   @UseGuards(JwtGuard)
   @UseGuards(ApiKeyGuard)
   @Roles(NORMAL_USER_ROLE)
-  @Get('message/all')
+  @Get('messages/all')
   async getAllConversations(@User() userPayload: TokenPayloadInterface) {
     return this.apiGatewayService.getAllConversations(userPayload);
   }
@@ -455,7 +451,7 @@ export class ApiGatewayController {
   @UseGuards(JwtGuard)
   @UseGuards(ApiKeyGuard)
   @Roles(NORMAL_USER_ROLE)
-  @Get('message/certain/:friendId')
+  @Get('messages/certain/:friendId')
   async getCertainFriendConversation(
     @User() userPayload: TokenPayloadInterface,
     @Query() dto: GetCertainFriendConversationDto,
@@ -473,7 +469,7 @@ export class ApiGatewayController {
   @UseGuards(JwtGuard)
   @UseGuards(ApiKeyGuard)
   @Roles(...ADMIN_ROLE)
-  @Get('statistic')
+  @Get('statistics')
   async getStatisticInfor() {
     return this.apiGatewayService.getStatisticInfor();
   }
@@ -482,7 +478,7 @@ export class ApiGatewayController {
   @UseGuards(JwtGuard)
   @UseGuards(ApiKeyGuard)
   @Roles(...ADMIN_ROLE)
-  @Get('admin/user/infor/:searchValue')
+  @Get('admins/users/infor/:searchValue')
   async getUserInforByAdmin(
     @Param() dto: GetUserInforByAdminInterface,
     @Query() { type }: TypeInterface,
@@ -494,7 +490,7 @@ export class ApiGatewayController {
   @UseGuards(JwtGuard)
   @UseGuards(ApiKeyGuard)
   @Roles(...ADMIN_ROLE)
-  @Get('admin/feed/:feedId')
+  @Get('admins/feeds/:feedId')
   async getFeedByAdmin(@Param() dto: GetFeedByAdminDto) {
     return this.apiGatewayService.getFeedByAdmin(dto);
   }
@@ -504,7 +500,7 @@ export class ApiGatewayController {
   @UseGuards(JwtGuard)
   @UseGuards(ApiKeyGuard)
   @Roles(NORMAL_USER_ROLE)
-  @Post('report/user/:userId')
+  @Post('reports/users/:userId')
   async reportUser(
     @User() userPayload: TokenPayloadInterface,
     @Param() { userId }: UserIdDto,
@@ -517,7 +513,7 @@ export class ApiGatewayController {
   @UseGuards(JwtGuard)
   @UseGuards(ApiKeyGuard)
   @Roles(NORMAL_USER_ROLE)
-  @Post('report/feed/:feedId')
+  @Post('reports/feeds/:feedId')
   async reportFeed(
     @User() userPayload: TokenPayloadInterface,
     @Param() { feedId }: FeedIdDto,
@@ -530,7 +526,7 @@ export class ApiGatewayController {
   @UseGuards(JwtGuard)
   @UseGuards(ApiKeyGuard)
   @Roles(...ADMIN_ROLE)
-  @Get('report/all')
+  @Get('reports/all')
   async getReports() {
     return this.apiGatewayService.getReports();
   }
@@ -539,7 +535,7 @@ export class ApiGatewayController {
   @UseGuards(JwtGuard)
   @UseGuards(ApiKeyGuard)
   @Roles(...ADMIN_ROLE)
-  @Get('report/user')
+  @Get('reports/users')
   async getMoreUserReports(@Query() dto: GetMoreReportsDto) {
     return this.apiGatewayService.getMoreUserReports(dto);
   }
@@ -548,7 +544,7 @@ export class ApiGatewayController {
   @UseGuards(JwtGuard)
   @UseGuards(ApiKeyGuard)
   @Roles(...ADMIN_ROLE)
-  @Get('report/feed')
+  @Get('reports/feeds')
   async getMoreFeedReports(@Query() dto: GetMoreReportsDto) {
     return this.apiGatewayService.getMoreFeedReports(dto);
   }
@@ -557,7 +553,7 @@ export class ApiGatewayController {
   @UseGuards(JwtGuard)
   @UseGuards(ApiKeyGuard)
   @Roles(...ADMIN_ROLE)
-  @Get('report/processed/all')
+  @Get('reports/processed/all')
   async getProcessedReports() {
     return this.apiGatewayService.getProcessedReports();
   }
@@ -566,7 +562,7 @@ export class ApiGatewayController {
   @UseGuards(JwtGuard)
   @UseGuards(ApiKeyGuard)
   @Roles(...ADMIN_ROLE)
-  @Get('report/processed/user')
+  @Get('reports/users/processed')
   async getMoreProcessedUserReports(@Query() dto: GetMoreReportsDto) {
     return this.apiGatewayService.getMoreProcessedUserReports(dto);
   }
@@ -575,7 +571,7 @@ export class ApiGatewayController {
   @UseGuards(JwtGuard)
   @UseGuards(ApiKeyGuard)
   @Roles(...ADMIN_ROLE)
-  @Get('report/processed/feed')
+  @Get('reports/feeds/processed')
   async getMoreProcessedFeedReports(@Query() dto: GetMoreReportsDto) {
     return this.apiGatewayService.getMoreProcessedFeedReports(dto);
   }
@@ -585,7 +581,7 @@ export class ApiGatewayController {
   @UseGuards(ApiKeyGuard)
   @Roles(...ADMIN_ROLE)
   @HttpCode(HttpStatus.OK)
-  @Post('report/feed/process/:reportId')
+  @Post('reports/feeds/process/:reportId')
   async processFeedReport(
     @User() userPayload: TokenPayloadInterface,
     @Param() { reportId }: ReportIdDto,
@@ -602,7 +598,7 @@ export class ApiGatewayController {
   @UseGuards(ApiKeyGuard)
   @Roles(...ADMIN_ROLE)
   @HttpCode(HttpStatus.OK)
-  @Post('report/user/process/:reportId')
+  @Post('reports/users/process/:reportId')
   async processUserReport(
     @User() userPayload: TokenPayloadInterface,
     @Param() { reportId }: ReportIdDto,
@@ -619,7 +615,7 @@ export class ApiGatewayController {
   @UseGuards(ApiKeyGuard)
   @Roles(ROOT_ADMIN_ROLE)
   @HttpCode(HttpStatus.CREATED)
-  @Post('admin/account/create')
+  @Post('auth/admins/sign-up')
   async createAdminAccount(
     @User() userPayload: TokenPayloadInterface,
     @Body() dto: CreateAdminDto,
@@ -632,7 +628,7 @@ export class ApiGatewayController {
   @UseGuards(ApiKeyGuard)
   @Roles(ROOT_ADMIN_ROLE)
   @HttpCode(HttpStatus.OK)
-  @Get('admin/account')
+  @Get('admins/list')
   async getAdminList(
     @Query() dto: GetAdminListDto,
     @User() userPayload: TokenPayloadInterface,
