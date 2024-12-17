@@ -54,6 +54,7 @@ import { GetUserInforByAdminInterface } from './interfaces/get_user_infor_by_adm
 import { GetMoreReportsDto } from './dto/get-more-reports.dto';
 import { GetAdminListDto } from './dto/get-admin-list.dto';
 import { CreateAdminDto } from './dto/create-admin.dto';
+import { RefreshTokenDto } from './dto/refreshtoken.dto';
 
 @Injectable()
 export class ApiGatewayService {
@@ -162,6 +163,43 @@ export class ApiGatewayService {
   async checkCodeToSignInAsAdmin(dto: CheckCodeDto) {
     const result = await lastValueFrom(
       this.authService.send('check_code_to_sign_in_as_admin', dto).pipe(
+        map((response) => {
+          if (response.error) {
+            this.throwErrorBasedOnStatusCode(
+              response.statusCode,
+              response.message,
+            );
+          }
+          return response;
+        }),
+      ),
+    );
+
+    return result;
+  }
+
+  //refresh token
+  async refreshUserAccessToken(dto: RefreshTokenDto) {
+    const result = await lastValueFrom(
+      this.authService.send('refresh_user_access_token', dto).pipe(
+        map((response) => {
+          if (response.error) {
+            this.throwErrorBasedOnStatusCode(
+              response.statusCode,
+              response.message,
+            );
+          }
+          return response;
+        }),
+      ),
+    );
+
+    return result;
+  }
+
+  async refreshAdminAccessToken(dto: RefreshTokenDto) {
+    const result = await lastValueFrom(
+      this.authService.send('refresh_admin_access_token', dto).pipe(
         map((response) => {
           if (response.error) {
             this.throwErrorBasedOnStatusCode(

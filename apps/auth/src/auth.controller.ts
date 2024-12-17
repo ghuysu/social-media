@@ -1,5 +1,4 @@
 import {
-  Body,
   Controller,
   HttpStatus,
   InternalServerErrorException,
@@ -20,14 +19,48 @@ import { SignInDto } from '@app/common';
 import { MessagePattern, Payload } from '@nestjs/microservices';
 import { CheckCodeDto } from '@app/common';
 import { SignInGoogleDto } from './dto/sign-in-google.dto';
+import { RefreshTokenDto } from './dto/refreshtoken.dto';
 
 @Controller()
 export class AuthController {
   constructor(private readonly authService: AuthService) {}
 
+  //refresh token
+  @MessagePattern('refresh_user_access_token')
+  async refreshUserAccessToken(@Payload() dto: RefreshTokenDto) {
+    try {
+      const accessToken = await this.authService.decodeUserRefreshToken(
+        dto.refreshToken,
+      );
+      return {
+        status: HttpStatus.OK,
+        message: 'Refresh user access token successfully.',
+        metadata: { accessToken },
+      };
+    } catch (error) {
+      return this.handleError(error);
+    }
+  }
+
+  @MessagePattern('refresh_admin_access_token')
+  async refreshAdminAccessToken(@Payload() dto: RefreshTokenDto) {
+    try {
+      const accessToken = await this.authService.decodeAdminRefreshToken(
+        dto.refreshToken,
+      );
+      return {
+        status: HttpStatus.OK,
+        message: 'Refresh admin access token successfully.',
+        metadata: { accessToken },
+      };
+    } catch (error) {
+      return this.handleError(error);
+    }
+  }
+
   //sign up
   @MessagePattern('check_email_for_sign_up')
-  async checkEmailForSignUp(@Body() dto: CheckEmailDto) {
+  async checkEmailForSignUp(@Payload() dto: CheckEmailDto) {
     try {
       await this.authService.checkEmailForSignUp(dto);
       return {
@@ -40,12 +73,13 @@ export class AuthController {
   }
 
   @MessagePattern('check_code_for_sign_up')
-  async checkCodeForSignUp(@Body() dto: CreateNormalUserDto) {
+  async checkCodeForSignUp(@Payload() dto: CreateNormalUserDto) {
     try {
-      await this.authService.checkCodeForSignUp(dto);
+      const result = await this.authService.checkCodeForSignUp(dto);
       return {
         status: HttpStatus.OK,
         message: 'Created user successfully',
+        metadata: result,
       };
     } catch (error) {
       return this.handleError(error);
@@ -54,7 +88,7 @@ export class AuthController {
 
   //change password
   @MessagePattern('check_email_for_change_password')
-  async checkEmailForChangePassword(@Body() dto: CheckEmailDto) {
+  async checkEmailForChangePassword(@Payload() dto: CheckEmailDto) {
     try {
       await this.authService.checkEmailForChangePassword(dto);
       return {
@@ -67,7 +101,7 @@ export class AuthController {
   }
 
   @MessagePattern('change_password')
-  async changePassword(@Body() dto: ChangePasswordDto) {
+  async changePassword(@Payload() dto: ChangePasswordDto) {
     try {
       await this.authService.checkCodeForChangePassword(dto);
       return {
@@ -81,7 +115,7 @@ export class AuthController {
 
   //sign in
   @MessagePattern('sign_in_as_user')
-  async signinAsUser(@Body() dto: SignInDto) {
+  async signinAsUser(@Payload() dto: SignInDto) {
     try {
       const data = await this.authService.signInAsNormalUser(dto);
       return {
@@ -95,7 +129,7 @@ export class AuthController {
   }
 
   @MessagePattern('sign_in_as_admin')
-  async signinAsAdmin(@Body() dto: SignInDto) {
+  async signinAsAdmin(@Payload() dto: SignInDto) {
     try {
       await this.authService.signInAsAdmin(dto);
       return {
@@ -108,7 +142,7 @@ export class AuthController {
   }
 
   @MessagePattern('check_code_to_sign_in_as_admin')
-  async checkCodeToSignInAsAdmin(@Body() dto: CheckCodeDto) {
+  async checkCodeToSignInAsAdmin(@Payload() dto: CheckCodeDto) {
     try {
       const result = await this.authService.checkCodeToSignInAsAdmin(dto);
       return {

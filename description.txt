@@ -1,0 +1,2 @@
+Technology: Nestjs, typescript, mongodb, redis, aws s3, microservices, docker.
+NestJS: dependency injection, monoreppo
