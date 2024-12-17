@@ -62,6 +62,7 @@ dependencies {
     implementation("androidx.compose.material3:material3")
     implementation("com.google.android.gms:play-services-base:18.5.0")
     implementation("com.google.firebase:firebase-auth:23.1.0")
+    implementation("com.google.mlkit:vision-common:17.3.0")
 
     // Navigation
     val nav_version = "2.7.7"
@@ -107,6 +108,12 @@ dependencies {
     // QR Code
     implementation("com.google.zxing:core:3.4.1")
     implementation("com.journeyapps:zxing-android-embedded:4.3.0")
+
+    // Thêm các dependencies sau
+    implementation("com.google.mlkit:barcode-scanning:17.2.0")
+    implementation("androidx.camera:camera-camera2:1.3.0")
+    implementation("androidx.camera:camera-lifecycle:1.3.0")
+    implementation("androidx.camera:camera-view:1.3.0")
 
     testImplementation("junit:junit:4.13.2")
     androidTestImplementation("androidx.test.ext:junit:1.2.1")
