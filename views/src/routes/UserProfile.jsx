@@ -11,7 +11,7 @@ const UserProfile = () => {
     const fetchUserInfo = async () => {
       try {
         const response = await fetch(
-          `https://skn7vgp9-10000.asse.devtunnels.ms/api/user/${userId}`,
+          `https://skn7vgp9-10000.asse.devtunnels.ms/api/users/${userId}`,
           {
             method: 'GET',
             headers: {

@@ -190,7 +190,11 @@ export class FeedController {
   async getFeedByAdmin(@Payload() { feedId }: GetFeedByAdminDto) {
     try {
       const result = await this.feedService.getFeedByAdmin(feedId);
-      return result;
+      return {
+        status: HttpStatus.OK,
+        message: 'Get feed successfully.',
+        metadata: result,
+      };
     } catch (error) {
       return this.handleError(error);
     }
