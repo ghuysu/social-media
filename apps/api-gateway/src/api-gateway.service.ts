@@ -86,10 +86,13 @@ export class ApiGatewayService {
     }
   }
 
-  //sign up
-  async checkEmail(dto: CheckEmailDto) {
+  private isValidMongoId(id: string): boolean {
+    return Types.ObjectId.isValid(id);
+  }
+
+  private async sendMessageToAuthService(message: string, dto: any) {
     const result = await lastValueFrom(
-      this.authService.send('check_email_for_sign_up', dto).pipe(
+      this.authService.send(message, dto).pipe(
         map((response) => {
           if (response.error) {
             this.throwErrorBasedOnStatusCode(
@@ -105,9 +108,9 @@ export class ApiGatewayService {
     return result;
   }
 
-  async checkCodeForSignUp(dto: CreateNormalUserDto) {
+  private async sendMessageToUserService(message: string, dto: any) {
     const result = await lastValueFrom(
-      this.authService.send('check_code_for_sign_up', dto).pipe(
+      this.userService.send(message, dto).pipe(
         map((response) => {
           if (response.error) {
             this.throwErrorBasedOnStatusCode(
@@ -121,347 +124,198 @@ export class ApiGatewayService {
     );
 
     return result;
+  }
+
+  private async sendMessageToFeedService(message: string, dto: any) {
+    const result = await lastValueFrom(
+      this.feedService.send(message, dto).pipe(
+        map((response) => {
+          if (response.error) {
+            this.throwErrorBasedOnStatusCode(
+              response.statusCode,
+              response.message,
+            );
+          }
+          return response;
+        }),
+      ),
+    );
+
+    return result;
+  }
+
+  private async sendMessageToMessageService(message: string, dto: any) {
+    const result = await lastValueFrom(
+      this.messageService.send(message, dto).pipe(
+        map((response) => {
+          if (response.error) {
+            this.throwErrorBasedOnStatusCode(
+              response.statusCode,
+              response.message,
+            );
+          }
+          return response;
+        }),
+      ),
+    );
+
+    return result;
+  }
+
+  private async sendMessageToReportingService(message: string, dto: any) {
+    const result = await lastValueFrom(
+      this.reportingService.send(message, dto).pipe(
+        map((response) => {
+          if (response.error) {
+            this.throwErrorBasedOnStatusCode(
+              response.statusCode,
+              response.message,
+            );
+          }
+          return response;
+        }),
+      ),
+    );
+
+    return result;
+  }
+
+  private async sendMessageToStatisticService(message: string, dto: any) {
+    const result = await lastValueFrom(
+      this.statisticService.send(message, dto).pipe(
+        map((response) => {
+          if (response.error) {
+            this.throwErrorBasedOnStatusCode(
+              response.statusCode,
+              response.message,
+            );
+          }
+          return response;
+        }),
+      ),
+    );
+
+    return result;
+  }
+
+  //sign up
+  async checkEmail(dto: CheckEmailDto) {
+    return this.sendMessageToAuthService('check_email_for_sign_up', dto);
+  }
+
+  async checkCodeForSignUp(dto: CreateNormalUserDto) {
+    return this.sendMessageToAuthService('check_code_for_sign_up', dto);
   }
 
   //sign in
   async signinAsUser(dto: SignInDto) {
-    const result = await lastValueFrom(
-      this.authService.send('sign_in_as_user', dto).pipe(
-        map((response) => {
-          if (response.error) {
-            this.throwErrorBasedOnStatusCode(
-              response.statusCode,
-              response.message,
-            );
-          }
-          return response;
-        }),
-      ),
-    );
-
-    return result;
+    return this.sendMessageToAuthService('sign_in_as_user', dto);
   }
 
   async signinAsAdmin(dto: SignInDto) {
-    const result = await lastValueFrom(
-      this.authService.send('sign_in_as_admin', dto).pipe(
-        map((response) => {
-          if (response.error) {
-            this.throwErrorBasedOnStatusCode(
-              response.statusCode,
-              response.message,
-            );
-          }
-          return response;
-        }),
-      ),
-    );
-
-    return result;
+    return this.sendMessageToAuthService('sign_in_as_admin', dto);
   }
 
   async checkCodeToSignInAsAdmin(dto: CheckCodeDto) {
-    const result = await lastValueFrom(
-      this.authService.send('check_code_to_sign_in_as_admin', dto).pipe(
-        map((response) => {
-          if (response.error) {
-            this.throwErrorBasedOnStatusCode(
-              response.statusCode,
-              response.message,
-            );
-          }
-          return response;
-        }),
-      ),
-    );
-
-    return result;
+    return this.sendMessageToAuthService('check_code_to_sign_in_as_admin', dto);
   }
 
   //refresh token
   async refreshUserAccessToken(dto: RefreshTokenDto) {
-    const result = await lastValueFrom(
-      this.authService.send('refresh_user_access_token', dto).pipe(
-        map((response) => {
-          if (response.error) {
-            this.throwErrorBasedOnStatusCode(
-              response.statusCode,
-              response.message,
-            );
-          }
-          return response;
-        }),
-      ),
-    );
-
-    return result;
+    return this.sendMessageToAuthService('refresh_user_access_token', dto);
   }
 
   async refreshAdminAccessToken(dto: RefreshTokenDto) {
-    const result = await lastValueFrom(
-      this.authService.send('refresh_admin_access_token', dto).pipe(
-        map((response) => {
-          if (response.error) {
-            this.throwErrorBasedOnStatusCode(
-              response.statusCode,
-              response.message,
-            );
-          }
-          return response;
-        }),
-      ),
-    );
-
-    return result;
+    return this.sendMessageToAuthService('refresh_admin_access_token', dto);
   }
 
   //change password
   async checkEmailForChangePassword(dto: CheckEmailDto) {
-    const result = await lastValueFrom(
-      this.authService.send('check_email_for_change_password', dto).pipe(
-        map((response) => {
-          if (response.error) {
-            this.throwErrorBasedOnStatusCode(
-              response.statusCode,
-              response.message,
-            );
-          }
-          return response;
-        }),
-      ),
+    return this.sendMessageToAuthService(
+      'check_email_for_change_password',
+      dto,
     );
-
-    return result;
   }
 
   async checkCodeForChangePassword(dto: ChangePasswordDto) {
-    const result = await lastValueFrom(
-      this.authService.send('change_password', dto).pipe(
-        map((response) => {
-          if (response.error) {
-            this.throwErrorBasedOnStatusCode(
-              response.statusCode,
-              response.message,
-            );
-          }
-          return response;
-        }),
-      ),
-    );
-
-    return result;
+    return this.sendMessageToAuthService('change_password', dto);
   }
 
   //google authentication
   async signInGoogle(token: string) {
-    const result = await lastValueFrom(
-      this.authService.send('sign_in_google', { token }).pipe(
-        map((response) => {
-          if (response.error) {
-            this.throwErrorBasedOnStatusCode(
-              response.statusCode,
-              response.message,
-            );
-          }
-          return response;
-        }),
-      ),
-    );
-
-    return result;
+    return this.sendMessageToAuthService('sign_in_google', { token });
   }
 
   //user
   async getUser(userPayload: TokenPayloadInterface) {
-    const result = await lastValueFrom(
-      this.userService.send('get_user', userPayload).pipe(
-        map((response) => {
-          if (response.error) {
-            this.throwErrorBasedOnStatusCode(
-              response.statusCode,
-              response.message,
-            );
-          }
-          return response;
-        }),
-      ),
-    );
-
-    return result;
+    return this.sendMessageToUserService('get_user', userPayload);
   }
 
   async getAllUsers(page: number) {
-    const result = await lastValueFrom(
-      this.userService.send('get_all_users', { page }).pipe(
-        map((response) => {
-          if (response.error) {
-            this.throwErrorBasedOnStatusCode(
-              response.statusCode,
-              response.message,
-            );
-          }
-          return response;
-        }),
-      ),
-    );
-
-    return result;
+    return this.sendMessageToUserService('get_all_users', { page });
   }
 
   async changeBirthday(
     userPayload: TokenPayloadInterface,
     dto: ChangeBirthdayDto,
   ) {
-    const result = await lastValueFrom(
-      this.userService
-        .send('change_birthday', { birthdayPayload: dto, userPayload })
-        .pipe(
-          map((response) => {
-            if (response.error) {
-              this.throwErrorBasedOnStatusCode(
-                response.statusCode,
-                response.message,
-              );
-            }
-            return response;
-          }),
-        ),
-    );
-
-    return result;
+    return this.sendMessageToUserService('change_birthday', {
+      birthdayPayload: dto,
+      userPayload,
+    });
   }
 
   async changeFullname(
     userPayload: TokenPayloadInterface,
     dto: ChangeFullnameDto,
   ) {
-    const result = await lastValueFrom(
-      this.userService
-        .send('change_fullname', { fullnamePayload: dto, userPayload })
-        .pipe(
-          map((response) => {
-            if (response.error) {
-              this.throwErrorBasedOnStatusCode(
-                response.statusCode,
-                response.message,
-              );
-            }
-            return response;
-          }),
-        ),
-    );
-
-    return result;
+    return this.sendMessageToUserService('change_fullname', {
+      fullnamePayload: dto,
+      userPayload,
+    });
   }
 
   async changeCountry(
     userPayload: TokenPayloadInterface,
     dto: ChangeCountryDto,
   ) {
-    const result = await lastValueFrom(
-      this.userService
-        .send('change_country', { countryPayload: dto, userPayload })
-        .pipe(
-          map((response) => {
-            if (response.error) {
-              this.throwErrorBasedOnStatusCode(
-                response.statusCode,
-                response.message,
-              );
-            }
-            return response;
-          }),
-        ),
-    );
-
-    return result;
+    return this.sendMessageToUserService('change_country', {
+      countryPayload: dto,
+      userPayload,
+    });
   }
 
   async changeEmail(userPayload: TokenPayloadInterface, dto: ChangeEmailDto) {
-    const result = await lastValueFrom(
-      this.userService
-        .send('change_email', { emailPayload: dto, userPayload })
-        .pipe(
-          map((response) => {
-            if (response.error) {
-              this.throwErrorBasedOnStatusCode(
-                response.statusCode,
-                response.message,
-              );
-            }
-            return response;
-          }),
-        ),
-    );
-
-    return result;
+    return this.sendMessageToUserService('change_email', {
+      emailPayload: dto,
+      userPayload,
+    });
   }
 
   async checkCodeToChangeEmail(
     userPayload: TokenPayloadInterface,
     dto: CheckCodeToChangeEmailDto,
   ) {
-    const result = await lastValueFrom(
-      this.userService
-        .send('check_code_to_change_email', { payload: dto, userPayload })
-        .pipe(
-          map((response) => {
-            if (response.error) {
-              this.throwErrorBasedOnStatusCode(
-                response.statusCode,
-                response.message,
-              );
-            }
-            return response;
-          }),
-        ),
-    );
-
-    return result;
+    return this.sendMessageToUserService('check_code_to_change_email', {
+      payload: dto,
+      userPayload,
+    });
   }
 
   async changeProfileImage(
     userPayload: TokenPayloadInterface,
     file: Express.Multer.File,
   ) {
-    const result = await lastValueFrom(
-      this.userService
-        .send('change_profile_image', {
-          image: file.buffer,
-          originalname: file.originalname,
-          userPayload,
-        })
-        .pipe(
-          map((response) => {
-            if (response.error) {
-              this.throwErrorBasedOnStatusCode(
-                response.statusCode,
-                response.message,
-              );
-            }
-            return response;
-          }),
-        ),
-    );
-
-    return result;
+    return this.sendMessageToUserService('change_profile_image', {
+      image: file.buffer,
+      originalname: file.originalname,
+      userPayload,
+    });
   }
 
   async getStrangerInfor(userId) {
-    const infor: GetStrangerInforInterface | null = await lastValueFrom(
-      this.userService.send('get_stranger_infor', { userId }).pipe(
-        map((response) => {
-          if (response.error) {
-            this.throwErrorBasedOnStatusCode(
-              response.statusCode,
-              response.message,
-            );
-          }
-          return response;
-        }),
-      ),
-    );
-
+    const infor: GetStrangerInforInterface | null =
+      await this.sendMessageToUserService('get_stranger_infor', { userId });
     return infor;
   }
 
@@ -469,95 +323,47 @@ export class ApiGatewayService {
     userPayload: TokenPayloadInterface,
     { userId }: SendInviteDto,
   ) {
-    const result = await lastValueFrom(
-      this.userService
-        .send('send_invite', {
-          payload: { userId },
-          userPayload,
-        })
-        .pipe(
-          map((response) => {
-            if (response.error) {
-              this.throwErrorBasedOnStatusCode(
-                response.statusCode,
-                response.message,
-              );
-            }
-            return response;
-          }),
-        ),
-    );
-
-    return result;
+    return this.sendMessageToUserService('send_invite', {
+      payload: { userId },
+      userPayload,
+    });
   }
 
   async removeInvite(userPayload: TokenPayloadInterface, dto: RemoveInviteDto) {
-    const result = await lastValueFrom(
-      this.userService
-        .send('remove_invite', {
-          payload: dto,
-          userPayload,
-        })
-        .pipe(
-          map((response) => {
-            if (response.error) {
-              this.throwErrorBasedOnStatusCode(
-                response.statusCode,
-                response.message,
-              );
-            }
-            return response;
-          }),
-        ),
-    );
-
-    return result;
+    return this.sendMessageToUserService('remove_invite', {
+      payload: dto,
+      userPayload,
+    });
   }
 
   async acceptInvite(userPayload: TokenPayloadInterface, dto: AcceptInviteDto) {
-    const result = await lastValueFrom(
-      this.userService
-        .send('accept_invite', {
-          payload: dto,
-          userPayload,
-        })
-        .pipe(
-          map((response) => {
-            if (response.error) {
-              this.throwErrorBasedOnStatusCode(
-                response.statusCode,
-                response.message,
-              );
-            }
-            return response;
-          }),
-        ),
-    );
-
-    return result;
+    return this.sendMessageToUserService('accept_invite', {
+      payload: dto,
+      userPayload,
+    });
   }
 
   async deleteFriend(userPayload: TokenPayloadInterface, dto: DeleteFriendDto) {
-    const result = await lastValueFrom(
-      this.userService
-        .send('delete_friend', {
-          payload: dto,
-          userPayload,
-        })
-        .pipe(
-          map((response) => {
-            if (response.error) {
-              this.throwErrorBasedOnStatusCode(
-                response.statusCode,
-                response.message,
-              );
-            }
-            return response;
-          }),
-        ),
-    );
+    return this.sendMessageToUserService('delete_friend', {
+      payload: dto,
+      userPayload,
+    });
+  }
 
-    return result;
+  async checkDeleteAccount(userPayload: TokenPayloadInterface) {
+    return this.sendMessageToUserService('check_delete_account', {
+      userPayload,
+    });
+  }
+
+  async deleteAccount(
+    userPayload: TokenPayloadInterface,
+    dto: DeleteAccountDto,
+  ) {
+    return this.sendMessageToMessageService('delete_account', {
+      userPayload,
+      payload: dto,
+    });
   }
 
   //feed
@@ -566,30 +372,14 @@ export class ApiGatewayService {
     dto: CreateFeedDto,
     image: Express.Multer.File,
   ) {
-    const result = await lastValueFrom(
-      this.feedService
-        .send('create_feed', {
-          payload: {
-            ...dto,
-            image: image.buffer,
-            originalname: image.originalname,
-          },
-          userPayload,
-        })
-        .pipe(
-          map((response) => {
-            if (response.error) {
-              this.throwErrorBasedOnStatusCode(
-                response.statusCode,
-                response.message,
-              );
-            }
-            return response;
-          }),
-        ),
-    );
-
-    return result;
+    return this.sendMessageToFeedService('create_feed', {
+      payload: {
+        ...dto,
+        image: image.buffer,
+        originalname: image.originalname,
+      },
+      userPayload,
+    });
   }
 
   async updateFeed(
@@ -597,49 +387,17 @@ export class ApiGatewayService {
     dto: UpdateFeedDto,
     feedId: string,
   ) {
-    const result = await lastValueFrom(
-      this.feedService
-        .send('update_feed', {
-          payload: { ...dto, feedId },
-          userPayload,
-        })
-        .pipe(
-          map((response) => {
-            if (response.error) {
-              this.throwErrorBasedOnStatusCode(
-                response.statusCode,
-                response.message,
-              );
-            }
-            return response;
-          }),
-        ),
-    );
-
-    return result;
+    return this.sendMessageToFeedService('update_feed', {
+      payload: { ...dto, feedId },
+      userPayload,
+    });
   }
 
   async deleteFeed(userPayload: TokenPayloadInterface, feedId: string) {
-    const result = await lastValueFrom(
-      this.feedService
-        .send('delete_feed', {
-          payload: { feedId },
-          userPayload,
-        })
-        .pipe(
-          map((response) => {
-            if (response.error) {
-              this.throwErrorBasedOnStatusCode(
-                response.statusCode,
-                response.message,
-              );
-            }
-            return response;
-          }),
-        ),
-    );
-
-    return result;
+    return this.sendMessageToFeedService('delete_feed', {
+      payload: { feedId },
+      userPayload,
+    });
   }
 
   async reactFeed(
@@ -647,74 +405,26 @@ export class ApiGatewayService {
     dto: ReactFeedDto,
     feedId: string,
   ) {
-    const result = await lastValueFrom(
-      this.feedService
-        .send('react_feed', {
-          payload: { ...dto, feedId },
-          userPayload,
-        })
-        .pipe(
-          map((response) => {
-            if (response.error) {
-              this.throwErrorBasedOnStatusCode(
-                response.statusCode,
-                response.message,
-              );
-            }
-            return response;
-          }),
-        ),
-    );
-
-    return result;
+    return this.sendMessageToFeedService('react_feed', {
+      payload: { ...dto, feedId },
+      userPayload,
+    });
   }
 
   async getEveryoneFeeds(
     userPayload: TokenPayloadInterface,
     payload: GetEveryoneFeedsDto,
   ) {
-    const result = await lastValueFrom(
-      this.feedService
-        .send('get_everyone_feeds', {
-          userPayload,
-          payload,
-        })
-        .pipe(
-          map((response) => {
-            if (response.error) {
-              this.throwErrorBasedOnStatusCode(
-                response.statusCode,
-                response.message,
-              );
-            }
-            return response;
-          }),
-        ),
-    );
-
-    return result;
+    return this.sendMessageToFeedService('get_everyone_feeds', {
+      userPayload,
+      payload,
+    });
   }
 
   async getAllFeeds(page: number) {
-    const result = await lastValueFrom(
-      this.feedService
-        .send('get_all_feeds', {
-          page,
-        })
-        .pipe(
-          map((response) => {
-            if (response.error) {
-              this.throwErrorBasedOnStatusCode(
-                response.statusCode,
-                response.message,
-              );
-            }
-            return response;
-          }),
-        ),
-    );
-
-    return result;
+    return this.sendMessageToFeedService('get_all_feeds', {
+      page,
+    });
   }
 
   async getCertainUserFeeds(
@@ -722,26 +432,10 @@ export class ApiGatewayService {
     dto: GetCertainUserFeedsDto,
     userId: string,
   ) {
-    const result = await lastValueFrom(
-      this.feedService
-        .send('get_certain_user_feeds', {
-          payload: { ...dto, userId },
-          userPayload,
-        })
-        .pipe(
-          map((response) => {
-            if (response.error) {
-              this.throwErrorBasedOnStatusCode(
-                response.statusCode,
-                response.message,
-              );
-            }
-            return response;
-          }),
-        ),
-    );
-
-    return result;
+    return this.sendMessageToFeedService('get_certain_user_feeds', {
+      payload: { ...dto, userId },
+      userPayload,
+    });
   }
 
   //message
@@ -749,71 +443,23 @@ export class ApiGatewayService {
     userPayload: TokenPayloadInterface,
     dto: CreateMessageDto,
   ) {
-    const result = await lastValueFrom(
-      this.messageService
-        .send('create_message', {
-          payload: dto,
-          userPayload,
-        })
-        .pipe(
-          map((response) => {
-            if (response.error) {
-              this.throwErrorBasedOnStatusCode(
-                response.statusCode,
-                response.message,
-              );
-            }
-            return response;
-          }),
-        ),
-    );
-
-    return result;
+    return this.sendMessageToMessageService('create_message', {
+      payload: dto,
+      userPayload,
+    });
   }
 
   async readMessages(userPayload: TokenPayloadInterface, dto: ReadMessageDto) {
-    const result = await lastValueFrom(
-      this.messageService
-        .send('read_messages', {
-          payload: dto,
-          userPayload,
-        })
-        .pipe(
-          map((response) => {
-            if (response.error) {
-              this.throwErrorBasedOnStatusCode(
-                response.statusCode,
-                response.message,
-              );
-            }
-            return response;
-          }),
-        ),
-    );
-
-    return result;
+    return this.sendMessageToMessageService('read_messages', {
+      payload: dto,
+      userPayload,
+    });
   }
 
   async getAllConversations(userPayload: TokenPayloadInterface) {
-    const result = await lastValueFrom(
-      this.messageService
-        .send('get_all_conversations', {
-          userPayload,
-        })
-        .pipe(
-          map((response) => {
-            if (response.error) {
-              this.throwErrorBasedOnStatusCode(
-                response.statusCode,
-                response.message,
-              );
-            }
-            return response;
-          }),
-        ),
-    );
-
-    return result;
+    return this.sendMessageToMessageService('get_all_conversations', {
+      userPayload,
+    });
   }
 
   async getCertainFriendConversation(
@@ -821,96 +467,18 @@ export class ApiGatewayService {
     dto: GetCertainFriendConversationDto,
     friendId: Types.ObjectId,
   ) {
-    const result = await lastValueFrom(
-      this.messageService
-        .send('get_certain_friend_conversation', {
-          userPayload,
-          payload: {
-            ...dto,
-            friendId: friendId.toString(),
-          },
-        })
-        .pipe(
-          map((response) => {
-            if (response.error) {
-              this.throwErrorBasedOnStatusCode(
-                response.statusCode,
-                response.message,
-              );
-            }
-            return response;
-          }),
-        ),
-    );
-
-    return result;
-  }
-
-  async checkDeleteAccount(userPayload: TokenPayloadInterface) {
-    const result = await lastValueFrom(
-      this.userService
-        .send('check_delete_account', {
-          userPayload,
-        })
-        .pipe(
-          map((response) => {
-            if (response.error) {
-              this.throwErrorBasedOnStatusCode(
-                response.statusCode,
-                response.message,
-              );
-            }
-            return response;
-          }),
-        ),
-    );
-
-    return result;
-  }
-
-  async deleteAccount(
-    userPayload: TokenPayloadInterface,
-    dto: DeleteAccountDto,
-  ) {
-    const result = await lastValueFrom(
-      this.userService
-        .send('delete_account', {
-          userPayload,
-          payload: dto,
-        })
-        .pipe(
-          map((response) => {
-            if (response.error) {
-              this.throwErrorBasedOnStatusCode(
-                response.statusCode,
-                response.message,
-              );
-            }
-            return response;
-          }),
-        ),
-    );
-
-    return result;
+    return this.sendMessageToMessageService('get_certain_friend_conversation', {
+      userPayload,
+      payload: {
+        ...dto,
+        friendId: friendId.toString(),
+      },
+    });
   }
 
   //statistic
   async getStatisticInfor() {
-    const result = await lastValueFrom(
-      this.statisticService.send('get_statistic_infor', {}).pipe(
-        map((response) => {
-          if (response.error) {
-            this.throwErrorBasedOnStatusCode(
-              response.statusCode,
-              response.message,
-            );
-          }
-          return response;
-        }),
-      ),
-    );
-
-    return result;
+    return this.sendMessageToStatisticService('get_statistic_infor', {});
   }
 
   //admin
@@ -929,40 +497,16 @@ export class ApiGatewayService {
     }
 
     //check type
-    const userInfor: UserDocument = await lastValueFrom(
-      this.userService
-        .send(getUserInforMessage, {
-          searchValue,
-        })
-        .pipe(
-          map((response) => {
-            if (response.error) {
-              this.throwErrorBasedOnStatusCode(
-                response.statusCode,
-                response.message,
-              );
-            }
-            return response;
-          }),
-        ),
+    const userInfor: UserDocument = await this.sendMessageToUserService(
+      getUserInforMessage,
+      { searchValue },
     );
 
-    const feedList: Types.ObjectId[] = await lastValueFrom(
-      this.feedService
-        .send('get_feed_list_by_admin', {
-          userId: userInfor._id,
-        })
-        .pipe(
-          map((response) => {
-            if (response.error) {
-              this.throwErrorBasedOnStatusCode(
-                response.statusCode,
-                response.message,
-              );
-            }
-            return response;
-          }),
-        ),
+    const feedList: Types.ObjectId[] = await this.sendMessageToFeedService(
+      'get_feed_list_by_admin',
+      {
+        userId: userInfor._id,
+      },
     );
 
     return {
@@ -976,228 +520,68 @@ export class ApiGatewayService {
   }
 
   async getFeedByAdmin({ feedId }: GetFeedByAdminDto) {
-    const result = await lastValueFrom(
-      this.feedService
-        .send('get_feed_by_admin', {
-          feedId,
-        })
-        .pipe(
-          map((response) => {
-            if (response.error) {
-              this.throwErrorBasedOnStatusCode(
-                response.statusCode,
-                response.message,
-              );
-            }
-            return response;
-          }),
-        ),
-    );
-
-    return {
-      status: HttpStatus.OK,
-      message: 'Get feed successfully.',
-      metadata: result,
-    };
-  }
-
-  isValidMongoId(id: string): boolean {
-    return Types.ObjectId.isValid(id);
+    return this.sendMessageToFeedService('get_feed_by_admin', {
+      feedId,
+    });
   }
 
   //report
   async reportUser(userPayload, userId: Types.ObjectId, reason: number) {
-    const result = await lastValueFrom(
-      this.reportingService
-        .send('report_user', {
-          userPayload,
-          payload: { reportedUserId: userId, reason },
-        })
-        .pipe(
-          map((response) => {
-            if (response.error) {
-              this.throwErrorBasedOnStatusCode(
-                response.statusCode,
-                response.message,
-              );
-            }
-            return response;
-          }),
-        ),
-    );
-
-    return result;
+    return this.sendMessageToReportingService('report_user', {
+      userPayload,
+      payload: { reportedUserId: userId, reason },
+    });
   }
 
   async reportFeed(userPayload, feedId: Types.ObjectId, reason: number) {
-    const result = await lastValueFrom(
-      this.reportingService
-        .send('report_feed', {
-          userPayload,
-          payload: { reportedFeedId: feedId, reason },
-        })
-        .pipe(
-          map((response) => {
-            if (response.error) {
-              this.throwErrorBasedOnStatusCode(
-                response.statusCode,
-                response.message,
-              );
-            }
-            return response;
-          }),
-        ),
-    );
-
-    return result;
+    return this.sendMessageToReportingService('report_feed', {
+      userPayload,
+      payload: { reportedFeedId: feedId, reason },
+    });
   }
 
   async getReports() {
-    const result = await lastValueFrom(
-      this.reportingService.send('get_reports', {}).pipe(
-        map((response) => {
-          if (response.error) {
-            this.throwErrorBasedOnStatusCode(
-              response.statusCode,
-              response.message,
-            );
-          }
-          return response;
-        }),
-      ),
-    );
-
-    return result;
+    return this.sendMessageToReportingService('get_reports', {});
   }
 
   async getMoreUserReports(dto: GetMoreReportsDto) {
-    const result = await lastValueFrom(
-      this.reportingService.send('get_more_user_reports', dto).pipe(
-        map((response) => {
-          if (response.error) {
-            this.throwErrorBasedOnStatusCode(
-              response.statusCode,
-              response.message,
-            );
-          }
-          return response;
-        }),
-      ),
-    );
-
-    return result;
+    return this.sendMessageToReportingService('get_more_user_reports', dto);
   }
 
   async getMoreFeedReports(dto: GetMoreReportsDto) {
-    const result = await lastValueFrom(
-      this.reportingService.send('get_more_feed_reports', dto).pipe(
-        map((response) => {
-          if (response.error) {
-            this.throwErrorBasedOnStatusCode(
-              response.statusCode,
-              response.message,
-            );
-          }
-          return response;
-        }),
-      ),
-    );
-
-    return result;
+    return this.sendMessageToReportingService('get_more_feed_reports', dto);
   }
 
   async getProcessedReports() {
-    const result = await lastValueFrom(
-      this.reportingService.send('get_processed_reports', {}).pipe(
-        map((response) => {
-          if (response.error) {
-            this.throwErrorBasedOnStatusCode(
-              response.statusCode,
-              response.message,
-            );
-          }
-          return response;
-        }),
-      ),
-    );
-
-    return result;
+    return this.sendMessageToReportingService('get_processed_reports', {});
   }
 
   async getMoreProcessedUserReports(dto: GetMoreReportsDto) {
-    const result = await lastValueFrom(
-      this.reportingService.send('get_more_processed_user_reports', dto).pipe(
-        map((response) => {
-          if (response.error) {
-            this.throwErrorBasedOnStatusCode(
-              response.statusCode,
-              response.message,
-            );
-          }
-          return response;
-        }),
-      ),
+    return this.sendMessageToReportingService(
+      'get_more_processed_user_reports',
+      dto,
     );
-
-    return result;
   }
 
   async getMoreProcessedFeedReports(dto: GetMoreReportsDto) {
-    const result = await lastValueFrom(
-      this.reportingService.send('get_more_processed_feed_reports', dto).pipe(
-        map((response) => {
-          if (response.error) {
-            this.throwErrorBasedOnStatusCode(
-              response.statusCode,
-              response.message,
-            );
-          }
-          return response;
-        }),
-      ),
+    return this.sendMessageToReportingService(
+      'get_more_processed_feed_reports',
+      dto,
     );
-
-    return result;
   }
 
   async processFeedReport(userPayload: TokenPayloadInterface, dto) {
-    const result = await lastValueFrom(
-      this.reportingService
-        .send('process_feed_report', { userPayload, payload: dto })
-        .pipe(
-          map((response) => {
-            if (response.error) {
-              this.throwErrorBasedOnStatusCode(
-                response.statusCode,
-                response.message,
-              );
-            }
-            return response;
-          }),
-        ),
-    );
-
-    return result;
+    return this.sendMessageToReportingService('process_feed_report', {
+      userPayload,
+      payload: dto,
+    });
   }
 
   async processUserReport(userPayload: TokenPayloadInterface, dto) {
-    const result = await lastValueFrom(
-      this.reportingService
-        .send('process_user_report', { userPayload, payload: dto })
-        .pipe(
-          map((response) => {
-            if (response.error) {
-              this.throwErrorBasedOnStatusCode(
-                response.statusCode,
-                response.message,
-              );
-            }
-            return response;
-          }),
-        ),
-    );
-
-    return result;
+    return this.sendMessageToReportingService('process_user_report', {
+      userPayload,
+      payload: dto,
+    });
   }
 
   //root admin
@@ -1205,43 +589,16 @@ export class ApiGatewayService {
     { userId }: TokenPayloadInterface,
     dto: CreateAdminDto,
   ) {
-    const result = await lastValueFrom(
-      this.authService
-        .send('create_new_admin_account', { adminId: userId, ...dto })
-        .pipe(
-          map((response) => {
-            if (response.error) {
-              this.throwErrorBasedOnStatusCode(
-                response.statusCode,
-                response.message,
-              );
-            }
-            return response;
-          }),
-        ),
-    );
-
-    return result;
+    return this.sendMessageToAuthService('create_new_admin_account', {
+      adminId: userId,
+      ...dto,
+    });
   }
 
   async getAdminList(
     { userId }: TokenPayloadInterface,
     { page }: GetAdminListDto,
   ) {
-    const result = await lastValueFrom(
-      this.userService.send('get_admin_list', { userId, page }).pipe(
-        map((response) => {
-          if (response.error) {
-            this.throwErrorBasedOnStatusCode(
-              response.statusCode,
-              response.message,
-            );
-          }
-          return response;
-        }),
-      ),
-    );
-
-    return result;
+    return this.sendMessageToUserService('get_admin_list', { userId, page });
   }
 }
