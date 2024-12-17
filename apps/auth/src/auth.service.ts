@@ -105,8 +105,9 @@ export class AuthService {
     payload: TokenPayloadInterface,
   ): Promise<string> {
     const token = await this.jwtService.signAsync(payload, {
-      secret: this.configService.get('JWT_SECRET'),
-      expiresIn: `${this.configService.get('JWT_EXPIRATION_ACCESS_TOKEN_USER')}s`,
+      secret: this.configService.get('JWT_SECRET_ACCESS_TOKEN'),
+      // expiresIn: `${this.configService.get('JWT_EXPIRATION_ACCESS_TOKEN_USER')}s`,
+      expiresIn: `${60}s`,
     });
     return `Bearer ${token}`;
   }
@@ -115,16 +116,30 @@ export class AuthService {
     payload: TokenPayloadInterface,
   ): Promise<string> {
     const token = await this.jwtService.signAsync(payload, {
-      secret: this.configService.get('JWT_SECRET'),
-      expiresIn: `${this.configService.get('JWT_EXPIRATION_REFRESH_TOKEN_USER')}s`,
+      secret: this.configService.get('JWT_SECRET_REFRESH_TOKEN'),
+      // expiresIn: `${this.configService.get('JWT_EXPIRATION_REFRESH_TOKEN_USER')}s`,
+      expiresIn: `${300}s`,
     });
 
+    //check user have cached refresh tokens yet or not
+    const cachedRefreshTokens = await this.cacheManager.get<string[]>(
+      `refresh-token:${payload.email}`,
+    );
+
     //save refreshToken into redis
-    this.cacheManager.set(`refresh-token:${payload.email}`, token, {
-      ttl:
-        this.configService.get<number>('JWT_EXPIRATION_REFRESH_TOKEN_USER') +
-        1000,
-    });
+    if (!cachedRefreshTokens) {
+      this.cacheManager.set(`refresh-token:${payload.email}`, [token], {
+        ttl: 0,
+      });
+    } else {
+      this.cacheManager.set(
+        `refresh-token:${payload.email}`,
+        [...cachedRefreshTokens, token],
+        {
+          ttl: 0,
+        },
+      );
+    }
 
     return `Bearer ${token}`;
   }
@@ -133,8 +148,9 @@ export class AuthService {
     payload: TokenPayloadInterface,
   ): Promise<string> {
     const token = await this.jwtService.signAsync(payload, {
-      secret: this.configService.get('JWT_SECRET'),
-      expiresIn: `${this.configService.get('JWT_EXPIRATION_ACCESS_TOKEN_ADMIN')}s`,
+      secret: this.configService.get('JWT_SECRET_ACCESS_TOKEN'),
+      // expiresIn: `${this.configService.get('JWT_EXPIRATION_ACCESS_TOKEN_ADMIN')}s`,
+      expiresIn: `${60}s`,
     });
     return `Bearer ${token}`;
   }
@@ -143,8 +159,9 @@ export class AuthService {
     payload: TokenPayloadInterface,
   ): Promise<string> {
     const token = await this.jwtService.signAsync(payload, {
-      secret: this.configService.get('JWT_SECRET'),
-      expiresIn: `${this.configService.get('JWT_EXPIRATION_REFRESH_TOKEN_ADMIN')}s`,
+      secret: this.configService.get('JWT_SECRET_REFRESH_TOKEN'),
+      // expiresIn: `${this.configService.get('JWT_EXPIRATION_REFRESH_TOKEN_ADMIN')}s`,
+      expiresIn: `${300}s`,
     });
 
     //save refreshToken into redis
@@ -155,6 +172,128 @@ export class AuthService {
     });
 
     return `Bearer ${token}`;
+  }
+
+  private async deleteExpiredRefreshToken(email: string, token: string) {
+    const expiredRefreshToken = token.split(' ')[1];
+
+    const cachedRefreshTokens = await this.cacheManager.get<string[]>(
+      `refresh-token:${email}`,
+    );
+
+    const filteredRefreshTokens = cachedRefreshTokens.filter(
+      (token) => token !== expiredRefreshToken,
+    );
+
+    this.cacheManager.set(`refresh-token:${email}`, filteredRefreshTokens, {
+      ttl: 0,
+    });
+  }
+
+  async decodeUserRefreshToken(token: string) {
+    let decodePayload: TokenPayloadInterface;
+    try {
+      const refreshToken = token.split(' ')[1];
+
+      //check refreshToken is real refresh token or not
+      decodePayload = this.jwtService.decode(refreshToken);
+
+      if (
+        !decodePayload ||
+        !decodePayload?.email ||
+        !decodePayload?.role ||
+        decodePayload?.role !== 'normal_user'
+      ) {
+        throw new UnauthorizedException('Incorrect refresh token');
+      }
+
+      //check sent refresh token is cached or not
+      const cachedRefreshTokens = await this.cacheManager.get<string[]>(
+        `refresh-token:${decodePayload.email}`,
+      );
+
+      if (!cachedRefreshTokens.includes(refreshToken)) {
+        throw new UnauthorizedException('Incorrect refresh token');
+      }
+
+      //verify refreshToken
+      const payload: TokenPayloadInterface = await this.jwtService.verifyAsync(
+        refreshToken,
+        {
+          secret: this.configService.get<string>('JWT_SECRET_REFRESH_TOKEN'),
+        },
+      );
+      //create new accessToken
+      const accessToken = await this.generateUserAccessToken({
+        userId: payload.userId,
+        email: payload.email,
+        role: payload.role,
+      });
+
+      return accessToken;
+    } catch (error) {
+      if (error.name === 'TokenExpiredError') {
+        await this.deleteExpiredRefreshToken(decodePayload.email, token);
+        throw new UnauthorizedException('Refresh token has expired');
+      }
+      if (error.message === 'Incorrect refresh token') {
+        throw new UnauthorizedException('Incorrect refresh token');
+      }
+      throw new UnauthorizedException('Invalid refresh token');
+    }
+  }
+
+  async decodeAdminRefreshToken(token: string) {
+    try {
+      const refreshToken = token.split(' ')[1];
+
+      //check refreshToken is real refresh token or not
+      const decodePayload: TokenPayloadInterface =
+        this.jwtService.decode(refreshToken);
+
+      if (
+        !decodePayload ||
+        !decodePayload?.email ||
+        !decodePayload?.role ||
+        (decodePayload?.role !== 'admin' &&
+          decodePayload?.role !== 'root_admin')
+      ) {
+        throw new UnauthorizedException('Incorrect refresh token');
+      }
+
+      const realRefreshToken = await this.cacheManager.get<string>(
+        `refresh-token:${decodePayload.email}`,
+      );
+
+      if (realRefreshToken !== refreshToken) {
+        throw new UnauthorizedException('Incorrect refresh token');
+      }
+
+      //verify refreshToken
+      const payload: TokenPayloadInterface = await this.jwtService.verifyAsync(
+        refreshToken,
+        {
+          secret: this.configService.get<string>('JWT_SECRET_REFRESH_TOKEN'),
+        },
+      );
+
+      //create new accessToken
+      const accessToken = await this.generateAdminAccessToken({
+        userId: payload.userId,
+        email: payload.email,
+        role: payload.role,
+      });
+
+      return accessToken;
+    } catch (error) {
+      if (error.name === 'TokenExpiredError') {
+        throw new UnauthorizedException('Refresh token has expired');
+      }
+      if (error.message === 'Incorrect refresh token') {
+        throw new UnauthorizedException('Incorrect refresh token');
+      }
+      throw new UnauthorizedException('Invalid refresh token');
+    }
   }
 
   //sign up
@@ -263,6 +402,14 @@ export class AuthService {
       country,
       profileImageUrl,
     };
+
+    if (!birthday) {
+      delete newUser.birthday;
+    }
+    if (!country) {
+      delete newUser.country;
+    }
+
     const user = await this.authRepository.create(newUser);
     delete user.password;
 
@@ -284,7 +431,7 @@ export class AuthService {
     this.statisticService.emit('created_user', {});
 
     //update country statistic
-    this.statisticService.emit('country', { country: country });
+    if (!country) this.statisticService.emit('country', { country: country });
 
     return {
       user,

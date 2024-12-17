@@ -66,6 +66,7 @@ import { ProcessReportDto } from './dto/processReport.dto';
 import { GetAdminListDto } from './dto/get-admin-list.dto';
 import { CreateAdminDto } from './dto/create-admin.dto';
 import { PageDto } from './dto/page.dto';
+import { RefreshTokenDto } from './dto/refreshtoken.dto';
 
 @Controller('api')
 export class ApiGatewayController {
@@ -123,6 +124,21 @@ export class ApiGatewayController {
     return this.apiGatewayService.checkCodeToSignInAsAdmin(dto);
   }
 
+  //refresh token
+  @UseGuards(ApiKeyGuard)
+  @Post('auth/users/refresh-token')
+  @HttpCode(HttpStatus.OK)
+  async refreshUserAccessToken(@Body() dto: RefreshTokenDto) {
+    return this.apiGatewayService.refreshUserAccessToken(dto);
+  }
+
+  @UseGuards(ApiKeyGuard)
+  @Post('auth/admins/refresh-token')
+  @HttpCode(HttpStatus.OK)
+  async refreshAdminAccessToken(@Body() dto: RefreshTokenDto) {
+    return this.apiGatewayService.refreshAdminAccessToken(dto);
+  }
+
   //google authentication
   @Post('auth/sign-in/google')
   @HttpCode(HttpStatus.OK)
@@ -135,7 +151,7 @@ export class ApiGatewayController {
   @UseGuards(RoleGuard)
   @UseGuards(JwtGuard)
   @UseGuards(ApiKeyGuard)
-  @Roles(NORMAL_USER_ROLE)
+  @Roles(...ALL_ROLE)
   @Get('users')
   async getUser(@User() userPayload: TokenPayloadInterface) {
     return this.apiGatewayService.getUser(userPayload);

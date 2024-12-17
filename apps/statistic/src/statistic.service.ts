@@ -244,12 +244,12 @@ export class StatisticService {
     });
   }
 
-  async changeCountry(oldCountry, newCountry) {
+  async changeCountry(oldCountry: string, newCountry: string) {
     //get country redis
     const countryRecord = await this.cacheManager.get('country_statistic');
 
     //update old country
-    countryRecord[oldCountry] -= 1;
+    if (oldCountry) countryRecord[oldCountry] -= 1;
 
     //check new country is exiting or not
     if (!countryRecord[newCountry]) {

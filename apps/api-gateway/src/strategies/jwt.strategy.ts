@@ -27,7 +27,6 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
     const bannedPayload: BannedPayloadDto = await this.cacheManager.get(
       `banned_user:${payload.email}`,
     );
-
     if (bannedPayload) {
       if (new Date() < new Date(bannedPayload.expirationTime)) {
         throw new ForbiddenException(
@@ -40,11 +39,9 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
     //check normal user's email is in banned email list
     const bannedEmailList: string[] =
       await this.cacheManager.get('banned_email_list');
-
     if (!bannedEmailList) {
       return payload;
     }
-
     if (bannedEmailList.some((email) => email === payload.email)) {
       throw new ForbiddenException('Email has been banned');
     }

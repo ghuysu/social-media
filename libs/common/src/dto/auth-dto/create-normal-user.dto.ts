@@ -1,4 +1,10 @@
-import { IsEmail, IsNumber, IsString, IsStrongPassword } from 'class-validator';
+import {
+  IsEmail,
+  IsNumber,
+  IsOptional,
+  IsString,
+  IsStrongPassword,
+} from 'class-validator';
 import { IsValidBirthday } from '../../validators/IsValidBirthday.validator';
 
 export class CreateNormalUserDto {
@@ -15,10 +21,12 @@ export class CreateNormalUserDto {
   @IsStrongPassword()
   password: string;
 
+  @IsOptional()
   @IsString()
   @IsValidBirthday()
   birthday: string;
 
+  @IsOptional()
   @IsString()
   country: string;
 }
