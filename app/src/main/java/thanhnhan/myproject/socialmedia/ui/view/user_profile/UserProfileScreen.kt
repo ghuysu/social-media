@@ -1,16 +1,16 @@
 package thanhnhan.myproject.socialmedia.ui.view.user_profile
 
 import android.app.Activity
-import android.graphics.Bitmap
+import android.content.ClipData
+import android.content.ClipboardManager
+import android.content.Context
+import android.content.Intent
 import android.net.Uri
 import android.util.Log
 import android.widget.Toast
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.activity.result.launch
-import android.content.ClipData
-import android.content.ClipboardManager
-import android.content.Context
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -98,6 +98,24 @@ import thanhnhan.myproject.socialmedia.data.Result
 import thanhnhan.myproject.socialmedia.data.repository.SignInUserRepository
 import thanhnhan.myproject.socialmedia.viewmodel.SignInUserViewModel
 import thanhnhan.myproject.socialmedia.viewmodel.SignInUserViewModelFactory
+import android.Manifest
+import android.graphics.Bitmap
+import androidx.camera.core.CameraSelector
+import androidx.camera.core.ImageAnalysis
+import androidx.camera.lifecycle.ProcessCameraProvider
+import androidx.camera.view.PreviewView
+import androidx.compose.material.icons.filled.Close
+import androidx.compose.ui.platform.LocalLifecycleOwner
+import androidx.compose.ui.viewinterop.AndroidView
+import androidx.core.content.ContextCompat
+import com.google.mlkit.vision.barcode.BarcodeScanning
+import com.google.mlkit.vision.barcode.common.Barcode
+import com.google.mlkit.vision.common.InputImage
+import androidx.camera.core.ExperimentalGetImage
+import androidx.compose.ui.graphics.asImageBitmap
+import com.google.zxing.BarcodeFormat
+import com.google.zxing.qrcode.QRCodeWriter
+import android.graphics.Color as AndroidColor
 
 @Composable
 fun ProfileScreen(
@@ -308,6 +326,20 @@ fun InviteSection(
     clipboardManager: ClipboardManager,
     viewmodel: UserProfileViewModel,
 ) {
+    var showQRDialog by remember { mutableStateOf(false) }
+    var showScanner by remember { mutableStateOf(false) }
+    
+    // Request camera permission
+    val launcher = rememberLauncherForActivityResult(
+        ActivityResultContracts.RequestPermission()
+    ) { isGranted: Boolean ->
+        if (isGranted) {
+            showScanner = true
+        } else {
+            Toast.makeText(context, "Camera permission required", Toast.LENGTH_SHORT).show()
+        }
+    }
+
     Column(
         modifier = Modifier
             .fillMaxWidth()
@@ -328,13 +360,12 @@ fun InviteSection(
             )
             Spacer(modifier = Modifier.width(8.dp))
             Text(
-                modifier = Modifier.width(250.dp),
+                modifier = Modifier.width(200.dp),
                 text = linkAddFriend,
                 style = TextStyle(color = Color.Gray),
                 maxLines = 1,
                 overflow = TextOverflow.Ellipsis
             )
-            Spacer(modifier = Modifier.width(8.dp))
             var showDialog by remember { mutableStateOf(false) }
             val qrCodeBitmap = viewmodel.generateQRCode(linkAddFriend, 700, 700)
 
@@ -342,7 +373,7 @@ fun InviteSection(
                 val clip = ClipData.newPlainText("simple text", linkAddFriend)
                 clipboardManager.setPrimaryClip(clip)
                 Toast.makeText(context, "Link copied to clipboard", Toast.LENGTH_SHORT).show()
-                showDialog = true
+                showQRDialog = true
             }) {
                 Icon(
                     imageVector = Icons.Default.Share,
@@ -350,10 +381,46 @@ fun InviteSection(
                     tint = Color.Gray
                 )
             }
-
-            if (showDialog) {
-                QRCodeDialog(onDismiss = { showDialog = false }, qrCodeBitmap = qrCodeBitmap)
+            
+            // Add QR Scanner button
+            IconButton(modifier = Modifier.size(40.dp),onClick = {
+                launcher.launch(Manifest.permission.CAMERA)
+            }) {
+                Icon(
+                    painter = painterResource(R.drawable.scan),
+                    contentDescription = "Scan QR Code",
+                    tint = Color.Gray
+                )
             }
+        }
+        
+        if (showQRDialog) {
+            QRCodeDialog(onDismiss = { showQRDialog = false }, qrCodeBitmap = generateQRCode(linkAddFriend, 800, 800))
+        }
+        
+        if (showScanner) {
+            QRScannerDialog(
+                onDismiss = { showScanner = false },
+                onQrCodeScanned = { url ->
+                    try {
+                        // Tạo Intent để mở trình duyệt
+                        val intent = Intent(Intent.ACTION_VIEW, Uri.parse(url))
+                        // Thêm flag để mở trong tab mới
+                        intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+                        context.startActivity(intent)
+                        
+                        // Đóng scanner sau khi mở URL
+                        showScanner = false
+                    } catch (e: Exception) {
+                        Toast.makeText(
+                            context,
+                            "Cannot open this URL: $url",
+                            Toast.LENGTH_LONG
+                        ).show()
+                        e.printStackTrace()
+                    }
+                }
+            )
         }
     }
 }
@@ -553,7 +620,7 @@ fun SettingItem(
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun AvatarChangeButton(authToken: String, repository: UserProfileRepository) {
-    var showModalSheet by remember { mutableStateOf(false) }  // Trạng thái để kiểm soát hiển thị ModalBottomSheet
+    var showModalSheet by remember { mutableStateOf(false) }  // Trạng thái ể kiểm soát hiển thị ModalBottomSheet
     val context = LocalContext.current
     val userProfileViewModel: UserProfileViewModel = viewModel(
         factory = UserProfileViewModelFactory(repository) // Sử dụng factory để khởi tạo viewModel
@@ -773,4 +840,144 @@ fun ProfileScreenPreview() {
         authToken = "mockToken",
         openIntro = {}
     )  // Gọi ProfileScreen với dữ liệu đã giả lập
+}
+
+@androidx.annotation.OptIn(ExperimentalGetImage::class)
+@Composable
+fun QRScannerDialog(onDismiss: () -> Unit, onQrCodeScanned: (String) -> Unit) {
+    val context = LocalContext.current
+    val lifecycleOwner = LocalLifecycleOwner.current
+    val cameraProviderFuture = remember { ProcessCameraProvider.getInstance(context) }
+    
+    Dialog(
+        onDismissRequest = onDismiss,
+        properties = DialogProperties(dismissOnClickOutside = true)
+    ) {
+        Surface(
+            shape = MaterialTheme.shapes.medium,
+            modifier = Modifier.size(300.dp)
+        ) {
+            Box {
+                AndroidView(
+                    factory = { ctx ->
+                        PreviewView(ctx).apply {
+                            implementationMode = PreviewView.ImplementationMode.COMPATIBLE
+                        }
+                    },
+                    modifier = Modifier.fillMaxSize(),
+                ) { previewView ->
+                    cameraProviderFuture.addListener({
+                        val cameraProvider = cameraProviderFuture.get()
+                        val preview = androidx.camera.core.Preview.Builder().build()
+                        preview.setSurfaceProvider(previewView.surfaceProvider)
+
+                        val imageAnalysis = ImageAnalysis.Builder()
+                            .setBackpressureStrategy(ImageAnalysis.STRATEGY_KEEP_ONLY_LATEST)
+                            .build()
+
+                        imageAnalysis.setAnalyzer(
+                            ContextCompat.getMainExecutor(context)
+                        ) { imageProxy ->
+                            val mediaImage = imageProxy.image
+                            if (mediaImage != null) {
+                                val image = InputImage.fromMediaImage(
+                                    mediaImage,
+                                    imageProxy.imageInfo.rotationDegrees
+                                )
+                                
+                                val scanner = BarcodeScanning.getClient()
+                                scanner.process(image)
+                                    .addOnSuccessListener { barcodes ->
+                                        for (barcode in barcodes) {
+                                            if (barcode.valueType == Barcode.TYPE_URL) {
+                                                barcode.url?.url?.let { url ->
+                                                    // Kiểm tra URL có hợp lệ không
+                                                    if (isValidUrl(url)) {
+                                                        onQrCodeScanned(url)
+                                                    } else {
+                                                        Toast.makeText(
+                                                            context,
+                                                            "Invalid URL detected",
+                                                            Toast.LENGTH_SHORT
+                                                        ).show()
+                                                    }
+                                                }
+                                            }
+                                        }
+                                    }
+                                    .addOnCompleteListener {
+                                        imageProxy.close()
+                                    }
+                            } else {
+                                imageProxy.close()
+                            }
+                        }
+
+                        try {
+                            cameraProvider.unbindAll()
+                            cameraProvider.bindToLifecycle(
+                                lifecycleOwner,
+                                CameraSelector.DEFAULT_BACK_CAMERA,
+                                preview,
+                                imageAnalysis
+                            )
+                        } catch (e: Exception) {
+                            e.printStackTrace()
+                        }
+                    }, ContextCompat.getMainExecutor(context))
+                }
+                
+                IconButton(
+                    onClick = onDismiss,
+                    modifier = Modifier
+                        .align(Alignment.TopEnd)
+                        .padding(8.dp)
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.Close,
+                        contentDescription = "Close",
+                        tint = Color.White
+                    )
+                }
+            }
+        }
+    }
+}
+
+fun Bitmap.toImageBitmap() = android.graphics.Bitmap.createBitmap(
+    this.width,
+    this.height,
+    android.graphics.Bitmap.Config.ARGB_8888
+).apply {
+    val canvas = android.graphics.Canvas(this)
+    canvas.drawBitmap(this@toImageBitmap, 0f, 0f, null)
+}.asImageBitmap()
+
+fun generateQRCode(content: String, width: Int, height: Int): ImageBitmap? {
+    return try {
+        val writer = QRCodeWriter()
+        val bitMatrix = writer.encode(content, BarcodeFormat.QR_CODE, width, height)
+        val bitmap = Bitmap.createBitmap(width, height, Bitmap.Config.RGB_565)
+        
+        for (x in 0 until width) {
+            for (y in 0 until height) {
+                bitmap.setPixel(x, y, if (bitMatrix[x, y]) AndroidColor.BLACK else AndroidColor.WHITE)
+            }
+        }
+        
+        bitmap.toImageBitmap()
+    } catch (e: Exception) {
+        e.printStackTrace()
+        null
+    }
+}
+
+// Thêm hàm kiểm tra URL hợp lệ
+private fun isValidUrl(urlString: String): Boolean {
+    return try {
+        val url = Uri.parse(urlString)
+        url.scheme != null && (url.scheme == "http" || url.scheme == "https")
+    } catch (e: Exception) {
+        false
+    }
 }
