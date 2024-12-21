@@ -10,6 +10,11 @@ import androidx.activity.viewModels
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.lifecycleScope
 import androidx.lifecycle.repeatOnLifecycle
+import androidx.navigation.NavType
+import androidx.navigation.compose.NavHost
+import androidx.navigation.compose.composable
+import androidx.navigation.compose.rememberNavController
+import androidx.navigation.navArgument
 import com.google.android.gms.auth.api.signin.GoogleSignIn
 import com.google.android.gms.common.api.ApiException
 import com.google.firebase.Firebase
@@ -21,8 +26,15 @@ import kotlinx.coroutines.launch
 import thanhnhan.myproject.socialmedia.data.database.UserDatabaseHelper
 import thanhnhan.myproject.socialmedia.data.network.RetrofitInstance
 import thanhnhan.myproject.socialmedia.data.repository.SignInUserRepository
+import thanhnhan.myproject.socialmedia.ui.view.Login.LocketIntroScreen
 import thanhnhan.myproject.socialmedia.ui.view.Login.SignIn
 import thanhnhan.myproject.socialmedia.ui.view.Login.SignInScreen
+import thanhnhan.myproject.socialmedia.ui.view.sign_up.ChooseBirthdaySignUp
+import thanhnhan.myproject.socialmedia.ui.view.sign_up.ChooseCountrySignUp
+import thanhnhan.myproject.socialmedia.ui.view.sign_up.ChooseEmailSignUp
+import thanhnhan.myproject.socialmedia.ui.view.sign_up.ChooseNameSignUp
+import thanhnhan.myproject.socialmedia.ui.view.sign_up.ChoosePasswordSignUp
+import thanhnhan.myproject.socialmedia.ui.view.sign_up.VerifyEmailCodeSignUp
 import thanhnhan.myproject.socialmedia.viewmodel.SignInUserViewModel
 import thanhnhan.myproject.socialmedia.viewmodel.SignInUserViewModelFactory
 
@@ -60,14 +72,198 @@ class AuthActivity : ComponentActivity() {
 
         // Chỉ setContent một lần
         setContent {
-            SignInScreen(
-                context = this,
-                onLoginSuccess = {
-                    Log.d("AuthActivity", "Login successful, navigating to Main")
-                    navigateToMain()
-                },
-                openIntro = { /* handle intro */ }
-            )
+            val navController = rememberNavController()
+
+            NavHost(navController = navController, startDestination = "intro") {
+                composable(route = "intro") {
+                    LocketIntroScreen(
+                        openSignIn = { navController.navigate("signInScreen") },
+                        openSignUp = { navController.navigate("chooseEmailSignUp") }
+                    )
+                }
+
+                composable(route = "signInScreen") {
+                    SignInScreen(
+                        context = this@AuthActivity,
+                        onLoginSuccess = { navigateToMain() },
+                        openIntro = {
+                            navController.navigate("intro") {
+                                popUpTo("intro") { inclusive = true }
+                            }
+                        }
+                    )
+                }
+
+                composable(route = "chooseEmailSignUp") {
+                    ChooseEmailSignUp(
+                        openChoosePassword = { email ->
+                            navController.navigate("choosePasswordSignUp/$email")
+                        }
+                    )
+                }
+                composable(
+                    route = "choosePasswordSignUp/{email}",
+                    arguments = listOf(
+                        navArgument("email") {
+                            type = NavType.StringType
+                        }
+                    )
+                ) { backStackEntry ->
+                    val email = backStackEntry.arguments?.getString("email")
+                    requireNotNull(email)
+                    ChoosePasswordSignUp(
+                        email = email,
+                        openChooseName = { email, password ->
+                            navController.navigate("chooseNameSignUp/$email/$password")
+                        },
+                        backAction = {
+                            navController.popBackStack()
+                        }
+                    )
+                }
+
+                composable(
+                    route = "chooseNameSignUp/{email}/{password}",
+                    arguments = listOf(
+                        navArgument(name = "email") {
+                            type = NavType.StringType
+                        },
+                        navArgument(name = "password") {
+                            type = NavType.StringType
+                        }
+                    )
+                ) { navBackStackEntry ->
+                    navBackStackEntry.arguments?.let { argument ->
+                        val email = argument.getString("email")!!
+                        val password = argument.getString("password")!!
+                        ChooseNameSignUp(
+                            email = email,
+                            password = password,
+                            openChooseBirthday = { email, password, name ->
+                                navController.navigate("chooseBirthdaySignUp/$email/$password/$name")
+                            },
+                            backAction = {
+                                navController.popBackStack()
+                            }
+                        )
+                    }
+                }
+
+                composable(
+                    route = "chooseBirthdaySignUp/{email}/{password}/{name}",
+                    arguments = listOf(
+                        navArgument(name = "email") {
+                            type = NavType.StringType
+                        },
+                        navArgument(name = "password") {
+                            type = NavType.StringType
+                        },
+                        navArgument(name = "name") {
+                            type = NavType.StringType
+                        }
+                    )
+                ) { navBackStackEntry ->
+                    navBackStackEntry.arguments?.let { argument ->
+                        val email = argument.getString("email")!!
+                        val password = argument.getString("password")!!
+                        val name = argument.getString("name")!!
+                        ChooseBirthdaySignUp(
+                            email = email,
+                            password = password,
+                            name = name,
+                            openChooseCountry = { email, password, name, birthday ->
+                                navController.navigate("chooseCountrySignUp/$email/$password/$name/$birthday")
+                            },
+                            backAction = {
+                                navController.popBackStack()
+                            }
+                        )
+                    }
+                }
+
+                composable(
+                    route = "chooseCountrySignUp/{email}/{password}/{name}/{birthday}",
+                    arguments = listOf(
+                        navArgument(name = "email") {
+                            type = NavType.StringType
+                        },
+                        navArgument(name = "password") {
+                            type = NavType.StringType
+                        },
+                        navArgument(name = "name") {
+                            type = NavType.StringType
+                        },
+                        navArgument(name = "birthday") {
+                            type = NavType.StringType
+                        }
+                    )
+                ) { navBackStackEntry ->
+                    navBackStackEntry.arguments?.let { argument ->
+                        val email = argument.getString("email")!!
+                        val password = argument.getString("password")!!
+                        val name = argument.getString("name")!!
+                        val birthday = argument.getString("birthday")!!
+                        ChooseCountrySignUp(
+                            email = email,
+                            password = password,
+                            name = name,
+                            birthday = birthday,
+                            openVerifyCode = { email, password, name, birthday, country ->
+                                navController.navigate("verifyEmailCodeSignUp/$email/$password/$name/$birthday/$country")
+                            },
+                            openChooseEmail = {
+                                navController.navigate("chooseEmailSignUp")
+                            },
+                            backAction = {
+                                navController.popBackStack()
+                            }
+                        )
+                    }
+                }
+
+                composable(
+                    route = "verifyEmailCodeSignUp/{email}/{password}/{name}/{birthday}/{country}",
+                    arguments = listOf(
+                        navArgument(name = "email") {
+                            type = NavType.StringType
+                        },
+                        navArgument(name = "password") {
+                            type = NavType.StringType
+                        },
+                        navArgument(name = "name") {
+                            type = NavType.StringType
+                        },
+                        navArgument(name = "birthday") {
+                            type = NavType.StringType
+                        },
+                        navArgument(name = "country") {
+                            type = NavType.StringType
+                        }
+                    )
+                ) { navBackStackEntry ->
+                    navBackStackEntry.arguments?.let { argument ->
+                        val email = argument.getString("email")!!
+                        val password = argument.getString("password")!!
+                        val name = argument.getString("name")!!
+                        val birthday = argument.getString("birthday")!!
+                        val country = argument.getString("country")!!
+                        VerifyEmailCodeSignUp(
+                            email = email,
+                            password = password,
+                            name = name,
+                            birthday = birthday,
+                            country = country,
+                            openSignin = { email ->
+                                navController.navigate("signInScreen")
+                            },
+                            backAction = {
+                                navController.popBackStack()
+                            }
+                        )
+                    }
+                }
+
+            }
         }
     }
 
