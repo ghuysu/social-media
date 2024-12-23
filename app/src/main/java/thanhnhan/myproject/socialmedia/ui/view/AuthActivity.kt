@@ -74,7 +74,7 @@ class AuthActivity : ComponentActivity() {
         setContent {
             val navController = rememberNavController()
 
-            NavHost(navController = navController, startDestination = "intro") {
+            NavHost(navController = navController, startDestination = "signInScreen") {
                 composable(route = "intro") {
                     LocketIntroScreen(
                         openSignIn = { navController.navigate("signInScreen") },
