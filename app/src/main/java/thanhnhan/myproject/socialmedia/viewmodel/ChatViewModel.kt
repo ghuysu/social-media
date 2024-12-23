@@ -20,6 +20,8 @@ import thanhnhan.myproject.socialmedia.data.model.SendMessageRequest
 import thanhnhan.myproject.socialmedia.data.model.SendMessageResponse
 import thanhnhan.myproject.socialmedia.data.network.SocketManager
 import thanhnhan.myproject.socialmedia.data.repository.MessageRepository
+import thanhnhan.myproject.socialmedia.data.model.CommentResponse
+import thanhnhan.myproject.socialmedia.data.model.MessageWithFeed
 class ChatViewModel(
     private val userViewModel: UserViewModel,
     private val repository: MessageRepository,
@@ -137,6 +139,8 @@ class ChatViewModel(
                     is Result.Error -> {
                         _pendingMessageId.value = null
                     }
+
+                    else -> {}
                 }
             }
         }
@@ -298,6 +302,49 @@ class ChatViewModel(
     override fun onCleared() {
         super.onCleared()
         socketManager.disconnect() // Ngắt kết nối socket
+    }
+    // Overload function cho MessageWithFeed
+    fun updateConversationWithNewMessage(newMessage: MessageWithFeed) {
+        // Chuyển đổi MessageWithFeed thành Message cơ bản
+        val basicMessage = Message(
+            _id = newMessage._id,
+            senderId = newMessage.senderId,
+            receiverId = newMessage.receiverId,
+            content = newMessage.content,
+            isRead = newMessage.isRead,
+            createdAt = newMessage.createdAt
+        )
+
+        // Gọi hàm xử lý Message
+        updateConversationWithNewMessage(basicMessage)
+    }
+
+    fun handleFeedComment(commentResponse: CommentResponse) {
+        val commentMessage = commentResponse.metadata
+        
+        val messageWithFeed = MessageWithFeed(
+            _id = commentMessage._id,
+            senderId = Friend(
+                _id = commentMessage.senderId._id,
+                fullname = commentMessage.senderId.fullname,
+                profileImageUrl = commentMessage.senderId.profileImageUrl
+            ),
+            receiverId = Friend(
+                _id = commentMessage.receiverId._id,
+                fullname = commentMessage.receiverId.fullname,
+                profileImageUrl = commentMessage.receiverId.profileImageUrl
+            ),
+            content = commentMessage.content,
+            isRead = commentMessage.isRead,
+            createdAt = commentMessage.createdAt,
+            feed = MessageWithFeed.Feed(
+                _id = commentMessage.feedId._id,
+                description = commentMessage.feedId.description,
+                imageUrl = commentMessage.feedId.imageUrl
+            )
+        )
+        
+        updateConversationWithNewMessage(messageWithFeed)
     }
 }
 

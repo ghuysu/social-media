@@ -1,7 +1,9 @@
 package thanhnhan.myproject.socialmedia.ui.view.ChatScreen
 
+import android.util.Log
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
@@ -16,6 +18,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.input.TextFieldValue
 import androidx.compose.ui.unit.dp
@@ -30,7 +33,10 @@ import thanhnhan.myproject.socialmedia.data.model.SendMessageRequest
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.delay
 import androidx.compose.ui.platform.LocalFocusManager
+import coil.compose.AsyncImage
+import thanhnhan.myproject.socialmedia.data.model.MessageWithFeed
 import thanhnhan.myproject.socialmedia.utils.DateTimeUtils
+import thanhnhan.myproject.socialmedia.data.model.IMessage
 
 @Composable
 fun ChatDetailScreen(
@@ -403,12 +409,29 @@ fun ChatHeader(
 
 @Composable
 fun MessageItem(
-    message: Message,
+    message: IMessage,
     currentUserId: String,
-    isPending: Boolean,
-    isError: Boolean,
+    isPending: Boolean = false,
+    isError: Boolean = false
 ) {
+    // Add logging
+    Log.d("MessageItem", "Message type: ${message::class.simpleName}")
+    when (message) {
+        is MessageWithFeed -> {
+            Log.d("MessageItem", "MessageWithFeed - Feed: ${message.feed}")
+            Log.d("MessageItem", "Feed image URL: ${message.feed?.imageUrl}")
+        }
+        is Message -> {
+            Log.d("MessageItem", "Regular Message")
+        }
+    }
+
     val isCurrentUser = message.senderId._id == currentUserId
+    val backgroundColor = if (isCurrentUser) {
+        MaterialTheme.colorScheme.primary
+    } else {
+        Color(0xFF2D333B)
+    }
 
     Column(
         modifier = Modifier
@@ -416,45 +439,96 @@ fun MessageItem(
             .padding(vertical = 2.dp, horizontal = 8.dp),
         horizontalAlignment = if (isCurrentUser) Alignment.End else Alignment.Start
     ) {
-        Box(
-            modifier = Modifier
-                .widthIn(max = 280.dp) // Giới hạn chiều rộng tối đa
-                .background(
-                    when {
-                        isError -> Color.Red.copy(alpha = 0.7f)
-                        isCurrentUser -> Color(0xFF4CAF50)
-                        else -> Color(0xFF333333)
-                    },
-                    RoundedCornerShape(
-                        topStart = 16.dp,
-                        topEnd = 16.dp,
-                        bottomStart = if (isCurrentUser) 16.dp else 4.dp,
-                        bottomEnd = if (isCurrentUser) 4.dp else 16.dp
-                    )
-                )
-                .padding(horizontal = 12.dp, vertical = 8.dp)
+        Row(
+            modifier = Modifier.fillMaxWidth(0.8f),
+            horizontalArrangement = if (isCurrentUser) Arrangement.End else Arrangement.Start
         ) {
-            Row(
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.spacedBy(4.dp)
-            ) {
-                Text(
-                    text = message.content,
-                    color = Color.White
+            if (!isCurrentUser) {
+                AsyncImage(
+                    model = message.senderId.profileImageUrl,
+                    contentDescription = "Profile Image",
+                    modifier = Modifier
+                        .size(32.dp)
+                        .clip(CircleShape)
                 )
+                Spacer(modifier = Modifier.width(8.dp))
+            }
+
+            Column {
+                // Hiển thị hình ảnh feed nếu có
+                when (message) {
+                    is MessageWithFeed -> {
+                        message.feed?.let { feed ->
+                            Log.d("MessageItem", "Attempting to display feed image: ${feed.imageUrl}")
+                            Card(
+                                modifier = Modifier
+                                    .fillMaxWidth(0.6f)
+                                    .height(150.dp)
+                                    .padding(bottom = 4.dp),
+                                shape = RoundedCornerShape(12.dp)
+                            ) {
+                                AsyncImage(
+                                    model = feed.imageUrl,
+                                    contentDescription = "Feed Image",
+                                    contentScale = ContentScale.Crop,
+                                    modifier = Modifier.fillMaxSize(),
+                                    onLoading = { Log.d("MessageItem", "Loading feed image...") },
+                                    onSuccess = { Log.d("MessageItem", "Feed image loaded successfully") },
+                                    onError = { Log.e("MessageItem", "Error loading feed image") }
+                                )
+                            }
+                        } ?: Log.d("MessageItem", "Feed is null for MessageWithFeed")
+                    }
+                    is Message -> { 
+                        Log.d("MessageItem", "Regular message - no feed to display") 
+                    }
+                }
+
+                Surface(
+                    shape = RoundedCornerShape(12.dp),
+                    color = if (isPending) Color.Gray else backgroundColor,
+                    modifier = Modifier.padding(end = if (isCurrentUser) 0.dp else 32.dp)
+                ) {
+                    Column(
+                        modifier = Modifier.padding(8.dp)
+                    ) {
+                        when (message) {
+                            is MessageWithFeed -> {
+                                if (message.feed != null) {
+                                    Text(
+                                        text = "Commented on a post",
+                                        color = Color.Gray,
+                                        fontSize = 12.sp,
+                                        modifier = Modifier.padding(bottom = 4.dp)
+                                    )
+                                }
+                            }
+                            is Message -> { /* No label needed */ }
+                        }
+
+                        Text(
+                            text = message.content,
+                            color = Color.White,
+                            modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp)
+                        )
+                    }
+                }
 
                 if (isPending) {
-                    Box(
-                        modifier = Modifier
-                            .size(8.dp)
-                            .background(Color.White, CircleShape)
+                    Text(
+                        text = "Sending...",
+                        color = Color.Gray,
+                        fontSize = 12.sp,
+                        modifier = Modifier.padding(top = 2.dp)
                     )
-                } else if (isError) {
-                    Icon(
-                        imageVector = Icons.Default.Clear,
-                        contentDescription = "Error",
-                        tint = Color.White,
-                        modifier = Modifier.size(16.dp)
+                }
+
+                if (isError) {
+                    Text(
+                        text = "Failed to send",
+                        color = Color.Red,
+                        fontSize = 12.sp,
+                        modifier = Modifier.padding(top = 2.dp)
                     )
                 }
             }

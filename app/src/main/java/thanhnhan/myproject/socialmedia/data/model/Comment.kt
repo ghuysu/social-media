@@ -9,6 +9,7 @@ data class CommentResponse(
         val _id: String,
         val senderId: User,
         val receiverId: User,
+        val feedId: Feed,
         val content: String,
         val isRead: Boolean,
         val createdAt: String
@@ -17,6 +18,12 @@ data class CommentResponse(
             val _id: String,
             val fullname: String,
             val profileImageUrl: String
+        )
+
+        data class Feed(
+            val _id: String,
+            val description: String,
+            val imageUrl: String
         )
     }
 }
