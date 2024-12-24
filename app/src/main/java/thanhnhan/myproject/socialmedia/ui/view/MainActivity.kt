@@ -417,15 +417,17 @@ fun MainApp(socketManager: SocketManager) {
                     openEditFeed = { visibility, imageUrl, description, feedId ->
                         navController.navigate("editFeed/$visibility/$imageUrl/$description/$feedId")
                     },
-                    openProfile = {
-                        navController.navigate("UserProfile")
-                    },
                     openHome = {
                         navController.navigate("homeScreen")
                     },
+                    openProfile = {
+                        navController.navigate("UserProfile")
+                    },
                     openChat = {
                         navController.navigate("ChatScreen")
-                    }
+                    },
+                    chatViewModel= chatViewModel
+
                 )
             }
 
@@ -464,7 +466,8 @@ fun MainApp(socketManager: SocketManager) {
                     },
                     backAction = {
                         navController.popBackStack()
-                    }
+                    },
+                    chatViewModel = chatViewModel
                 )
             }
 
@@ -485,7 +488,8 @@ fun MainApp(socketManager: SocketManager) {
                     },
                     backAction = {
                         navController.popBackStack()
-                    }
+                    },
+                    chatViewModel = chatViewModel
                 )
             }
         }

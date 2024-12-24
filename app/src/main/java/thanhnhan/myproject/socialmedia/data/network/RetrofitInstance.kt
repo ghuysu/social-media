@@ -1,9 +1,11 @@
 package thanhnhan.myproject.socialmedia.data.network
 
+import com.google.gson.GsonBuilder
 import okhttp3.Interceptor
 import okhttp3.OkHttpClient
 import retrofit2.Retrofit
 import retrofit2.converter.gson.GsonConverterFactory
+import thanhnhan.myproject.socialmedia.data.model.IMessage
 import thanhnhan.myproject.socialmedia.utils.Constants.Companion.BASE_URL
 
 object RetrofitInstance {
@@ -20,8 +22,12 @@ object RetrofitInstance {
         .addInterceptor(headerInterceptor)
         .build()
 
+    private val gson = GsonBuilder()
+        .registerTypeAdapter(IMessage::class.java, IMessageTypeAdapter())
+        .create()
+
     val api: Api = Retrofit.Builder()
-        .addConverterFactory(GsonConverterFactory.create())
+        .addConverterFactory(GsonConverterFactory.create(gson))
         .baseUrl(Api.BASE_URL)
         .client(client)
         .build()

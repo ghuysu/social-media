@@ -1,5 +1,6 @@
 package thanhnhan.myproject.socialmedia.utils
 
+import thanhnhan.myproject.socialmedia.data.model.IMessage
 import thanhnhan.myproject.socialmedia.data.model.Message
 import java.text.SimpleDateFormat
 import java.util.Calendar
@@ -72,7 +73,7 @@ object DateTimeUtils {
         }
     }
 
-    fun shouldShowTimestamp(currentMessage: Message, previousMessage: Message?): Boolean {
+    fun shouldShowTimestamp(currentMessage: IMessage, previousMessage: IMessage?): Boolean {
         if (previousMessage == null) return true
 
         try {

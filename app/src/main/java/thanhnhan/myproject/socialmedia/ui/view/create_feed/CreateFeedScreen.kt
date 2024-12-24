@@ -39,6 +39,7 @@ import thanhnhan.myproject.socialmedia.data.repository.FeedRepository
 import thanhnhan.myproject.socialmedia.ui.theme.AppTheme
 import thanhnhan.myproject.socialmedia.ui.view.sign_up.BackIconButton
 import thanhnhan.myproject.socialmedia.utils.FileUtils.uriToFile
+import thanhnhan.myproject.socialmedia.viewmodel.ChatViewModel
 import thanhnhan.myproject.socialmedia.viewmodel.FeedViewModel
 import thanhnhan.myproject.socialmedia.viewmodel.FeedViewModelFactory
 import java.io.File
@@ -48,11 +49,17 @@ import java.io.File
 fun CreateFeed(
     uri: String,
     openHome: () -> Unit,
-    backAction: () -> Unit = {}
+    backAction: () -> Unit = {},
+    chatViewModel: ChatViewModel
 ) {
     val api = RetrofitInstance.api
     val repository = FeedRepository(api)
-    val viewModel: FeedViewModel = viewModel(factory = FeedViewModelFactory(repository))
+    val viewModel: FeedViewModel = viewModel(
+        factory = FeedViewModelFactory(
+            repository = repository,
+            chatViewModel = chatViewModel
+        )
+    )
     val createFeedResult by viewModel.createFeedResult.collectAsState()
     val getUserInfoResult by viewModel.getUserResult.collectAsState()
 
@@ -341,36 +348,36 @@ fun UserAvatarItem(user: VisibleFriend, isSelected: Boolean, onClick: () -> Unit
     }
 }
 
-@Preview(showSystemUi = true, showBackground = true)
-@Composable
-fun CreateFeedPreview() {
-    UserSession.setUserData(
-        SignInUserResponse.Metadata.User(
-            _id = "12345",
-            email = "email@gmail.com",
-            fullname = "Name",
-            birthday = "13/07/2003",
-            profileImageUrl = "https://via.placeholder.com/150",
-            friendList = listOf(
-                SignInUserResponse.Metadata.Friend(_id = "1", fullname = "John Doe", profileImageUrl = "https://example.com/john_doe.png"),
-                SignInUserResponse.Metadata.Friend(_id = "2", fullname = "Jane Smith", profileImageUrl = "https://example.com/jane_smith.png"),
-                SignInUserResponse.Metadata.Friend(_id = "3", fullname = "Mike Johnson", profileImageUrl = "https://example.com/mike_johnson.png"),
-                SignInUserResponse.Metadata.Friend(_id = "4", fullname = "Emily Davis", profileImageUrl = "https://example.com/emily_davis.png"),
-                SignInUserResponse.Metadata.Friend(_id = "5", fullname = "David Brown", profileImageUrl = "https://example.com/david_brown.png"),
-                SignInUserResponse.Metadata.Friend(_id = "6", fullname = "Emma Wilson", profileImageUrl = "https://example.com/emma_wilson.png"),
-                SignInUserResponse.Metadata.Friend(_id = "7", fullname = "Oliver Thompson", profileImageUrl = "https://example.com/oliver_thompson.png"),
-                SignInUserResponse.Metadata.Friend(_id = "8", fullname = "Sophia White", profileImageUrl = "https://example.com/sophia_white.png"),
-                SignInUserResponse.Metadata.Friend(_id = "9", fullname = "Lucas Martin", profileImageUrl = "https://example.com/lucas_martin.png"),
-                SignInUserResponse.Metadata.Friend(_id = "10", fullname = "Ava Garcia", profileImageUrl = "https://example.com/ava_garcia.png")
-            ),
-            friendInvites = listOf(),
-            country = "VN"
-        ),
-        token = "mockToken"
-    )
-
-    CreateFeed(
-        openHome = {},
-        uri = ""
-    )
-}
+//@Preview(showSystemUi = true, showBackground = true)
+//@Composable
+//fun CreateFeedPreview() {
+//    UserSession.setUserData(
+//        SignInUserResponse.Metadata.User(
+//            _id = "12345",
+//            email = "email@gmail.com",
+//            fullname = "Name",
+//            birthday = "13/07/2003",
+//            profileImageUrl = "https://via.placeholder.com/150",
+//            friendList = listOf(
+//                SignInUserResponse.Metadata.Friend(_id = "1", fullname = "John Doe", profileImageUrl = "https://example.com/john_doe.png"),
+//                SignInUserResponse.Metadata.Friend(_id = "2", fullname = "Jane Smith", profileImageUrl = "https://example.com/jane_smith.png"),
+//                SignInUserResponse.Metadata.Friend(_id = "3", fullname = "Mike Johnson", profileImageUrl = "https://example.com/mike_johnson.png"),
+//                SignInUserResponse.Metadata.Friend(_id = "4", fullname = "Emily Davis", profileImageUrl = "https://example.com/emily_davis.png"),
+//                SignInUserResponse.Metadata.Friend(_id = "5", fullname = "David Brown", profileImageUrl = "https://example.com/david_brown.png"),
+//                SignInUserResponse.Metadata.Friend(_id = "6", fullname = "Emma Wilson", profileImageUrl = "https://example.com/emma_wilson.png"),
+//                SignInUserResponse.Metadata.Friend(_id = "7", fullname = "Oliver Thompson", profileImageUrl = "https://example.com/oliver_thompson.png"),
+//                SignInUserResponse.Metadata.Friend(_id = "8", fullname = "Sophia White", profileImageUrl = "https://example.com/sophia_white.png"),
+//                SignInUserResponse.Metadata.Friend(_id = "9", fullname = "Lucas Martin", profileImageUrl = "https://example.com/lucas_martin.png"),
+//                SignInUserResponse.Metadata.Friend(_id = "10", fullname = "Ava Garcia", profileImageUrl = "https://example.com/ava_garcia.png")
+//            ),
+//            friendInvites = listOf(),
+//            country = "VN"
+//        ),
+//        token = "mockToken"
+//    )
+//
+//    CreateFeed(
+//        openHome = {},
+//        uri = ""
+//    )
+//}

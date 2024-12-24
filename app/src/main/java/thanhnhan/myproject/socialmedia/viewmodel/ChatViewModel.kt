@@ -20,6 +20,10 @@ import thanhnhan.myproject.socialmedia.data.model.SendMessageRequest
 import thanhnhan.myproject.socialmedia.data.model.SendMessageResponse
 import thanhnhan.myproject.socialmedia.data.network.SocketManager
 import thanhnhan.myproject.socialmedia.data.repository.MessageRepository
+import thanhnhan.myproject.socialmedia.data.model.CommentResponse
+import thanhnhan.myproject.socialmedia.data.model.MessageWithFeed
+import thanhnhan.myproject.socialmedia.data.model.IMessage
+
 class ChatViewModel(
     private val userViewModel: UserViewModel,
     private val repository: MessageRepository,
@@ -35,12 +39,12 @@ class ChatViewModel(
     val pendingMessageId: StateFlow<String?> = _pendingMessageId
 
     // StateFlow để lưu trữ tin nhắn mới từ socket
-    private val _newMessage = MutableStateFlow<Message?>(null) // Sửa đổi kiểu dữ liệu
-    val newMessage: StateFlow<Message?> get() = _newMessage
+    private val _newMessage = MutableStateFlow<IMessage?>(null)
+    val newMessage: StateFlow<IMessage?> get() = _newMessage
 
     // Thêm StateFlow mới để quản lý tin nhắn local
-    private val _localMessages = MutableStateFlow<List<Message>>(emptyList())
-    val localMessages: StateFlow<List<Message>> = _localMessages
+    private val _localMessages = MutableStateFlow<List<IMessage>>(emptyList())
+    val localMessages: StateFlow<List<IMessage>> = _localMessages
 
     private var currentUserId: String = "default kjfsakgnsak"
 
@@ -69,8 +73,7 @@ class ChatViewModel(
     }
 
     // Hàm gửi tin nhắn local
-    // Hàm gửi tin nhắn local
-    private fun sendLocalMessage(content: String, receiverId: String): Message {
+    private fun sendLocalMessage(content: String, receiverId: String): IMessage {
         val temporaryMessage = Message(
             _id = System.currentTimeMillis().toString(),
             content = content,
@@ -137,6 +140,8 @@ class ChatViewModel(
                     is Result.Error -> {
                         _pendingMessageId.value = null
                     }
+
+                    else -> {}
                 }
             }
         }
@@ -198,7 +203,7 @@ class ChatViewModel(
                             conversation.copy(
                                 conversation = conversation.conversation.map { message ->
                                     if (messageIds.contains(message._id)) {
-                                        message.copy(isRead = true)
+                                        message.copyWithRead(true)
                                     } else {
                                         message
                                     }
@@ -242,8 +247,8 @@ class ChatViewModel(
     private val _conversationsResult = MutableStateFlow<Result<ConversationResponse>?>(null)
     val conversationsResult: StateFlow<Result<ConversationResponse>?> = _conversationsResult
 
-    fun updateConversationWithNewMessage(newMessage: Message) {
-        println("updateConversationWithNewMessage called with message ID: ${newMessage._id}")
+    fun updateConversationWithNewMessage(newMessage: IMessage) {
+        println("Updating conversation with message: ${newMessage._id}")
         viewModelScope.launch {
             _conversationsResult.update { currentResult ->
                 when (currentResult) {
@@ -252,7 +257,6 @@ class ChatViewModel(
                             if (metadata.friendId == newMessage.senderId._id ||
                                 metadata.friendId == newMessage.receiverId._id
                             ) {
-                                // Kiểm tra xem tin nhắn đã tồn tại chưa
                                 if (metadata.conversation.none { it._id == newMessage._id }) {
                                     metadata.copy(
                                         conversation = metadata.conversation + newMessage
@@ -298,6 +302,65 @@ class ChatViewModel(
     override fun onCleared() {
         super.onCleared()
         socketManager.disconnect() // Ngắt kết nối socket
+    }
+    // Overload function cho MessageWithFeed
+    fun updateConversationWithNewMessage(newMessage: MessageWithFeed) {
+        println("Updating conversation with MessageWithFeed: ${newMessage._id}")
+        viewModelScope.launch {
+            _conversationsResult.update { currentResult ->
+                when (currentResult) {
+                    is Result.Success -> {
+                        val updatedMetadata = currentResult.data?.metadata?.map { metadata ->
+                            if (metadata.friendId == newMessage.senderId._id ||
+                                metadata.friendId == newMessage.receiverId._id
+                            ) {
+                                // Kiểm tra xem tin nhắn đã tồn tại chưa
+                                if (metadata.conversation.none { it._id == newMessage._id }) {
+                                    metadata.copy(
+                                        conversation = metadata.conversation + newMessage
+                                    )
+                                } else {
+                                    println("Message already exists in conversation")
+                                    metadata
+                                }
+                            } else {
+                                metadata
+                            }
+                        }
+                        Result.Success(updatedMetadata?.let { currentResult.data?.copy(metadata = it) })
+                    }
+                    else -> currentResult
+                }
+            }
+        }
+    }
+
+    fun handleFeedComment(commentResponse: CommentResponse) {
+        val commentMessage = commentResponse.metadata
+        
+        val messageWithFeed = MessageWithFeed(
+            _id = commentMessage._id,
+            senderId = Friend(
+                _id = commentMessage.senderId._id,
+                fullname = commentMessage.senderId.fullname,
+                profileImageUrl = commentMessage.senderId.profileImageUrl
+            ),
+            receiverId = Friend(
+                _id = commentMessage.receiverId._id,
+                fullname = commentMessage.receiverId.fullname,
+                profileImageUrl = commentMessage.receiverId.profileImageUrl
+            ),
+            content = commentMessage.content,
+            isRead = commentMessage.isRead,
+            createdAt = commentMessage.createdAt,
+            feedId = MessageWithFeed.Feed(
+                _id = commentMessage.feedId._id,
+                description = commentMessage.feedId.description,
+                imageUrl = commentMessage.feedId.imageUrl
+            )
+        )
+        
+        updateConversationWithNewMessage(messageWithFeed)
     }
 }
 
