@@ -4,7 +4,7 @@ package thanhnhan.myproject.socialmedia.data.model
 // Cuộc trò chuyện với một người bạn cụ thể
 data class Conversation(
     val friendId: String,       // ID của người bạn
-    val conversation: List<Message> // Danh sách các tin nhắn giữa hai người
+    val conversation: List<IMessage> // Danh sách các tin nhắn giữa hai người
 )
 
 // Response trả về từ API

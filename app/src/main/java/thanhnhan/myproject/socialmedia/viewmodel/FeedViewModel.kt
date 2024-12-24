@@ -23,7 +23,10 @@ import thanhnhan.myproject.socialmedia.data.network.SocketManager
 import thanhnhan.myproject.socialmedia.utils.FileUtils.uriToFile
 import java.io.File
 
-class FeedViewModel(private val repository: FeedRepository) : ViewModel() {
+class FeedViewModel(
+    private val repository: FeedRepository,
+    private val chatViewModel: ChatViewModel
+) : ViewModel() {
 
     private val _createFeedResult = MutableStateFlow<Result<CreateFeedResponse>?>(null)
     val createFeedResult: MutableStateFlow<Result<CreateFeedResponse>?> = _createFeedResult
@@ -90,8 +93,20 @@ class FeedViewModel(private val repository: FeedRepository) : ViewModel() {
 
     fun comment(authToken: String, receiverId: String, content: String, feedId: String) {
         viewModelScope.launch {
-            repository.comment(authToken, receiverId, content, feedId).collect {
-                _commentResult.value = it
+            repository.comment(authToken, receiverId, content, feedId).collect { result ->
+                _commentResult.value = result
+                
+                when (result) {
+                    is Result.Success -> {
+                        result.data?.let { commentResponse ->
+                            chatViewModel.handleFeedComment(commentResponse)
+                        }
+                    }
+                    is Result.Error -> {
+                        // Xử lý lỗi nếu cần
+                    }
+                    else -> {}
+                }
             }
         }
     }

@@ -7,6 +7,8 @@ sealed interface IMessage {
     val content: String
     val isRead: Boolean
     val createdAt: String
+    
+    fun copyWithRead(isRead: Boolean): IMessage
 }
 
 data class Message(
@@ -16,7 +18,9 @@ data class Message(
     override val content: String,
     override val isRead: Boolean,
     override val createdAt: String
-) : IMessage
+) : IMessage {
+    override fun copyWithRead(isRead: Boolean): IMessage = copy(isRead = isRead)
+}
 
 data class Friend(
     val _id: String,
@@ -41,8 +45,10 @@ data class MessageWithFeed(
     override val content: String,
     override val isRead: Boolean,
     override val createdAt: String,
-    val feed: Feed? = null
+    val feedId: Feed? = null
 ) : IMessage {
+    override fun copyWithRead(isRead: Boolean): IMessage = copy(isRead = isRead)
+    
     data class Feed(
         val _id: String,
         val description: String,

@@ -414,15 +414,19 @@ fun MessageItem(
     isPending: Boolean = false,
     isError: Boolean = false
 ) {
-    // Add logging
-    Log.d("MessageItem", "Message type: ${message::class.simpleName}")
+    // Thêm log chi tiết hơn để debug
     when (message) {
         is MessageWithFeed -> {
-            Log.d("MessageItem", "MessageWithFeed - Feed: ${message.feed}")
-            Log.d("MessageItem", "Feed image URL: ${message.feed?.imageUrl}")
+            Log.d("MessageItem", """
+                MessageWithFeed Details:
+                Content: ${message.content}
+                Feed ID: ${message.feedId?._id}
+                Feed Description: ${message.feedId?.description}
+                Feed Image: ${message.feedId?.imageUrl}
+            """.trimIndent())
         }
         is Message -> {
-            Log.d("MessageItem", "Regular Message")
+            Log.d("MessageItem", "Regular Message: ${message.content}")
         }
     }
 
@@ -458,7 +462,7 @@ fun MessageItem(
                 // Hiển thị hình ảnh feed nếu có
                 when (message) {
                     is MessageWithFeed -> {
-                        message.feed?.let { feed ->
+                        message.feedId?.let { feed ->
                             Log.d("MessageItem", "Attempting to display feed image: ${feed.imageUrl}")
                             Card(
                                 modifier = Modifier
@@ -494,7 +498,7 @@ fun MessageItem(
                     ) {
                         when (message) {
                             is MessageWithFeed -> {
-                                if (message.feed != null) {
+                                if (message.feedId != null) {
                                     Text(
                                         text = "Commented on a post",
                                         color = Color.Gray,

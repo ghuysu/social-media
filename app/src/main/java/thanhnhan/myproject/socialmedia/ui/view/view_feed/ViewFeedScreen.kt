@@ -88,6 +88,7 @@ import thanhnhan.myproject.socialmedia.data.network.SocketHandler
 import thanhnhan.myproject.socialmedia.data.network.SocketManager
 import thanhnhan.myproject.socialmedia.data.repository.FeedRepository
 import thanhnhan.myproject.socialmedia.ui.theme.AppTheme
+import thanhnhan.myproject.socialmedia.viewmodel.ChatViewModel
 import thanhnhan.myproject.socialmedia.viewmodel.FeedViewModel
 import thanhnhan.myproject.socialmedia.viewmodel.FeedViewModelFactory
 import java.text.SimpleDateFormat
@@ -99,14 +100,20 @@ import java.util.TimeZone
 @Composable
 fun ViewFeed(
     openEditFeed: (String, String, String, String) -> Unit,
-    openProfile: () -> Unit,
     openHome: () -> Unit,
+    openProfile: () -> Unit,
     openChat: () -> Unit,
+    chatViewModel: ChatViewModel
 ) {
 
     val api = RetrofitInstance.api
     val repository = FeedRepository(api)
-    val viewModel: FeedViewModel = viewModel(factory = FeedViewModelFactory(repository))
+    val viewModel: FeedViewModel = viewModel(
+        factory = FeedViewModelFactory(
+            repository = repository,
+            chatViewModel = chatViewModel
+        )
+    )
     val getEveryoneFeedResult by viewModel.getEveryoneFeedsResult.collectAsState()
     val reactFeedResult by viewModel.reactFeedResult.collectAsState()
     val commentResult by viewModel.commentResult.collectAsState()
@@ -163,6 +170,18 @@ fun ViewFeed(
         commentResult?.let { result ->
             when (result) {
                 is Result.Success -> {
+                    // Log tin nhắn mới
+                    result.data?.metadata?.let { message ->
+                        Log.d("NewMessage", """
+                            New Comment Message:
+                            Content: ${message.content}
+                            From: ${message.senderId.fullname}
+                            To: ${message.receiverId.fullname}
+                            Feed: ${message.feedId._id}
+                            Created At: ${message.createdAt}
+                        """.trimIndent())
+                    }
+
                     Toast.makeText(
                         context,
                         result.data?.message,
@@ -1404,82 +1423,81 @@ fun ActivityPopup(
     }
 }
 
-@Preview(showBackground = true, showSystemUi = true)
-@Composable
-fun ViewFeedPreview() {
-    UserSession.setUserData(
-        SignInUserResponse.Metadata.User(
-            _id = "66e14253840f0686f5624e81",
-            email = "ndhuynh13@gmail.com",
-            fullname = "Nguyen Huynh",
-            birthday = "13/07/2003",
-            profileImageUrl = "https://via.placeholder.com/150",  // URL ảnh đại diện giả lập
-            friendList = listOf(),
-            friendInvites = listOf(),
-            country = "VN"
-        ),
-        token = "mockToken"
-    )
-    ViewFeed(
-        openEditFeed = { _, _, _, _ -> },
-        openHome = {},
-        openProfile = {},
-        openChat = {}
-    )
-}
+//@Preview(showBackground = true, showSystemUi = true)
+//@Composable
+//fun ViewFeedPreview() {
+//    val mockApi = RetrofitInstance.api
+//    val mockMessageRepository = MessageRepository(mockApi)
+//    val mockUserViewModel = UserViewModel(UserRepository(mockApi))
+//    val mockSocketManager = SocketManager()
+//    val mockChatViewModel = ChatViewModel(
+//        userViewModel = mockUserViewModel,
+//        repository = mockMessageRepository,
+//        socketManager = mockSocketManager
+//    )
+//
+//    ViewFeed(
+//        openEditFeed = { _, _, _, _ -> },
+//        openHome = {},
+//        openProfile = {},
+//        openChat = {},
+//        chatViewModel = mockChatViewModel
+//    )
+//}
 
-@Preview(showBackground = true, showSystemUi = true)
-@Composable
-fun UserFeedItemPreview() {
-    val feed1 = GetEveryoneFeedsResponse.Feed(
-        _id = "66f83383c7568b672c8c090b",
-        description = "Seventh feed",
-        imageUrl = "https://social-media-pbl6.s3.ap-southeast-2.amazonaws.com/1727542147245_a",
-        visibility = listOf("66e981d0463acb70864b6d45"),
-        userId = GetEveryoneFeedsResponse.Feed.User(
-            _id = "66e14253840f0686f5624e81",
-            fullname = "Gia Huy",
-            profileImageUrl = "https://social-media-pbl6.s3.ap-southeast-2.amazonaws.com/1727634219292_avatar"
-        ),
-        reactions = listOf(),
-        createdAt = "2024-09-28T16:49:07.247Z"
-    )
-    val api = RetrofitInstance.api
-    val repository = FeedRepository(api)
-    val viewModel: FeedViewModel = viewModel(factory = FeedViewModelFactory(repository))
-    UserFeedItem(feed1, { _, _, _, _ -> }, {}, listOf(), viewModel)
-}
-
-@Preview(showBackground = true, showSystemUi = true)
-@Composable
-fun FriendFeedItemPreview() {
-    val feed2 = GetEveryoneFeedsResponse.Feed(
-        _id = "66f83381c7568b672c8c0905",
-        description = "Seventh feed",
-        imageUrl = "https://social-media-pbl6.s3.ap-southeast-2.amazonaws.com/1727542145891_a",
-        visibility = listOf(),
-        userId = GetEveryoneFeedsResponse.Feed.User(
-            _id = "66e981d0463acb70864b6d45",
-            fullname = "Nguyen Huynh co dang cap khong",
-            profileImageUrl = "https://social-media-pbl6.s3.ap-southeast-2.amazonaws.com/1727720786943_cropped_image"
-        ),
-        reactions = listOf(
-            GetEveryoneFeedsResponse.Feed.Reaction(
-                _id = "66fad4910fc980e6766b336e",
-                userId = GetEveryoneFeedsResponse.Feed.User(
-                    _id = "66e14253840f0686f5624e81",
-                    fullname = "Gia Huy",
-                    profileImageUrl = "https://social-media-pbl6.s3.ap-southeast-2.amazonaws.com/1727634219292_avatar"
-                ),
-                feedId = "66f83381c7568b672c8c0905",
-                icon = listOf("haha", "like"),
-                createdAt = "2024-09-30T16:40:49.494Z"
-            )
-        ),
-        createdAt = "2024-09-28T16:49:05.926Z"
-    )
-    val api = RetrofitInstance.api
-    val repository = FeedRepository(api)
-    val viewModel: FeedViewModel = viewModel(factory = FeedViewModelFactory(repository))
-    FriendFeedItem(feed2, {}, viewModel)
-}
+//@Preview(showBackground = true, showSystemUi = true)
+//@Composable
+//fun UserFeedItemPreview() {
+//    val feed1 = GetEveryoneFeedsResponse.Feed(
+//        _id = "66f83383c7568b672c8c090b",
+//        description = "Seventh feed",
+//        imageUrl = "https://social-media-pbl6.s3.ap-southeast-2.amazonaws.com/1727542147245_a",
+//        visibility = listOf("66e981d0463acb70864b6d45"),
+//        userId = GetEveryoneFeedsResponse.Feed.User(
+//            _id = "66e14253840f0686f5624e81",
+//            fullname = "Gia Huy",
+//            profileImageUrl = "https://social-media-pbl6.s3.ap-southeast-2.amazonaws.com/1727634219292_avatar"
+//        ),
+//        reactions = listOf(),
+//        createdAt = "2024-09-28T16:49:07.247Z"
+//    )
+//    val api = RetrofitInstance.api
+//    val repository = FeedRepository(api)
+//    val viewModel: FeedViewModel = viewModel(factory = FeedViewModelFactory(repository))
+//    UserFeedItem(feed1, { _, _, _, _ -> }, {}, listOf(), viewModel)
+//}
+//
+//@Preview(showBackground = true, showSystemUi = true)
+//@Composable
+//fun FriendFeedItemPreview() {
+//    val feed2 = GetEveryoneFeedsResponse.Feed(
+//        _id = "66f83381c7568b672c8c0905",
+//        description = "Seventh feed",
+//        imageUrl = "https://social-media-pbl6.s3.ap-southeast-2.amazonaws.com/1727542145891_a",
+//        visibility = listOf(),
+//        userId = GetEveryoneFeedsResponse.Feed.User(
+//            _id = "66e981d0463acb70864b6d45",
+//            fullname = "Nguyen Huynh co dang cap khong",
+//            profileImageUrl = "https://social-media-pbl6.s3.ap-southeast-2.amazonaws.com/1727720786943_cropped_image"
+//        ),
+//        reactions = listOf(
+//            GetEveryoneFeedsResponse.Feed.Reaction(
+//                _id = "66fad4910fc980e6766b336e",
+//                userId = GetEveryoneFeedsResponse.Feed.User(
+//                    _id = "66e14253840f0686f5624e81",
+//                    fullname = "Gia Huy",
+//                    profileImageUrl = "https://social-media-pbl6.s3.ap-southeast-2.amazonaws.com/1727634219292_avatar"
+//                ),
+//                feedId = "66f83381c7568b672c8c0905",
+//                icon = listOf("haha", "like"),
+//                createdAt = "2024-09-30T16:40:49.494Z"
+//            )
+//        ),
+//        createdAt = "2024-09-28T16:49:05.926Z"
+//    )
+//    val api = RetrofitInstance.api
+//    val repository = FeedRepository(api)
+//    val chatViewModel:ChatViewModel
+//    val viewModel: FeedViewModel = viewModel(factory = FeedViewModelFactory(repository, chatViewModel))
+//    FriendFeedItem(feed2, {}, viewModel)
+//}

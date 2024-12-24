@@ -7,8 +7,8 @@ data class CommentResponse(
 ) {
     data class Message(
         val _id: String,
-        val senderId: User,
-        val receiverId: User,
+        val senderId: Friend,
+        val receiverId: Friend,
         val feedId: Feed,
         val content: String,
         val isRead: Boolean,
