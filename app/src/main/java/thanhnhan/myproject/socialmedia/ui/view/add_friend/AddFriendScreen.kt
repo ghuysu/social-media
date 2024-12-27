@@ -128,6 +128,8 @@ fun AddFriendScreen(
                                 result.message ?: "Error occurred",
                                 Toast.LENGTH_LONG
                             ).show()
+                            delay(1000)
+                            openUserProfile()
                         }
                     }
                 }
@@ -165,6 +167,7 @@ fun AddFriendScreen(
             }
         } else {
             Toast.makeText(context, "Can't send invite yourself", Toast.LENGTH_LONG).show()
+            openUserProfile()
         }
     } else {
         Toast.makeText(context, "Sign in and send invite again", Toast.LENGTH_LONG).show()
