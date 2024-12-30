@@ -112,6 +112,7 @@ import com.google.mlkit.vision.barcode.BarcodeScanning
 import com.google.mlkit.vision.barcode.common.Barcode
 import com.google.mlkit.vision.common.InputImage
 import androidx.camera.core.ExperimentalGetImage
+import androidx.compose.material.icons.filled.Home
 import androidx.compose.ui.graphics.asImageBitmap
 import com.google.zxing.BarcodeFormat
 import com.google.zxing.qrcode.QRCodeWriter
@@ -123,6 +124,7 @@ fun ProfileScreen(
     openChangeBirthday: () -> Unit,
     openChangeCountry: () -> Unit,
     openChangeFullname: () -> Unit,
+    openHome: () -> Unit,
     repository: UserProfileRepository,  // Truyền repository từ đây
     authToken: String,  // Nhận authToken
     openIntro: () -> Unit,
@@ -157,6 +159,19 @@ fun ProfileScreen(
             val context = LocalContext.current
             val clipboardManager =
                 context.getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager
+
+            Button(
+                onClick = {
+                    openHome()
+                },
+                colors = ButtonDefaults.buttonColors(
+                    containerColor = AppTheme.appButtonStyle.backgroundColor,
+                    disabledContainerColor = Color.Gray,
+                    disabledContentColor = Color.White
+                ),
+            ) {
+                Icon(imageVector = Icons.Default.Home, contentDescription = null)
+            }
 
             ProfileSection(
                 userAvatar = user.profileImageUrl,
@@ -328,7 +343,7 @@ fun InviteSection(
 ) {
     var showQRDialog by remember { mutableStateOf(false) }
     var showScanner by remember { mutableStateOf(false) }
-    
+
     // Request camera permission
     val launcher = rememberLauncherForActivityResult(
         ActivityResultContracts.RequestPermission()
@@ -381,9 +396,9 @@ fun InviteSection(
                     tint = Color.Gray
                 )
             }
-            
+
             // Add QR Scanner button
-            IconButton(modifier = Modifier.size(40.dp),onClick = {
+            IconButton(modifier = Modifier.size(40.dp), onClick = {
                 launcher.launch(Manifest.permission.CAMERA)
             }) {
                 Icon(
@@ -393,11 +408,14 @@ fun InviteSection(
                 )
             }
         }
-        
+
         if (showQRDialog) {
-            QRCodeDialog(onDismiss = { showQRDialog = false }, qrCodeBitmap = generateQRCode(linkAddFriend, 800, 800))
+            QRCodeDialog(
+                onDismiss = { showQRDialog = false },
+                qrCodeBitmap = generateQRCode(linkAddFriend, 800, 800)
+            )
         }
-        
+
         if (showScanner) {
             QRScannerDialog(
                 onDismiss = { showScanner = false },
@@ -408,7 +426,7 @@ fun InviteSection(
                         // Thêm flag để mở trong tab mới
                         intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
                         context.startActivity(intent)
-                        
+
                         // Đóng scanner sau khi mở URL
                         showScanner = false
                     } catch (e: Exception) {
@@ -491,8 +509,10 @@ fun SummarySection(openIntro: () -> Unit) {
 
         val api = RetrofitInstance.api
         val repository = UserProfileRepository(api)
-        val userViewModel: UserProfileViewModel = viewModel(factory = UserProfileViewModelFactory(repository))
-        val sendDeleteAccountCodeResult = userViewModel.sendDeleteAccountCodeResult.collectAsState().value
+        val userViewModel: UserProfileViewModel =
+            viewModel(factory = UserProfileViewModelFactory(repository))
+        val sendDeleteAccountCodeResult =
+            userViewModel.sendDeleteAccountCodeResult.collectAsState().value
         val deleteAccountResult = userViewModel.deleteAccountResult.collectAsState().value
 
         LaunchedEffect(key1 = sendDeleteAccountCodeResult) {
@@ -505,6 +525,7 @@ fun SummarySection(openIntro: () -> Unit) {
                             Toast.LENGTH_LONG
                         ).show()
                     }
+
                     is Result.Error -> {
                         Toast.makeText(
                             context,
@@ -528,6 +549,7 @@ fun SummarySection(openIntro: () -> Unit) {
                         viewModel.logout()
                         openIntro()
                     }
+
                     is Result.Error -> {
                         Toast.makeText(
                             context,
@@ -563,7 +585,10 @@ fun SummarySection(openIntro: () -> Unit) {
                 confirmButton = {
                     Button(
                         onClick = {
-                            userViewModel.deleteAccount(UserSession.signInToken!!, inputValue.toInt())
+                            userViewModel.deleteAccount(
+                                UserSession.signInToken!!,
+                                inputValue.toInt()
+                            )
                         }
                     ) {
                         Text("Confirm")
@@ -836,6 +861,7 @@ fun ProfileScreenPreview() {
         openChangeBirthday = {},
         openChangeCountry = {},
         openChangeFullname = {},
+        openHome = {},
         repository = mockRepository,  // Truyền repository giả lập
         authToken = "mockToken",
         openIntro = {}
@@ -848,7 +874,7 @@ fun QRScannerDialog(onDismiss: () -> Unit, onQrCodeScanned: (String) -> Unit) {
     val context = LocalContext.current
     val lifecycleOwner = LocalLifecycleOwner.current
     val cameraProviderFuture = remember { ProcessCameraProvider.getInstance(context) }
-    
+
     Dialog(
         onDismissRequest = onDismiss,
         properties = DialogProperties(dismissOnClickOutside = true)
@@ -884,7 +910,7 @@ fun QRScannerDialog(onDismiss: () -> Unit, onQrCodeScanned: (String) -> Unit) {
                                     mediaImage,
                                     imageProxy.imageInfo.rotationDegrees
                                 )
-                                
+
                                 val scanner = BarcodeScanning.getClient()
                                 scanner.process(image)
                                     .addOnSuccessListener { barcodes ->
@@ -926,7 +952,7 @@ fun QRScannerDialog(onDismiss: () -> Unit, onQrCodeScanned: (String) -> Unit) {
                         }
                     }, ContextCompat.getMainExecutor(context))
                 }
-                
+
                 IconButton(
                     onClick = onDismiss,
                     modifier = Modifier
@@ -958,13 +984,17 @@ fun generateQRCode(content: String, width: Int, height: Int): ImageBitmap? {
         val writer = QRCodeWriter()
         val bitMatrix = writer.encode(content, BarcodeFormat.QR_CODE, width, height)
         val bitmap = Bitmap.createBitmap(width, height, Bitmap.Config.RGB_565)
-        
+
         for (x in 0 until width) {
             for (y in 0 until height) {
-                bitmap.setPixel(x, y, if (bitMatrix[x, y]) AndroidColor.BLACK else AndroidColor.WHITE)
+                bitmap.setPixel(
+                    x,
+                    y,
+                    if (bitMatrix[x, y]) AndroidColor.BLACK else AndroidColor.WHITE
+                )
             }
         }
-        
+
         bitmap.toImageBitmap()
     } catch (e: Exception) {
         e.printStackTrace()
