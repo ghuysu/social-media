@@ -68,6 +68,7 @@ class MainActivity : ComponentActivity() {
 
     private lateinit var auth: FirebaseAuth
     private lateinit var socketManager: SocketManager
+
     // Sử dụng ActivityResultContracts để yêu cầu quyền camera
     private val requestPermissionLauncher =
         registerForActivityResult(ActivityResultContracts.RequestPermission()) { isGranted: Boolean ->
@@ -101,7 +102,7 @@ class MainActivity : ComponentActivity() {
             navigateToAuth()
             return
         }
-        
+
 
         // Nếu có user, tiếp tục khởi tạo MainActivity
         Log.d("MainActivity", "User found, initializing MainActivity")
@@ -166,8 +167,18 @@ fun MainApp(socketManager: SocketManager) {
     val dbHelper = UserDatabaseHelper(context)
     val savedUser = dbHelper.getUserData()
     val userViewModel = UserViewModel(repository = UserRepository(RetrofitInstance.api))
-    val friendViewModel = FriendViewModel(repository = FriendRepository(RetrofitInstance.api), socketManager, userViewModel)
-    val chatViewModel = remember { ChatViewModel(userViewModel, repository = MessageRepository(RetrofitInstance.api), socketManager) }
+    val friendViewModel = FriendViewModel(
+        repository = FriendRepository(RetrofitInstance.api),
+        socketManager,
+        userViewModel
+    )
+    val chatViewModel = remember {
+        ChatViewModel(
+            userViewModel,
+            repository = MessageRepository(RetrofitInstance.api),
+            socketManager
+        )
+    }
     var authToken: String = savedUser?.token ?: "defaultToken"
     var currentUserId: String = savedUser?.id ?: "default ID"
     Log.d("MainApp", "AuthToken: $authToken") // Log token trước khi sử dụng
@@ -246,6 +257,9 @@ fun MainApp(socketManager: SocketManager) {
                         openIntro = {
                             navController.navigate("intro")
                         },
+                        openHome = {
+                            navController.navigate("homeScreen")
+                        },
                         repository = UserProfileRepository(RetrofitInstance.api),  // Sử dụng repository
                         authToken = authToken  // Truyền token đã lưu vào ProfileScreen
                     )
@@ -268,6 +282,9 @@ fun MainApp(socketManager: SocketManager) {
                     },
                     openIntro = {
                         navController.navigate("intro")
+                    },
+                    openHome = {
+                        navController.navigate("homeScreen")
                     },
                     repository = UserProfileRepository(RetrofitInstance.api),  // Sử dụng repository
                     authToken = authToken  // Truyền token đã lưu vào ProfileScreen
@@ -376,11 +393,21 @@ fun MainApp(socketManager: SocketManager) {
             }
             // Thêm route cho FriendsScreen
             composable(route = "friendsScreen") {
-                FriendsScreen(friendViewModel = friendViewModel, userViewModel = userViewModel, authToken=authToken, socketManager = socketManager ) // Gọi FriendsScreen
+                FriendsScreen(
+                    friendViewModel = friendViewModel,
+                    userViewModel = userViewModel,
+                    authToken = authToken,
+                    socketManager = socketManager
+                ) // Gọi FriendsScreen
             }
             // Chat Screen
-            composable(route = "ChatScreen"){
-                ChatScreen(chatViewModel = chatViewModel,userViewModel = userViewModel , authToken = authToken,navController)
+            composable(route = "ChatScreen") {
+                ChatScreen(
+                    chatViewModel = chatViewModel,
+                    userViewModel = userViewModel,
+                    authToken = authToken,
+                    navController
+                )
             }
             composable(
                 route = "chatDetail/{friendId}",
@@ -426,7 +453,7 @@ fun MainApp(socketManager: SocketManager) {
                     openChat = {
                         navController.navigate("ChatScreen")
                     },
-                    chatViewModel= chatViewModel
+                    chatViewModel = chatViewModel
 
                 )
             }

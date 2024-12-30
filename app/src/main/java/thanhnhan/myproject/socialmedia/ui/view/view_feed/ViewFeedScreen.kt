@@ -87,10 +87,13 @@ import thanhnhan.myproject.socialmedia.data.network.RetrofitInstance
 import thanhnhan.myproject.socialmedia.data.network.SocketHandler
 import thanhnhan.myproject.socialmedia.data.network.SocketManager
 import thanhnhan.myproject.socialmedia.data.repository.FeedRepository
+import thanhnhan.myproject.socialmedia.data.repository.MessageRepository
+import thanhnhan.myproject.socialmedia.data.repository.UserRepository
 import thanhnhan.myproject.socialmedia.ui.theme.AppTheme
 import thanhnhan.myproject.socialmedia.viewmodel.ChatViewModel
 import thanhnhan.myproject.socialmedia.viewmodel.FeedViewModel
 import thanhnhan.myproject.socialmedia.viewmodel.FeedViewModelFactory
+import thanhnhan.myproject.socialmedia.viewmodel.UserViewModel
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
@@ -969,13 +972,13 @@ fun FriendFeedItem(
                                 // Thêm biểu tượng ở đây
                                 Icon(
                                     imageVector = Icons.Default.AccountBox, // Thay đổi thành biểu tượng bạn muốn
-                                    contentDescription = "Report User",
+                                    contentDescription = "Report user",
                                     tint = AppTheme.appButtonStyle.backgroundColor, // Màu cho biểu tượng
                                     modifier = Modifier.size(26.dp) // Kích thước biểu tượng
                                 )
                                 Spacer(modifier = Modifier.width(8.dp)) // Khoảng cách giữa biểu tượng và chữ
                                 Text(
-                                    text = "Report User",
+                                    text = "Report user",
                                     style = MaterialTheme.typography.body1.copy(
                                         color = AppTheme.appButtonStyle.backgroundColor, // Màu chữ
                                         fontWeight = FontWeight.Bold // Chữ đậm
@@ -1009,13 +1012,13 @@ fun FriendFeedItem(
                                 // Thêm biểu tượng ở đây
                                 Icon(
                                     painter = painterResource(id = R.drawable.ic_feed), // Thay đổi thành biểu tượng bạn muốn
-                                    contentDescription = "Report Feed",
+                                    contentDescription = "Report feed",
                                     tint = AppTheme.appButtonStyle.backgroundColor, // Màu cho biểu tượng
                                     modifier = Modifier.size(22.dp) // Kích thước biểu tượng
                                 )
                                 Spacer(modifier = Modifier.width(8.dp)) // Khoảng cách giữa biểu tượng và chữ
                                 Text(
-                                    text = "Report Feed",
+                                    text = "Report feed",
                                     style = MaterialTheme.typography.body1.copy(
                                         color = AppTheme.appButtonStyle.backgroundColor, // Màu chữ
                                         fontWeight = FontWeight.Bold // Chữ đậm
@@ -1071,7 +1074,7 @@ fun ReportUserDialog(
 
     AlertDialog(
         onDismissRequest = onDismissRequest,
-        title = { Text(text = "Report User") },
+        title = { Text(text = "Report user") },
         text = {
             Column {
                 Text("Please choose a reason:")
@@ -1083,7 +1086,7 @@ fun ReportUserDialog(
                         selected = selectedOption == "Option 1",
                         onClick = { selectedOption = "Option 1" }
                     )
-                    Text("Post Inappropriate Feeds", modifier = Modifier.padding(start = 8.dp))
+                    Text("Post inappropriate feeds", modifier = Modifier.padding(start = 8.dp))
                 }
                 Row(
                     verticalAlignment = Alignment.CenterVertically,
@@ -1093,7 +1096,7 @@ fun ReportUserDialog(
                         selected = selectedOption == "Option 2",
                         onClick = { selectedOption = "Option 2" }
                     )
-                    Text("Offend Others", modifier = Modifier.padding(start = 8.dp))
+                    Text("Offend others", modifier = Modifier.padding(start = 8.dp))
                 }
             }
         },
@@ -1131,7 +1134,7 @@ fun ReportFeedDialog(
 
     AlertDialog(
         onDismissRequest = onDismissRequest,
-        title = { Text(text = "Report Feed") },
+        title = { Text(text = "Report feed") },
         text = {
             Column {
                 Text("Please choose a reason:")
@@ -1143,7 +1146,7 @@ fun ReportFeedDialog(
                         selected = selectedOption == "Option 1",
                         onClick = { selectedOption = "Option 1" }
                     )
-                    Text("Sensitive Image", modifier = Modifier.padding(start = 8.dp))
+                    Text("Sensitive image", modifier = Modifier.padding(start = 8.dp))
                 }
                 Row(
                     verticalAlignment = Alignment.CenterVertically,
@@ -1153,7 +1156,7 @@ fun ReportFeedDialog(
                         selected = selectedOption == "Option 2",
                         onClick = { selectedOption = "Option 2" }
                     )
-                    Text("Inappropriate Words", modifier = Modifier.padding(start = 8.dp))
+                    Text("Inappropriate words", modifier = Modifier.padding(start = 8.dp))
                 }
             }
         },
@@ -1423,81 +1426,75 @@ fun ActivityPopup(
     }
 }
 
-//@Preview(showBackground = true, showSystemUi = true)
-//@Composable
-//fun ViewFeedPreview() {
-//    val mockApi = RetrofitInstance.api
-//    val mockMessageRepository = MessageRepository(mockApi)
-//    val mockUserViewModel = UserViewModel(UserRepository(mockApi))
-//    val mockSocketManager = SocketManager()
-//    val mockChatViewModel = ChatViewModel(
-//        userViewModel = mockUserViewModel,
-//        repository = mockMessageRepository,
-//        socketManager = mockSocketManager
-//    )
-//
-//    ViewFeed(
-//        openEditFeed = { _, _, _, _ -> },
-//        openHome = {},
-//        openProfile = {},
-//        openChat = {},
-//        chatViewModel = mockChatViewModel
-//    )
-//}
+@Preview(showBackground = true, showSystemUi = true)
+@Composable
+fun ViewFeedPreview() {
+    val mockApi = RetrofitInstance.api
+    val mockMessageRepository = MessageRepository(mockApi)
+    val mockUserViewModel = UserViewModel(UserRepository(mockApi))
+    val mockSocketManager = SocketManager()
+    val mockChatViewModel = ChatViewModel(
+        userViewModel = mockUserViewModel,
+        repository = mockMessageRepository,
+        socketManager = mockSocketManager
+    )
 
-//@Preview(showBackground = true, showSystemUi = true)
-//@Composable
-//fun UserFeedItemPreview() {
-//    val feed1 = GetEveryoneFeedsResponse.Feed(
-//        _id = "66f83383c7568b672c8c090b",
-//        description = "Seventh feed",
-//        imageUrl = "https://social-media-pbl6.s3.ap-southeast-2.amazonaws.com/1727542147245_a",
-//        visibility = listOf("66e981d0463acb70864b6d45"),
-//        userId = GetEveryoneFeedsResponse.Feed.User(
-//            _id = "66e14253840f0686f5624e81",
-//            fullname = "Gia Huy",
-//            profileImageUrl = "https://social-media-pbl6.s3.ap-southeast-2.amazonaws.com/1727634219292_avatar"
-//        ),
-//        reactions = listOf(),
-//        createdAt = "2024-09-28T16:49:07.247Z"
-//    )
-//    val api = RetrofitInstance.api
-//    val repository = FeedRepository(api)
-//    val viewModel: FeedViewModel = viewModel(factory = FeedViewModelFactory(repository))
-//    UserFeedItem(feed1, { _, _, _, _ -> }, {}, listOf(), viewModel)
-//}
-//
-//@Preview(showBackground = true, showSystemUi = true)
-//@Composable
-//fun FriendFeedItemPreview() {
-//    val feed2 = GetEveryoneFeedsResponse.Feed(
-//        _id = "66f83381c7568b672c8c0905",
-//        description = "Seventh feed",
-//        imageUrl = "https://social-media-pbl6.s3.ap-southeast-2.amazonaws.com/1727542145891_a",
-//        visibility = listOf(),
-//        userId = GetEveryoneFeedsResponse.Feed.User(
-//            _id = "66e981d0463acb70864b6d45",
-//            fullname = "Nguyen Huynh co dang cap khong",
-//            profileImageUrl = "https://social-media-pbl6.s3.ap-southeast-2.amazonaws.com/1727720786943_cropped_image"
-//        ),
-//        reactions = listOf(
-//            GetEveryoneFeedsResponse.Feed.Reaction(
-//                _id = "66fad4910fc980e6766b336e",
-//                userId = GetEveryoneFeedsResponse.Feed.User(
-//                    _id = "66e14253840f0686f5624e81",
-//                    fullname = "Gia Huy",
-//                    profileImageUrl = "https://social-media-pbl6.s3.ap-southeast-2.amazonaws.com/1727634219292_avatar"
-//                ),
-//                feedId = "66f83381c7568b672c8c0905",
-//                icon = listOf("haha", "like"),
-//                createdAt = "2024-09-30T16:40:49.494Z"
-//            )
-//        ),
-//        createdAt = "2024-09-28T16:49:05.926Z"
-//    )
-//    val api = RetrofitInstance.api
-//    val repository = FeedRepository(api)
-//    val chatViewModel:ChatViewModel
-//    val viewModel: FeedViewModel = viewModel(factory = FeedViewModelFactory(repository, chatViewModel))
-//    FriendFeedItem(feed2, {}, viewModel)
-//}
+    ViewFeed(
+        openEditFeed = { _, _, _, _ -> },
+        openHome = {},
+        openProfile = {},
+        openChat = {},
+        chatViewModel = mockChatViewModel
+    )
+}
+
+@Preview(showBackground = true, showSystemUi = true)
+@Composable
+fun UserFeedItemPreview() {
+    val feed1 = GetEveryoneFeedsResponse.Feed(
+        _id = "66f83383c7568b672c8c090b",
+        description = "Seventh feed",
+        imageUrl = "https://social-media-pbl6.s3.ap-southeast-2.amazonaws.com/1727542147245_a",
+        visibility = listOf("66e981d0463acb70864b6d45"),
+        userId = GetEveryoneFeedsResponse.Feed.User(
+            _id = "66e14253840f0686f5624e81",
+            fullname = "Gia Huy",
+            profileImageUrl = "https://social-media-pbl6.s3.ap-southeast-2.amazonaws.com/1727634219292_avatar"
+        ),
+        reactions = listOf(),
+        createdAt = "2024-09-28T16:49:07.247Z"
+    )
+    UserFeedItem(feed1, { _, _, _, _ -> }, {}, listOf(), viewModel())
+}
+
+@Preview(showBackground = true, showSystemUi = true)
+@Composable
+fun FriendFeedItemPreview() {
+    val feed2 = GetEveryoneFeedsResponse.Feed(
+        _id = "66f83381c7568b672c8c0905",
+        description = "Seventh feed",
+        imageUrl = "https://social-media-pbl6.s3.ap-southeast-2.amazonaws.com/1727542145891_a",
+        visibility = listOf(),
+        userId = GetEveryoneFeedsResponse.Feed.User(
+            _id = "66e981d0463acb70864b6d45",
+            fullname = "Nguyen Huynh co dang cap khong",
+            profileImageUrl = "https://social-media-pbl6.s3.ap-southeast-2.amazonaws.com/1727720786943_cropped_image"
+        ),
+        reactions = listOf(
+            GetEveryoneFeedsResponse.Feed.Reaction(
+                _id = "66fad4910fc980e6766b336e",
+                userId = GetEveryoneFeedsResponse.Feed.User(
+                    _id = "66e14253840f0686f5624e81",
+                    fullname = "Gia Huy",
+                    profileImageUrl = "https://social-media-pbl6.s3.ap-southeast-2.amazonaws.com/1727634219292_avatar"
+                ),
+                feedId = "66f83381c7568b672c8c0905",
+                icon = listOf("haha", "like"),
+                createdAt = "2024-09-30T16:40:49.494Z"
+            )
+        ),
+        createdAt = "2024-09-28T16:49:05.926Z"
+    )
+    val viewModel: FeedViewModel = viewModel()
+    FriendFeedItem(feed2, {}, viewModel)
+}
