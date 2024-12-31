@@ -112,7 +112,7 @@ fun Header() {
         modifier = Modifier.fillMaxWidth()
     ) {
         Text(
-            text = "Bạn bè của bạn",
+            text = "Your Friends",
             style = AppTheme.appTypography.largeTitle,
             color = Color.White
         )
@@ -144,7 +144,7 @@ fun YourFriendsList(
         }
     } else {
         Text(
-            text = "Bạn chưa có bạn bè nào.",
+            text = "You not have friends yet",
             style = AppTheme.appTypography.title,
             modifier = Modifier.padding(vertical = 8.dp)
         )
@@ -198,7 +198,7 @@ fun FriendsRequestList(
         }
     } else {
         Text(
-            text = "Bạn chưa có lời mời kết bạn nào.",
+            text = "You not have friend's request yet",
             style = AppTheme.appTypography.title,
             modifier = Modifier.padding(vertical = 8.dp)
         )
